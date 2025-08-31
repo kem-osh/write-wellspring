@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { CommandSettings } from "@/components/CommandSettings";
 import { useDocumentSelection } from "@/hooks/useDocumentSelection";
 import { ContextualAIToolbar } from "@/components/ContextualAIToolbar";
+import { SettingsModal } from "@/components/SettingsModal";
 
 interface Document {
   id: string;
@@ -96,6 +97,7 @@ export default function Dashboard() {
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [showCommandSettings, setShowCommandSettings] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [commandSettingsKey, setCommandSettingsKey] = useState(0);
   
   // Mobile state
@@ -808,8 +810,8 @@ export default function Dashboard() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowCommandSettings(true)}
-                  title="Customize AI Commands"
+                  onClick={() => setShowSettingsModal(true)}
+                  title="Settings"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
@@ -1037,6 +1039,12 @@ export default function Dashboard() {
           onAccept={handleAcceptSuggestion}
           onReject={handleRejectSuggestion}
           onClose={() => setAiSuggestion(null)}
+        />
+
+        {/* Settings Modal */}
+        <SettingsModal
+          open={showSettingsModal}
+          onOpenChange={setShowSettingsModal}
         />
 
         {/* Command Settings Modal */}
