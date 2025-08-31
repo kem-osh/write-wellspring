@@ -301,12 +301,8 @@
   .status-final { @apply bg-status-final/10 text-status-final border-status-final/20; }
 
   /* Enhanced transitions */
-  .transition-smooth { 
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .transition-bounce { 
-    transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  }
+  .transition-smooth { @apply transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1); }
+  .transition-bounce { @apply transition-all duration-200 cubic-bezier(0.68, -0.55, 0.265, 1.55); }
 
   /* Sidebar transitions */
   .sidebar-transition { @apply transition-smooth; }
