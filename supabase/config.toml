@@ -45,19 +45,34 @@ enable_signup = true
 enable_email_confirmations = false
 
 [functions.ai-generate-title]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-light-edit]  
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-expand-content]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-condense-content]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-outline]
-verify_jwt = false
+verify_jwt = true
+
+[functions.synthesize-documents]
+verify_jwt = true
+
+[functions.ai-continue]
+verify_jwt = true
+
+[functions.compare-documents]
+verify_jwt = true
+
+[functions.ai-fact-check]
+verify_jwt = true
+
+[functions.ai-rewrite]
+verify_jwt = true
 
 [functions.generate-embeddings]
 verify_jwt = true
