@@ -152,6 +152,19 @@ export default function Dashboard() {
     }
   }, [settings.theme]);
 
+  // Settings keyboard shortcut (Cmd/Ctrl + ,)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault();
+        setShowSettingsModal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Auto-save document content based on settings
   useEffect(() => {
     if (currentDocument && documentContent !== currentDocument.content && settings.autoSaveInterval > 0) {

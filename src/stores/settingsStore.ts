@@ -22,9 +22,9 @@ export interface Settings {
 const DEFAULT_SETTINGS: Settings = {
   // General
   autoSaveInterval: 5000, // 5 seconds
-  defaultCategory: 'general',
+  defaultCategory: 'General',
   autoGenerateTitles: true,
-  exportFormat: 'md',
+  exportFormat: 'txt',
   
   // Editor
   theme: 'auto',
@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS: Settings = {
   lineHeight: 'normal',
   
   // AI
-  defaultAIModel: 'gpt-5-nano',
+  defaultAIModel: 'gpt-5-nano', // Cheaper default
   voiceLanguage: 'en-US',
 };
 
