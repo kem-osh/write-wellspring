@@ -581,49 +581,63 @@ export default function Dashboard() {
             {(leftSidebarOpen && !isFocusMode) && (
               <>
                  <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                   <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft">
-                     {/* Header */}
-                     <div className="p-4 border-b flex items-center justify-between">
-                       <h3 className="font-medium">Documents</h3>
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => setLeftSidebarOpen(false)}
-                       >
-                         <X className="h-4 w-4" />
-                       </Button>
+                   <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft overflow-hidden">
+                     {/* Fixed Header Section */}
+                     <div className="flex-shrink-0 border-b bg-card">
+                       {/* Title and Close Button */}
+                       <div className="p-4 border-b flex items-center justify-between">
+                         <h3 className="font-medium">Documents</h3>
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => setLeftSidebarOpen(false)}
+                         >
+                           <X className="h-4 w-4" />
+                         </Button>
+                       </div>
+                       
+                       {/* New Document & Search */}
+                       <div className="p-4 space-y-3">
+                         <Button onClick={createNewDocument} className="w-full">
+                           <Plus className="h-4 w-4 mr-2" />
+                           New Document
+                         </Button>
+                         <DocumentSearch 
+                           onSearch={handleDocumentSearch}
+                           onClear={clearDocumentSearch}
+                         />
+                       </div>
                      </div>
                      
-                     {/* New Document & Search */}
-                     <div className="p-4 border-b space-y-3">
-                       <Button onClick={createNewDocument} className="w-full">
-                         <Plus className="h-4 w-4 mr-2" />
-                         New Document
-                       </Button>
-                       <DocumentSearch 
-                         onSearch={handleDocumentSearch}
-                         onClear={clearDocumentSearch}
-                       />
+                     {/* Scrollable Content Section */}
+                     <div className="flex-1 flex flex-col overflow-hidden">
+                       <ScrollArea className="flex-1">
+                         <div className="p-4 pb-20 space-y-4">
+                           {/* Filters */}
+                           <DocumentFilters 
+                             onFiltersChange={handleFiltersChange}
+                             initialFilters={filters}
+                           />
+                           
+                           {/* Document List */}
+                           <div className="min-h-0">
+                             <DocumentList
+                               documents={filteredDocuments}
+                               categories={categories}
+                               currentDocument={currentDocument}
+                               onDocumentSelect={openDocument}
+                               onDocumentUpdate={loadDocuments}
+                               searchQuery={searchQuery}
+                             />
+                           </div>
+                           
+                           {/* Stats - at bottom of scrollable area */}
+                           <div className="mt-auto pt-4 border-t">
+                             <DocumentStats documents={documents} />
+                           </div>
+                         </div>
+                       </ScrollArea>
                      </div>
-                     
-                     {/* Filters */}
-                     <DocumentFilters 
-                       onFiltersChange={handleFiltersChange}
-                       initialFilters={filters}
-                     />
-                     
-                     {/* Document List */}
-                     <DocumentList
-                       documents={filteredDocuments}
-                       categories={categories}
-                       currentDocument={currentDocument}
-                       onDocumentSelect={openDocument}
-                       onDocumentUpdate={loadDocuments}
-                       searchQuery={searchQuery}
-                     />
-                     
-                     {/* Stats */}
-                     <DocumentStats documents={documents} />
                    </div>
                 </ResizablePanel>
                 <ResizableHandle />
