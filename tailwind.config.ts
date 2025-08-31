@@ -26,11 +26,16 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					50: 'hsl(var(--primary-50))',
+					100: 'hsl(var(--primary-100))',
+					500: 'hsl(var(--primary-500))',
+					600: 'hsl(var(--primary-600))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					foreground: 'hsl(var(--secondary-foreground))',
+					hover: 'hsl(var(--secondary-hover))'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
@@ -38,11 +43,14 @@ export default {
 				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
+					foreground: 'hsl(var(--muted-foreground))',
+					hover: 'hsl(var(--muted-hover))'
 				},
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					foreground: 'hsl(var(--accent-foreground))',
+					50: 'hsl(var(--accent-50))',
+					100: 'hsl(var(--accent-100))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -52,6 +60,11 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				surface: {
+					DEFAULT: 'hsl(var(--surface))',
+					foreground: 'hsl(var(--surface-foreground))'
+				},
+				elevated: 'hsl(var(--elevated))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -64,16 +77,49 @@ export default {
 				},
 				'voice-button': {
 					DEFAULT: 'hsl(var(--voice-button))',
-					foreground: 'hsl(var(--voice-button-foreground))'
+					foreground: 'hsl(var(--voice-button-foreground))',
+					hover: 'hsl(var(--voice-button-hover))'
+				},
+				'ai-button': {
+					DEFAULT: 'hsl(var(--ai-button))',
+					foreground: 'hsl(var(--ai-button-foreground))',
+					hover: 'hsl(var(--ai-button-hover))'
 				},
 				'save-button': {
 					DEFAULT: 'hsl(var(--save-button))',
-					foreground: 'hsl(var(--save-button-foreground))'
+					foreground: 'hsl(var(--save-button-foreground))',
+					hover: 'hsl(var(--save-button-hover))'
 				},
 				'command-button': {
 					DEFAULT: 'hsl(var(--command-button))',
-					foreground: 'hsl(var(--command-button-foreground))'
+					foreground: 'hsl(var(--command-button-foreground))',
+					hover: 'hsl(var(--command-button-hover))'
+				},
+				status: {
+					draft: 'hsl(var(--status-draft))',
+					polished: 'hsl(var(--status-polished))',
+					final: 'hsl(var(--status-final))'
 				}
+			},
+			fontFamily: {
+				sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+				mono: ['var(--font-mono)', 'monospace']
+			},
+			spacing: {
+				'1': 'var(--space-1)',
+				'2': 'var(--space-2)', 
+				'3': 'var(--space-3)',
+				'4': 'var(--space-4)',
+				'6': 'var(--space-6)',
+				'8': 'var(--space-8)',
+				'12': 'var(--space-12)'
+			},
+			boxShadow: {
+				'sm': 'var(--shadow-sm)',
+				'DEFAULT': 'var(--shadow)',
+				'md': 'var(--shadow-md)',
+				'lg': 'var(--shadow-lg)',
+				'xl': 'var(--shadow-xl)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

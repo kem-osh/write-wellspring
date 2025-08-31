@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { DocumentCard } from '@/components/DocumentCard';
 import { Input } from '@/components/ui/input';
-import { X, FileText, Search, Plus } from 'lucide-react';
+import { X, FileText, Search, Plus, Filter } from 'lucide-react';
 import { DocumentSearch } from '@/components/DocumentSearch';
 import { DocumentFilters } from '@/components/DocumentFilters';
-import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 
 interface Document {
   id: string;
@@ -50,131 +50,129 @@ export function MobileDocumentLibrary({
 }: MobileDocumentLibraryProps) {
   const [swipedItem, setSwipedItem] = useState<string | null>(null);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  const DocumentItem = ({ doc }: { doc: Document }) => {
-    const swipeGesture = useSwipeGesture({
-      onSwipeLeft: () => setSwipedItem(doc.id),
-      onSwipeRight: () => setSwipedItem(null)
-    });
-
-    return (
-      <div className="relative">
-        <div
-          {...swipeGesture}
-          className={`transition-transform duration-200 ${
-            swipedItem === doc.id ? 'translate-x-[-80px]' : ''
-          }`}
-        >
-          <button
-            onClick={() => {
-              onDocumentSelect(doc);
-              onClose();
-            }}
-            className="w-full p-4 bg-card rounded-lg border text-left touch-target"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium truncate">{doc.title}</h3>
-                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                  <span>{formatDate(doc.updated_at)}</span>
-                  <span>•</span>
-                  <span>{doc.word_count} words</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {doc.content.substring(0, 100)}...
-                </p>
-              </div>
-              <FileText className="h-4 w-4 ml-2 text-muted-foreground flex-shrink-0" />
-            </div>
-          </button>
-        </div>
-        
-        {/* Delete action revealed on swipe */}
-        {swipedItem === doc.id && (
-          <div className="absolute right-0 top-0 bottom-0 w-20 bg-destructive flex items-center justify-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                onDeleteDocument(doc.id);
-                setSwipedItem(null);
-              }}
-              className="text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-    );
-  };
+  const [showFilters, setShowFilters] = useState(false);
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="left" className="w-full sm:max-w-full p-0 mobile-sheet">
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-background">
+        <div className="flex flex-col h-full bg-background">
+          {/* Enhanced Header */}
+          <div className="flex items-center justify-between p-4 border-b bg-surface/50 backdrop-blur-sm">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold">Documents</h2>
-              <Button
-                variant="ghost"
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h2 className="text-heading-lg">Documents</h2>
+              </div>
+              <EnhancedButton
+                variant="outline"
                 size="icon"
                 onClick={onCreateNew}
-                className="touch-target"
+                className="h-8 w-8"
               >
                 <Plus className="h-4 w-4" />
-              </Button>
+              </EnhancedButton>
             </div>
-            <Button
+            <EnhancedButton
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="touch-target"
+              className="h-8 w-8"
             >
               <X className="h-5 w-5" />
-            </Button>
+            </EnhancedButton>
           </div>
           
-          {/* Search and Filters */}
-          <div className="p-4 border-b space-y-3">
-            <DocumentSearch 
-              onSearch={onSearchChange}
-              onClear={() => onSearchChange('')}
-              isLoading={loading}
-            />
-            <DocumentFilters
-              initialFilters={filters}
-              onFiltersChange={onFiltersChange}
-            />
+          {/* Enhanced Search and Filters */}
+          <div className="p-4 bg-surface/30 border-b space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search documents..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-9 bg-background border-border focus:border-primary transition-colors"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <EnhancedButton
+                variant={showFilters ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+              </EnhancedButton>
+              
+              {Object.values(filters).some(v => v !== 'all' && (!Array.isArray(v) || v.length > 0)) && (
+                <EnhancedButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onFiltersChange({ category: 'all', status: [], sortBy: 'recent' })}
+                  className="text-destructive hover:text-destructive"
+                >
+                  Clear
+                </EnhancedButton>
+              )}
+            </div>
+
+            {showFilters && (
+              <div className="animate-in slide-in-from-top-2 duration-200">
+                <DocumentFilters
+                  initialFilters={filters}
+                  onFiltersChange={onFiltersChange}
+                />
+              </div>
+            )}
           </div>
           
-          {/* Document List */}
+          {/* Enhanced Document List */}
           <ScrollArea className="flex-1 mobile-scroll">
-            <div className="p-4 space-y-3 pb-safe">
-              {documents.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No documents found</p>
-                  <Button
-                    variant="outline"
+            <div className="p-4 space-y-4 pb-safe">
+              {loading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-24 bg-muted animate-pulse rounded-xl" />
+                  ))}
+                </div>
+              ) : documents.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-heading-sm mb-2">
+                    {searchQuery ? 'No documents found' : 'No documents yet'}
+                  </h3>
+                  <p className="text-body-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                    {searchQuery 
+                      ? `No documents match "${searchQuery}". Try different keywords or check your filters.`
+                      : "Create your first document to get started with LogosScribe."
+                    }
+                  </p>
+                  <EnhancedButton
+                    variant="default"
                     onClick={onCreateNew}
-                    className="mt-4"
+                    className="gap-2"
                   >
-                    Create your first document
-                  </Button>
+                    <Plus className="h-4 w-4" />
+                    Create Document
+                  </EnhancedButton>
                 </div>
               ) : (
-                documents.map(doc => (
-                  <DocumentItem key={doc.id} doc={doc} />
-                ))
+                <div className="space-y-3">
+                  {documents.map(doc => (
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      onSelect={(doc) => {
+                        onDocumentSelect(doc);
+                        onClose();
+                      }}
+                      onDelete={onDeleteDocument}
+                      searchQuery={searchQuery}
+                      compact={true}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </ScrollArea>
