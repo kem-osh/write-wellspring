@@ -10,7 +10,11 @@ import { User, Settings, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-export function UserMenu() {
+interface UserMenuProps {
+  onOpenSettings?: () => void;
+}
+
+export function UserMenu({ onOpenSettings }: UserMenuProps = {}) {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -137,7 +141,7 @@ export function UserMenu() {
             </div>
           </DialogContent>
         </Dialog>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={onOpenSettings}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>

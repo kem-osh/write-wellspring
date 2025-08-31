@@ -676,14 +676,25 @@ export default function Dashboard() {
                   placeholder="Document title..."
                 />
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className="touch-target"
-              >
-                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSettingsModal(true)}
+                  className="touch-target md:hidden"
+                  aria-label="Open settings"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="touch-target"
+                >
+                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              </div>
             </header>
 
             {/* Mobile Editor */}
@@ -863,7 +874,7 @@ export default function Dashboard() {
                 >
                   {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
-                <UserMenu />
+                <UserMenu onOpenSettings={() => setShowSettingsModal(true)} />
               </div>
             </header>
 
