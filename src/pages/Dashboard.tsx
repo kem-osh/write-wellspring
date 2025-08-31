@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { UserMenu } from "@/components/UserMenu";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
@@ -84,6 +86,8 @@ export default function Dashboard() {
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  
+  const isMobile = useIsMobile();
 
   // Load documents and categories on mount
   useEffect(() => {
@@ -689,8 +693,8 @@ export default function Dashboard() {
               </div>
             </ResizablePanel>
 
-            {/* Right Sidebar - AI Assistant */}
-            {(rightSidebarOpen && !isFocusMode) && (
+            {/* Right Sidebar - AI Assistant (Desktop) */}
+            {(rightSidebarOpen && !isFocusMode && !isMobile) && (
               <>
                 <ResizableHandle />
                 <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
@@ -738,7 +742,6 @@ export default function Dashboard() {
                   <div className="text-xs text-muted-foreground whitespace-nowrap">
                     {(() => {
                       const count = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
-                      const isMobile = window.innerWidth < 640;
                       if (isMobile && count >= 1000) {
                         return `${(count / 1000).toFixed(1)}k words`;
                       }
@@ -778,6 +781,19 @@ export default function Dashboard() {
           onReject={handleRejectSuggestion}
           onClose={() => setAiSuggestion(null)}
         />
+
+        {/* Mobile AI Chat Overlay */}
+        {isMobile && (
+          <Sheet open={rightSidebarOpen} onOpenChange={setRightSidebarOpen}>
+            <SheetContent side="right" className="w-full p-0">
+              <AIChatSidebar
+                isOpen={rightSidebarOpen}
+                onClose={() => setRightSidebarOpen(false)}
+                onDocumentSelect={openDocument}
+              />
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
     </div>
   );

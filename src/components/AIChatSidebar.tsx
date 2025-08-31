@@ -9,7 +9,7 @@ import {
   Send, 
   Bot, 
   User, 
-  RefreshCw,
+  RotateCcw,
   FileText
 } from 'lucide-react';
 
@@ -79,20 +79,20 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || !userId || isLoading) return;
+  const sendMessage = async (message?: string) => {
+    const messageToSend = message || inputMessage.trim();
+    if (!messageToSend || !userId || isLoading) return;
 
-    const userMessage = inputMessage.trim();
     setInputMessage('');
     
     // Add user message
-    addMessage({ role: 'user', content: userMessage });
+    addMessage({ role: 'user', content: messageToSend });
     setIsLoading(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
-          message: userMessage,
+          message: messageToSend,
           userId
         }
       });
@@ -156,13 +156,16 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
   if (!isOpen) return null;
 
   return (
-    <div className="w-96 h-full flex flex-col bg-card border-l border-border">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <h3 className="text-lg font-semibold">AI Assistant</h3>
+    <div className="w-full h-full flex flex-col bg-background">
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border bg-card/50">
+        <div className="flex items-center gap-3">
+          <Bot className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold text-foreground">AI Assistant</h3>
+        </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={clearChat}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button variant="ghost" size="sm" onClick={clearChat} disabled={messages.length === 0}>
+            <RotateCcw className="w-4 h-4 mr-2" />
             New Chat
           </Button>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -171,121 +174,139 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
         </div>
       </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">
-                Ask me about your documents, get writing help, or explore your content!
-              </p>
-              <p className="text-xs mt-2 opacity-75">
-                Try: "Summarize my recent blog posts" or "Help me improve this draft"
-              </p>
-            </div>
-          )}
-          
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
-            >
-              {/* Avatar */}
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                message.role === 'user' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {message.role === 'user' ? (
-                  <User className="w-4 h-4" />
-                ) : (
-                  <Bot className="w-4 h-4" />
-                )}
+      {/* Scrollable Messages Area */}
+      <div className="flex-1 overflow-hidden bg-muted/30">
+        <ScrollArea className="h-full">
+          <div className="p-4">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+                <Bot className="w-12 h-12 text-muted-foreground mb-4" />
+                <h4 className="text-lg font-medium mb-2">Ask me about your documents</h4>
+                <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                  I can help you write, edit, find information in your documents, or answer questions about your content.
+                </p>
+                
+                {/* Suggestion Chips */}
+                <div className="flex flex-col gap-2 w-full max-w-sm">
+                  <button
+                    onClick={() => sendMessage("Summarize my recent blog posts")}
+                    className="px-4 py-3 text-sm bg-background hover:bg-muted border border-border rounded-lg transition-colors text-left"
+                  >
+                    📝 Summarize recent posts
+                  </button>
+                  <button
+                    onClick={() => sendMessage("Help me improve this draft")}
+                    className="px-4 py-3 text-sm bg-background hover:bg-muted border border-border rounded-lg transition-colors text-left"
+                  >
+                    ✨ Improve my draft
+                  </button>
+                  <button
+                    onClick={() => sendMessage("What topics have I written about?")}
+                    className="px-4 py-3 text-sm bg-background hover:bg-muted border border-border rounded-lg transition-colors text-left"
+                  >
+                    🔍 Analyze my topics
+                  </button>
+                </div>
               </div>
+            ) : (
+              <div className="space-y-6">
+                {messages.map((message) => (
+                  <div key={message.id} className="animate-fade-in">
+                    {/* Message Header */}
+                    <div className="flex items-center gap-2 mb-2">
+                      {message.role === 'user' ? (
+                        <>
+                          <User className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium text-primary">You</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm font-medium text-muted-foreground">Assistant</span>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Message Content */}
+                    <div className={`ml-6 p-3 rounded-lg border ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground border-primary/20'
+                        : 'bg-background border-border'
+                    }`}>
+                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </div>
+                      
+                      {/* Sources */}
+                      {message.sources && message.sources.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-border/20">
+                          <span className="text-xs text-muted-foreground">Referenced:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {message.sources.map((source) => (
+                              <button
+                                key={source.id}
+                                onClick={() => handleSourceClick(source.id)}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-primary hover:text-primary-foreground rounded transition-colors"
+                              >
+                                <FileText className="w-3 h-3" />
+                                {source.title}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
 
-              {/* Message content */}
-              <div className={`flex-1 max-w-[80%] ${message.role === 'user' ? 'text-right' : ''}`}>
-                <div className={`p-3 rounded-lg ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground ml-auto'
-                    : 'bg-muted text-muted-foreground'
-                }`}>
-                  <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-                  
-                  {/* Sources */}
-                  {message.sources && message.sources.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-border/20">
-                      <p className="text-xs opacity-75 mb-2">Referenced documents:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {message.sources.map((source) => (
-                          <button
-                            key={source.id}
-                            onClick={() => handleSourceClick(source.id)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-background/50 hover:bg-background/80 rounded-md transition-colors"
-                          >
-                            <FileText className="w-3 h-3" />
-                            {source.title}
-                          </button>
-                        ))}
+                {/* Typing indicator */}
+                {isLoading && (
+                  <div className="animate-fade-in">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Bot className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">Assistant</span>
+                    </div>
+                    <div className="ml-6 p-3 bg-background border border-border rounded-lg">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:150ms]" />
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:300ms]" />
                       </div>
                     </div>
-                  )}
-                </div>
-                
-                <div className={`text-xs text-muted-foreground/60 mt-1 ${
-                  message.role === 'user' ? 'text-right' : ''
-                }`}>
-                  {message.timestamp.toLocaleTimeString()}
-                </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+      </div>
 
-          {/* Typing indicator */}
-          {isLoading && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0">
-                <Bot className="w-4 h-4" />
-              </div>
-              <div className="bg-muted p-3 rounded-lg">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Input */}
-      <div className="p-4 border-t border-border">
-        <div className="flex gap-2">
+      {/* Fixed Input Area */}
+      <div className="flex-shrink-0 p-4 border-t border-border bg-card/50">
+        <div className="flex gap-2 items-end">
           <Textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask about your documents, get writing help..."
-            className="flex-1 min-h-0 resize-none"
-            rows={2}
+            className="flex-1 min-h-[60px] max-h-[120px] resize-none bg-muted/50 border-border focus:bg-background"
             disabled={isLoading}
           />
           <Button 
-            onClick={sendMessage} 
+            onClick={() => sendMessage()} 
             disabled={!inputMessage.trim() || isLoading}
             size="icon"
-            className="self-end"
+            className="h-[60px] w-[60px] flex-shrink-0"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Press Enter to send, Shift+Enter for new line
-        </p>
+        <div className="mt-2 text-center">
+          <span className="text-xs text-muted-foreground">
+            Press Enter to send, Shift+Enter for new line
+          </span>
+        </div>
       </div>
     </div>
   );
