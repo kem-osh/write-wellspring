@@ -87,7 +87,7 @@ export default function Dashboard() {
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   
-  const isMobile = useIsMobile();
+  const isMobileView = useIsMobile();
 
   // Load documents and categories on mount
   useEffect(() => {
@@ -694,7 +694,7 @@ export default function Dashboard() {
             </ResizablePanel>
 
             {/* Right Sidebar - AI Assistant (Desktop) */}
-            {(rightSidebarOpen && !isFocusMode && !isMobile) && (
+            {(rightSidebarOpen && !isFocusMode && !isMobileView) && (
               <>
                 <ResizableHandle />
                 <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
@@ -742,7 +742,7 @@ export default function Dashboard() {
                   <div className="text-xs text-muted-foreground whitespace-nowrap">
                     {(() => {
                       const count = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
-                      if (isMobile && count >= 1000) {
+                      if (isMobileView && count >= 1000) {
                         return `${(count / 1000).toFixed(1)}k words`;
                       }
                       return `${count} words`;
@@ -783,7 +783,7 @@ export default function Dashboard() {
         />
 
         {/* Mobile AI Chat Overlay */}
-        {isMobile && (
+        {isMobileView && (
           <Sheet open={rightSidebarOpen} onOpenChange={setRightSidebarOpen}>
             <SheetContent side="right" className="w-full p-0">
               <AIChatSidebar
