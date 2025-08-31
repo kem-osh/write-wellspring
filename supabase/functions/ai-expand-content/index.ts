@@ -32,7 +32,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -43,7 +43,7 @@ serve(async (req) => {
             content: textToExpand
           }
         ],
-        temperature: 0.6,
+        max_completion_tokens: Math.max(800, Math.ceil(textToExpand.length * 1.5))
       }),
     });
 

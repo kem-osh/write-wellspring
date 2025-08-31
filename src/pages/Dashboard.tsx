@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic } from "lucide-react";
+import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { UserMenu } from "@/components/UserMenu";
@@ -266,13 +266,66 @@ export default function Dashboard() {
   };
 
   const handleVoiceTranscription = async (text: string) => {
-    if (currentDocument) {
-      // Append to existing document
-      const newContent = documentContent + (documentContent ? '\n\n' : '') + text;
+    if (currentDocument && documentContent.trim()) {
+      // Append to existing document with content
+      const newContent = documentContent + '\n\n' + text;
       setDocumentContent(newContent);
+      
+      // Auto-generate title if current title is generic and content is substantial
+      const wordCount = newContent.trim().split(/\s+/).filter(word => word.length > 0).length;
+      if (wordCount >= 50 && (documentTitle === "New Document" || documentTitle.trim() === "")) {
+        try {
+          const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
+            body: { content: newContent.substring(0, 200) }
+          });
+
+          if (titleData?.title) {
+            const currentDate = new Date().toLocaleDateString('en-US', { 
+              month: '2-digit', 
+              day: '2-digit', 
+              year: 'numeric' 
+            });
+            const generatedTitle = `${titleData.title} - ${currentDate}`;
+            setDocumentTitle(generatedTitle);
+          }
+        } catch (error) {
+          console.error('Failed to generate title:', error);
+        }
+      }
+
       toast({
         title: "Voice added to document",
         description: "Transcription has been added to your current document.",
+      });
+    } else if (currentDocument && !documentContent.trim()) {
+      // Replace empty document content
+      setDocumentContent(text);
+      
+      // Auto-generate title for new content
+      const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+      if (wordCount >= 10) {
+        try {
+          const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
+            body: { content: text.substring(0, 200) }
+          });
+
+          if (titleData?.title) {
+            const currentDate = new Date().toLocaleDateString('en-US', { 
+              month: '2-digit', 
+              day: '2-digit', 
+              year: 'numeric' 
+            });
+            const generatedTitle = `${titleData.title} - ${currentDate}`;
+            setDocumentTitle(generatedTitle);
+          }
+        } catch (error) {
+          console.error('Failed to generate title:', error);
+        }
+      }
+
+      toast({
+        title: "Voice transcription complete",
+        description: "Your document has been updated with the transcribed content.",
       });
     } else {
       // Create new document
@@ -284,12 +337,27 @@ export default function Dashboard() {
     if (!user) return;
 
     try {
-      // Generate AI title first
-      const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
-        body: { content }
-      });
+      // Generate AI title first if content is substantial
+      let title = 'Voice Note';
+      
+      if (content.trim().split(/\s+/).filter(word => word.length > 0).length >= 10) {
+        try {
+          const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
+            body: { content: content.substring(0, 200) }
+          });
 
-      const title = titleData?.title || 'Voice Note';
+          if (titleData?.title) {
+            const currentDate = new Date().toLocaleDateString('en-US', { 
+              month: '2-digit', 
+              day: '2-digit', 
+              year: 'numeric' 
+            });
+            title = `${titleData.title} - ${currentDate}`;
+          }
+        } catch (error) {
+          console.error('Failed to generate title:', error);
+        }
+      }
 
       const newDoc = {
         title,
@@ -595,9 +663,17 @@ export default function Dashboard() {
                       return `${count} words`;
                     })()}
                   </div>
-                  <div className="auto-save-indicator text-xs text-green-600 dark:text-green-400">
-                    ✓ <span className="hidden sm:inline">Saved</span>
-                  </div>
+                  {!aiLoading && (
+                    <div className="auto-save-indicator text-xs text-green-600 dark:text-green-400 animate-fadeInScale">
+                      ✓ <span className="hidden sm:inline">Saved</span>
+                    </div>
+                  )}
+                  {aiLoading && (
+                    <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span className="hidden sm:inline">Processing...</span>
+                    </div>
+                  )}
                 </div>
               )}
               <Button 
