@@ -10,7 +10,7 @@ interface Shortcut {
 }
 
 interface CustomShortcutsProps {
-  onShortcut: (type: 'light-edit' | 'expand' | 'condense', prompt: string) => void;
+  onShortcut: (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string) => void;
   isLoading?: boolean;
 }
 
@@ -32,7 +32,7 @@ export function CustomShortcuts({ onShortcut, isLoading }: CustomShortcutsProps)
       id: 'outline',
       name: 'Outline',
       icon: <List className="h-3 w-3" />,
-      action: () => onShortcut('light-edit', 'Create an outline from this text'),
+      action: () => onShortcut('outline', 'Create a structured outline with headers and bullet points'),
     },
     {
       id: 'improve',

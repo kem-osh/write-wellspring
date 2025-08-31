@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 
 interface AISuggestion {
   id: string;
-  type: 'light-edit' | 'expand' | 'condense';
+  type: 'light-edit' | 'expand' | 'condense' | 'outline';
   originalText: string;
   suggestedText: string;
   changes?: boolean;
@@ -54,6 +54,8 @@ export function AISuggestionPanel({
         return 'Expand';
       case 'condense':
         return 'Condense';
+      case 'outline':
+        return 'Outline';
       default:
         return 'AI Suggestion';
     }
@@ -67,6 +69,8 @@ export function AISuggestionPanel({
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       case 'condense':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+      case 'outline':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }

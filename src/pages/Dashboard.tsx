@@ -28,7 +28,7 @@ interface Document {
 
 interface AISuggestion {
   id: string;
-  type: 'light-edit' | 'expand' | 'condense';
+  type: 'light-edit' | 'expand' | 'condense' | 'outline';
   originalText: string;
   suggestedText: string;
   changes?: boolean;
@@ -205,7 +205,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleCustomShortcut = async (type: 'light-edit' | 'expand' | 'condense', prompt: string) => {
+  const handleCustomShortcut = async (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string) => {
     if (!currentDocument) {
       toast({
         title: "No document selected",
@@ -230,7 +230,8 @@ export default function Dashboard() {
     try {
       const functionName = type === 'light-edit' ? 'ai-light-edit' : 
                           type === 'expand' ? 'ai-expand-content' : 
-                          'ai-condense-content';
+                          type === 'condense' ? 'ai-condense-content' :
+                          'ai-outline';
 
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: { 
@@ -246,7 +247,8 @@ export default function Dashboard() {
         type,
         originalText: textToProcess,
         suggestedText: data[type === 'light-edit' ? 'editedText' : 
-                          type === 'expand' ? 'expandedText' : 'condensedText'],
+                          type === 'expand' ? 'expandedText' : 
+                          type === 'condense' ? 'condensedText' : 'outlineText'],
         changes: type === 'light-edit' ? data.changes : true
       };
 
@@ -561,14 +563,6 @@ export default function Dashboard() {
                 onTranscription={handleVoiceTranscription}
                 disabled={aiLoading}
               />
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleCustomShortcut('light-edit', 'Fix spelling, grammar, and formatting')}
-                disabled={!currentDocument || aiLoading || !documentContent.trim()}
-              >
-                ✨ Light Edit
-              </Button>
               {!rightSidebarOpen && (
                 <Button
                   variant="outline"
@@ -593,8 +587,13 @@ export default function Dashboard() {
                   {documentContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
                 </div>
               )}
-              <Button variant="outline" size="sm" onClick={saveDocument}>
-                Save
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={saveDocument}
+                disabled={!currentDocument}
+              >
+                💾 Save
               </Button>
             </div>
           </div>

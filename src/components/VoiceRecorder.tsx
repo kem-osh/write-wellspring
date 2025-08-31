@@ -165,12 +165,14 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
     const recognition = initializeRecognition();
     if (!recognition) return;
 
+    triggerHapticFeedback();
     recognitionRef.current = recognition;
     recognition.start();
   };
 
   const stopRecording = () => {
     if (recognitionRef.current && state === 'recording') {
+      triggerHapticFeedback();
       recognitionRef.current.stop();
       recognitionRef.current = null;
     }
@@ -202,16 +204,26 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
       case 'error':
         return 'destructive';
       default:
-        return 'outline';
+        return 'default';
     }
   };
 
   const getButtonClass = () => {
-    const baseClass = '';
+    const baseClass = 'transition-all duration-200';
     if (state === 'recording') {
-      return `${baseClass} animate-pulse`;
+      return `${baseClass} animate-pulse bg-destructive hover:bg-destructive/90 border-destructive`;
+    }
+    if (state === 'ready') {
+      return `${baseClass} bg-primary/10 hover:bg-primary/20 border-primary/20 text-primary`;
     }
     return baseClass;
+  };
+
+  // Haptic feedback for mobile devices
+  const triggerHapticFeedback = () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
   };
 
   return (
@@ -234,8 +246,11 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
       </Button>
       
       {transcript && state === 'recording' && (
-        <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 max-w-md p-2 bg-card border rounded-lg shadow-lg">
-          <p className="text-xs text-muted-foreground">Live transcription:</p>
+        <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 max-w-md p-3 bg-card border rounded-lg shadow-lg z-10 animate-fade-in">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
+            <p className="text-xs text-muted-foreground font-medium">Live transcription:</p>
+          </div>
           <p className="text-sm">{transcript}</p>
         </div>
       )}
