@@ -58,9 +58,19 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const queryEmbedding = embeddingData.data[0].embedding;
 
+    // Enhanced debugging
     console.log('Generated query embedding, searching for relevant documents...');
+    console.log('Query embedding dimensions:', queryEmbedding.length);
+    console.log('First few embedding values:', queryEmbedding.slice(0, 5));
 
     // Find relevant documents using the vector similarity function
+    console.log('Calling match_documents with:', {
+      userId,
+      embeddingLength: queryEmbedding.length,
+      threshold: 0.1,
+      count: 10
+    });
+
     const { data: relevantDocs, error: searchError } = await supabase.rpc('match_documents', {
       query_embedding: queryEmbedding,
       user_id: userId,
@@ -73,9 +83,37 @@ serve(async (req) => {
       throw searchError;
     }
 
-    console.log(`Found ${relevantDocs?.length || 0} relevant documents`);
+    console.log('Search results:', {
+      found: relevantDocs?.length || 0,
+      docs: relevantDocs?.map(d => ({ title: d.title, similarity: d.similarity }))
+    });
     
-    // If no documents found with semantic search, try getting user's recent documents
+    // Try text search as additional fallback for better recall
+    let textSearchDocs = null;
+    const searchTerms = message.toLowerCase().split(' ').filter(word => word.length > 2);
+    if (searchTerms.length > 0) {
+      console.log('Attempting text search with terms:', searchTerms);
+      const searchPattern = searchTerms.join('|');
+      
+      const { data: textDocs, error: textError } = await supabase
+        .from('documents')
+        .select('id, title, content')
+        .eq('user_id', userId)
+        .or(`title.ilike.%${searchTerms[0]}%,content.ilike.%${searchTerms[0]}%`)
+        .limit(5);
+      
+      if (!textError && textDocs && textDocs.length > 0) {
+        textSearchDocs = textDocs.map(doc => ({
+          id: doc.id,
+          title: doc.title,
+          content: doc.content,
+          similarity: 0.6 // Higher similarity for text matches
+        }));
+        console.log(`Found ${textSearchDocs.length} documents via text search`);
+      }
+    }
+    
+    // If no documents found with semantic search, try recent documents as final fallback
     let fallbackDocs = null;
     if (!relevantDocs || relevantDocs.length === 0) {
       console.log('No relevant documents found via embedding search, trying recent documents...');
@@ -91,25 +129,49 @@ serve(async (req) => {
           id: doc.id,
           title: doc.title,
           content: doc.content,
-          similarity: 0.5 // Default similarity for fallback docs
+          similarity: 0.4 // Lower similarity for fallback docs
         }));
         console.log(`Found ${fallbackDocs.length} recent documents as fallback`);
       }
     }
 
-    // Build context from relevant documents or fallback documents
-    const docsToUse = relevantDocs && relevantDocs.length > 0 ? relevantDocs : fallbackDocs;
+    // Build context from the best available documents (prioritize embedding matches, then text matches, then recent)
+    let docsToUse = [];
+    
+    // Start with embedding matches if available
+    if (relevantDocs && relevantDocs.length > 0) {
+      docsToUse = [...relevantDocs];
+      console.log(`Using ${relevantDocs.length} documents from embedding search`);
+    }
+    
+    // Add text search results if we have fewer than 5 documents
+    if (textSearchDocs && textSearchDocs.length > 0 && docsToUse.length < 5) {
+      // Avoid duplicates by checking IDs
+      const existingIds = new Set(docsToUse.map(doc => doc.id));
+      const newTextDocs = textSearchDocs.filter(doc => !existingIds.has(doc.id));
+      docsToUse = [...docsToUse, ...newTextDocs].slice(0, 5);
+      console.log(`Added ${newTextDocs.length} additional documents from text search`);
+    }
+    
+    // Use recent documents as final fallback if still no matches
+    if (docsToUse.length === 0 && fallbackDocs) {
+      docsToUse = fallbackDocs;
+      console.log(`Using ${fallbackDocs.length} recent documents as final fallback`);
+    }
+    
     let context = '';
     let hasDocuments = false;
     
     if (docsToUse && docsToUse.length > 0) {
       hasDocuments = true;
+      // Sort by similarity score descending
+      docsToUse.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
       context = docsToUse
         .map((doc: any) => 
-          `Document: "${doc.title}"\nContent: ${doc.content.substring(0, 800)}...\n`
+          `Document: "${doc.title}" (relevance: ${(doc.similarity * 100).toFixed(1)}%)\nContent: ${doc.content.substring(0, 800)}...\n`
         )
         .join('\n');
-      console.log(`Using ${docsToUse.length} documents for context`);
+      console.log(`Using ${docsToUse.length} total documents for context, top similarity: ${((docsToUse[0]?.similarity || 0) * 100).toFixed(1)}%`);
     } else {
       console.log('No documents found - user may not have any documents yet');
     }
