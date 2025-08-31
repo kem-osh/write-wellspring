@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,13 @@ export default function Dashboard() {
   const [showCommandSettings, setShowCommandSettings] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [commandSettingsKey, setCommandSettingsKey] = useState(0);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveIndicator, setSaveIndicator] = useState<'saved' | 'saving' | 'error' | null>(null);
+  
+  // Auto-title generation constants
+  const MIN_CONTENT_LENGTH = 100; // Minimum characters before saving/titling
+  const AUTO_TITLE_THRESHOLD = 200; // Characters needed for title generation
   
   // Mobile state
   const [mobileDocumentLibraryOpen, setMobileDocumentLibraryOpen] = useState(false);
@@ -164,17 +171,6 @@ export default function Dashboard() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  // Auto-save document content based on settings
-  useEffect(() => {
-    if (currentDocument && documentContent !== currentDocument.content && settings.autoSaveInterval > 0) {
-      const timeoutId = setTimeout(() => {
-        saveDocument();
-      }, settings.autoSaveInterval);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [documentContent, currentDocument, settings.autoSaveInterval]);
 
   const loadDocuments = async () => {
     if (!user) return;
@@ -271,37 +267,28 @@ export default function Dashboard() {
   const createNewDocument = async () => {
     if (!user) return;
 
-      const newDoc = {
-        title: settings.autoGenerateTitles ? "New Document" : "New Document",
-        content: "",
-        user_id: user.id,
-        category: settings.defaultCategory,
-        status: "draft",
-        word_count: 0,
-      };
+    // Don't create empty documents in database immediately
+    // Instead, create a local document state that will be saved when content is added
+    const newDoc: Document = {
+      id: 'temp-' + Date.now(),
+      title: "New Document",
+      content: "",
+      category: settings.defaultCategory,
+      status: "draft",
+      word_count: 0,
+      folder_id: undefined,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-    const { data, error } = await supabase
-      .from("documents")
-      .insert([newDoc])
-      .select()
-      .single();
-
-    if (error) {
-      toast({
-        title: "Error creating document",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setDocuments([data, ...documents]);
-      setCurrentDocument(data);
-      setDocumentTitle(data.title);
-      setDocumentContent(data.content);
-      toast({
-        title: "New document created",
-        description: "Your new document is ready for editing.",
-      });
-    }
+    setCurrentDocument(null); // Set to null so auto-save knows to create new document
+    setDocumentTitle(newDoc.title);
+    setDocumentContent(newDoc.content);
+    
+    toast({
+      title: "New document ready",
+      description: "Start typing to create your document.",
+    });
   };
 
   const openDocument = (doc: Document) => {
@@ -309,6 +296,147 @@ export default function Dashboard() {
     setDocumentTitle(doc.title);
     setDocumentContent(doc.content);
   };
+
+  const handleAutoSave = useCallback(async () => {
+    if (!user) return;
+
+    // Don't save empty documents
+    if (!documentContent || documentContent.trim().length < MIN_CONTENT_LENGTH) {
+      console.log('Content too short, skipping save');
+      return;
+    }
+
+    setSaveIndicator('saving');
+
+    // Check if this is a new document that needs a title
+    const needsTitle = 
+      documentTitle === 'New Document' || 
+      documentTitle === '' || 
+      !documentTitle;
+
+    const hasEnoughContent = documentContent.trim().length >= AUTO_TITLE_THRESHOLD;
+
+    try {
+      // Generate title if needed and has enough content
+      let finalTitle = documentTitle;
+      if (needsTitle && hasEnoughContent && !isGeneratingTitle && settings.autoGenerateTitles) {
+        setIsGeneratingTitle(true);
+        
+        const { data: titleData, error: titleError } = await supabase.functions.invoke(
+          'ai-generate-title',
+          {
+            body: {
+              content: documentContent.substring(0, 1000), // Use first 1000 chars for context
+              userId: user.id
+            }
+          }
+        );
+
+        if (titleData?.title && !titleError) {
+          finalTitle = titleData.title;
+          setDocumentTitle(finalTitle);
+          toast({
+            title: "Document titled",
+            description: finalTitle,
+          });
+        }
+        
+        setIsGeneratingTitle(false);
+      }
+
+      const wordCount = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
+
+      // Save document with generated or existing title
+      if (currentDocument?.id) {
+        // Update existing document
+        const { error } = await supabase
+          .from('documents')
+          .update({
+            title: finalTitle,
+            content: documentContent,
+            word_count: wordCount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentDocument.id);
+
+        if (!error) {
+          // Update local state
+          const updatedDoc = { 
+            ...currentDocument, 
+            title: finalTitle, 
+            content: documentContent,
+            word_count: wordCount 
+          };
+          setCurrentDocument(updatedDoc);
+          setDocuments(documents.map(doc => 
+            doc.id === currentDocument.id ? updatedDoc : doc
+          ));
+          
+          setLastSaved(new Date());
+          setSaveIndicator('saved');
+        } else {
+          setSaveIndicator('error');
+          throw error;
+        }
+      } else {
+        // Create new document (only if has content)
+        const { data: newDoc, error } = await supabase
+          .from('documents')
+          .insert({
+            title: finalTitle,
+            content: documentContent,
+            category: settings.defaultCategory,
+            status: 'draft',
+            word_count: wordCount,
+            user_id: user.id
+          })
+          .select()
+          .single();
+
+        if (newDoc && !error) {
+          setCurrentDocument(newDoc);
+          setDocuments([newDoc, ...documents]);
+          setLastSaved(new Date());
+          setSaveIndicator('saved');
+        } else {
+          setSaveIndicator('error');
+          throw error;
+        }
+      }
+
+      // Generate embeddings silently in background
+      if (currentDocument?.id || (currentDocument === null && documentContent.trim())) {
+        const docId = currentDocument?.id || documents.find(d => d.content === documentContent)?.id;
+        if (docId) {
+          generateEmbeddingsSilently(docId, documentContent);
+        }
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      setSaveIndicator('error');
+      toast({
+        title: "Error saving document",
+        description: error instanceof Error ? error.message : "Failed to save document",
+        variant: "destructive",
+      });
+    }
+  }, [user, documentContent, documentTitle, currentDocument, isGeneratingTitle, settings, documents, toast, generateEmbeddingsSilently]);
+
+  // Auto-save document content with title generation
+  useEffect(() => {
+    // Don't save empty documents
+    if (!documentContent || documentContent.trim().length < MIN_CONTENT_LENGTH) {
+      return;
+    }
+
+    if (currentDocument && documentContent !== currentDocument.content && settings.autoSaveInterval > 0) {
+      const timeoutId = setTimeout(() => {
+        handleAutoSave();
+      }, settings.autoSaveInterval);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [documentContent, currentDocument, settings.autoSaveInterval, handleAutoSave]);
 
   const saveDocument = async () => {
     if (!currentDocument) return;
