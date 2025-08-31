@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2 } from "lucide-react";
+import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useDevice } from "@/hooks/useDevice";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { MobileEditor } from "@/components/MobileEditor";
+import { MobileDocumentLibrary } from "@/components/MobileDocumentLibrary";
+import { MobileAICommands } from "@/components/MobileAICommands";
 import { UserMenu } from "@/components/UserMenu";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
 import { AdvancedAICommands } from "@/components/AdvancedAICommands";
@@ -92,7 +95,11 @@ export default function Dashboard() {
   const [showCommandSettings, setShowCommandSettings] = useState(false);
   const [commandSettingsKey, setCommandSettingsKey] = useState(0);
   
-  const isMobileView = useIsMobile();
+  // Mobile state
+  const [mobileDocumentLibraryOpen, setMobileDocumentLibraryOpen] = useState(false);
+  const [mobileAICommandsOpen, setMobileAICommandsOpen] = useState(false);
+  
+  const { isMobile, isTablet, isDesktop } = useDevice();
 
   // Load documents and categories on mount
   useEffect(() => {
@@ -599,246 +606,390 @@ export default function Dashboard() {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
-      <div className="flex flex-col h-screen bg-background">
-        {/* Top Bar */}
-        <header className="flex items-center justify-between p-4 border-b bg-card">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
-            <Input
-              value={documentTitle}
-              onChange={(e) => setDocumentTitle(e.target.value)}
-              className="text-lg font-medium bg-transparent border-none focus:border-border max-w-md"
-              placeholder="Document title..."
-            />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCommandSettings(true)}
-              title="Customize AI Commands"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsFocusMode(!isFocusMode)}
-            >
-              {isFocusMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-            <UserMenu />
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
-          <ResizablePanelGroup direction="horizontal">
-            {/* Left Sidebar - Document Library */}
-            {(leftSidebarOpen && !isFocusMode) && (
-              <>
-                 <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                   <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft overflow-hidden">
-                     {/* Fixed Header Section */}
-                     <div className="flex-shrink-0 border-b bg-card">
-                       {/* Title and Close Button */}
-                       <div className="p-4 border-b flex items-center justify-between">
-                         <h3 className="font-medium">Documents</h3>
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => setLeftSidebarOpen(false)}
-                         >
-                           <X className="h-4 w-4" />
-                         </Button>
-                       </div>
-                       
-                       {/* New Document & Search */}
-                       <div className="p-4 space-y-3">
-                         <Button onClick={createNewDocument} className="w-full">
-                           <Plus className="h-4 w-4 mr-2" />
-                           New Document
-                         </Button>
-                        <DocumentSearch 
-                          onSearch={handleDocumentSearch}
-                          onClear={clearDocumentSearch}
-                          isLoading={searchLoading}
-                        />
-                       </div>
-                     </div>
-                     
-                     {/* Scrollable Content Section */}
-                     <div className="flex-1 flex flex-col overflow-hidden">
-                       <ScrollArea className="flex-1">
-                         <div className="p-4 pb-20 space-y-4">
-                           {/* Filters */}
-                           <DocumentFilters 
-                             onFiltersChange={handleFiltersChange}
-                             initialFilters={filters}
-                           />
-                           
-                           {/* Document List */}
-                           <div className="min-h-0">
-                              <DocumentList
-                                documents={filteredDocuments}
-                                categories={categories}
-                                currentDocument={currentDocument}
-                                onDocumentSelect={openDocument}
-                                onDocumentUpdate={loadDocuments}
-                                searchQuery={searchQuery}
-                                selectedDocuments={selectedDocuments}
-                                onDocumentSelectionChange={setSelectedDocuments}
-                              />
-                           </div>
-                           
-                           {/* Stats - at bottom of scrollable area */}
-                           <div className="mt-auto pt-4 border-t">
-                             <DocumentStats documents={documents} />
-                           </div>
-                         </div>
-                       </ScrollArea>
-                     </div>
-                   </div>
-                </ResizablePanel>
-                <ResizableHandle />
-              </>
-            )}
-
-            {/* Main Editor */}
-            <ResizablePanel>
-              <div className="h-full flex flex-col">
-                {currentDocument ? (
-                  <div className="flex-1">
-                    <MonacoEditor
-                      value={documentContent}
-                      onChange={setDocumentContent}
-                      isDarkMode={isDarkMode}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-center">
-                    <div>
-                      <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
-                      <p className="text-muted-foreground mb-4">
-                        Your AI-powered writing studio for professional content creation
-                      </p>
-                      <Button onClick={createNewDocument}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Document
-                      </Button>
-                    </div>
-                  </div>
-                )}
+      <div className={`flex flex-col h-screen bg-background ${isMobile ? 'mobile-layout' : ''}`}>
+        {/* Mobile Layout */}
+        {isMobile ? (
+          <>
+            {/* Mobile Header */}
+            <header className="flex items-center justify-between p-3 border-b bg-card h-14">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileDocumentLibraryOpen(true)}
+                className="touch-target"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div className="flex-1 mx-3 min-w-0">
+                <input
+                  value={documentTitle || 'New Document'}
+                  onChange={(e) => setDocumentTitle(e.target.value)}
+                  className="w-full text-base font-medium bg-transparent border-none outline-none text-center truncate"
+                  placeholder="Document title..."
+                />
               </div>
-            </ResizablePanel>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="touch-target"
+              >
+                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            </header>
 
-            {/* Right Sidebar - AI Assistant (Desktop) */}
-            {(rightSidebarOpen && !isFocusMode && !isMobileView) && (
-              <>
-                <ResizableHandle />
-                <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
-                  <AIChatSidebar
-                    isOpen={rightSidebarOpen}
-                    onClose={() => setRightSidebarOpen(false)}
-                    onDocumentSelect={openDocument}
-                  />
-                </ResizablePanel>
-              </>
-            )}
-          </ResizablePanelGroup>
-        </div>
+            {/* Mobile Editor */}
+            <main className="flex-1 overflow-hidden">
+              {currentDocument ? (
+                <MobileEditor
+                  value={documentContent}
+                  onChange={setDocumentContent}
+                  isDarkMode={isDarkMode}
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-center p-8">
+                  <div>
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
+                    <p className="text-muted-foreground mb-4">
+                      Your AI-powered writing studio
+                    </p>
+                    <Button onClick={createNewDocument} className="touch-target">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Document
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </main>
 
-        {/* Bottom Toolbar */}
-        <footer className="border-t bg-card">
-          <div className="flex items-center gap-3 p-3 min-h-[68px]">
-            {/* Left Section - Voice & AI Chat */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Mobile Bottom Navigation */}
+            <nav className="flex items-center justify-around border-t bg-card h-16 px-2 pb-safe">
+              <Button
+                variant="ghost"
+                onClick={() => setMobileDocumentLibraryOpen(true)}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+              >
+                <FileText className="h-5 w-5" />
+                <span className="text-xs mt-1">Docs</span>
+              </Button>
+              
               <VoiceRecorder 
                 onTranscription={handleVoiceTranscription}
                 disabled={aiLoading}
               />
-              {!rightSidebarOpen && (
-                <Button
-                  size="sm"
-                  className="h-11 bg-muted hover:bg-muted/80 text-muted-foreground border-0 hidden sm:flex items-center gap-1.5"
-                  onClick={() => setRightSidebarOpen(true)}
-                >
-                  💬 <span className="hidden md:inline">AI Chat</span>
-                </Button>
-              )}
-            </div>
-            
-            {/* Center Section - Command Shortcuts */}
-            <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
-              <CustomShortcuts 
-                onShortcut={handleCustomShortcut} 
-                isLoading={aiLoading}
-                onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
-              />
-              <div className="w-px h-6 bg-border mx-2" />
-              <AdvancedAICommands
-                selectedDocuments={selectedDocuments}
-                onDocumentCreated={handleDocumentCreated}
-                onTextInsert={handleTextInsert}
-                onTextReplace={handleTextReplace}
-                getCurrentText={getCurrentText}
-                getSelectedText={getSelectedText}
-                getCursorContext={getCursorContext}
-              />
-            </div>
-            
-            {/* Right Section - Word Count & Save */}
-            <div className="flex items-center gap-2 shrink-0">
-              {currentDocument && (
-                <div className="flex items-center gap-2">
-                  <div className="text-xs text-muted-foreground whitespace-nowrap">
-                    {(() => {
-                      const count = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
-                      if (isMobileView && count >= 1000) {
-                        return `${(count / 1000).toFixed(1)}k words`;
-                      }
-                      return `${count} words`;
-                    })()}
-                  </div>
-                  {!aiLoading && (
-                    <div className="auto-save-indicator text-xs text-green-600 dark:text-green-400 animate-fadeInScale">
-                      ✓ <span className="hidden sm:inline">Saved</span>
-                    </div>
-                  )}
-                  {aiLoading && (
-                    <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span className="hidden sm:inline">Processing...</span>
-                    </div>
-                  )}
-                </div>
-              )}
-              <Button 
-                size="sm" 
-                className="h-11 bg-save-button hover:bg-save-button/90 text-save-button-foreground border-0 min-w-fit"
-                onClick={saveDocument}
+              
+              <Button
+                variant="ghost"
+                onClick={() => setMobileAICommandsOpen(true)}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
                 disabled={!currentDocument}
               >
-                💾 <span className="hidden sm:inline ml-1">Save</span>
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-xs mt-1">AI</span>
               </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => setRightSidebarOpen(true)}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-xs mt-1">Chat</span>
+              </Button>
+              
+              <Button 
+                variant="ghost"
+                onClick={saveDocument}
+                disabled={!currentDocument}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+              >
+                <span className="text-lg">💾</span>
+                <span className="text-xs mt-1">Save</span>
+              </Button>
+            </nav>
+
+            {/* Mobile Document Library Overlay */}
+            <MobileDocumentLibrary
+              isOpen={mobileDocumentLibraryOpen}
+              onClose={() => setMobileDocumentLibraryOpen(false)}
+              documents={filteredDocuments}
+              onDocumentSelect={(doc) => {
+                openDocument(doc);
+                setMobileDocumentLibraryOpen(false);
+              }}
+              onCreateNew={createNewDocument}
+              onDeleteDocument={deleteDocument}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              filters={filters}
+              onFiltersChange={setFilters}
+              categories={categories}
+              loading={searchLoading}
+            />
+
+            {/* Mobile AI Commands Overlay */}
+            <MobileAICommands
+              isOpen={mobileAICommandsOpen}
+              onClose={() => setMobileAICommandsOpen(false)}
+              onCommand={handleCustomShortcut}
+              aiLoading={aiLoading}
+              selectedText={selectedText}
+            />
+
+            {/* Mobile AI Chat Overlay */}
+            <Sheet open={rightSidebarOpen} onOpenChange={setRightSidebarOpen}>
+              <SheetContent side="right" className="w-full p-0 mobile-sheet">
+                <AIChatSidebar
+                  isOpen={rightSidebarOpen}
+                  onClose={() => setRightSidebarOpen(false)}
+                  onDocumentSelect={openDocument}
+                />
+              </SheetContent>
+            </Sheet>
+          </>
+        ) : (
+          /* Desktop Layout */
+          <>
+            {/* Desktop Top Bar */}
+            <header className="flex items-center justify-between p-4 border-b bg-card">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+                <Input
+                  value={documentTitle}
+                  onChange={(e) => setDocumentTitle(e.target.value)}
+                  className="text-lg font-medium bg-transparent border-none focus:border-border max-w-md"
+                  placeholder="Document title..."
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCommandSettings(true)}
+                  title="Customize AI Commands"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsFocusMode(!isFocusMode)}
+                >
+                  {isFocusMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                >
+                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+                <UserMenu />
+              </div>
+            </header>
+
+            {/* Desktop Main Content */}
+            <div className="flex-1 overflow-hidden">
+              <ResizablePanelGroup direction="horizontal">
+                {/* Left Sidebar - Document Library */}
+                {(leftSidebarOpen && !isFocusMode) && (
+                  <>
+                     <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                       <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft overflow-hidden">
+                         {/* ... existing sidebar content ... */}
+                         {/* Fixed Header Section */}
+                         <div className="flex-shrink-0 border-b bg-card">
+                           {/* Title and Close Button */}
+                           <div className="p-4 border-b flex items-center justify-between">
+                             <h3 className="font-medium">Documents</h3>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => setLeftSidebarOpen(false)}
+                             >
+                               <X className="h-4 w-4" />
+                             </Button>
+                           </div>
+                           
+                           {/* New Document & Search */}
+                           <div className="p-4 space-y-3">
+                             <Button onClick={createNewDocument} className="w-full">
+                               <Plus className="h-4 w-4 mr-2" />
+                               New Document
+                             </Button>
+                            <DocumentSearch 
+                              onSearch={handleDocumentSearch}
+                              onClear={clearDocumentSearch}
+                              isLoading={searchLoading}
+                            />
+                           </div>
+                         </div>
+                         
+                         {/* Scrollable Content Section */}
+                         <div className="flex-1 flex flex-col overflow-hidden">
+                           <ScrollArea className="flex-1">
+                             <div className="p-4 pb-20 space-y-4">
+                               {/* Filters */}
+                               <DocumentFilters 
+                                 onFiltersChange={handleFiltersChange}
+                                 initialFilters={filters}
+                               />
+                               
+                               {/* Document List */}
+                               <div className="min-h-0">
+                                  <DocumentList
+                                    documents={filteredDocuments}
+                                    categories={categories}
+                                    currentDocument={currentDocument}
+                                    onDocumentSelect={openDocument}
+                                    onDocumentUpdate={loadDocuments}
+                                    searchQuery={searchQuery}
+                                    selectedDocuments={selectedDocuments}
+                                    onDocumentSelectionChange={setSelectedDocuments}
+                                  />
+                               </div>
+                               
+                               {/* Stats - at bottom of scrollable area */}
+                               <div className="mt-auto pt-4 border-t">
+                                 <DocumentStats documents={documents} />
+                               </div>
+                             </div>
+                           </ScrollArea>
+                         </div>
+                       </div>
+                    </ResizablePanel>
+                    <ResizableHandle />
+                  </>
+                )}
+
+                {/* Main Editor */}
+                <ResizablePanel>
+                  <div className="h-full flex flex-col">
+                    {currentDocument ? (
+                      <div className="flex-1">
+                        <MonacoEditor
+                          value={documentContent}
+                          onChange={setDocumentContent}
+                          isDarkMode={isDarkMode}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center text-center">
+                        <div>
+                          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                          <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
+                          <p className="text-muted-foreground mb-4">
+                            Your AI-powered writing studio for professional content creation
+                          </p>
+                          <Button onClick={createNewDocument}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Your First Document
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ResizablePanel>
+
+                {/* Right Sidebar - AI Assistant (Desktop) */}
+                {(rightSidebarOpen && !isFocusMode) && (
+                  <>
+                    <ResizableHandle />
+                    <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
+                      <AIChatSidebar
+                        isOpen={rightSidebarOpen}
+                        onClose={() => setRightSidebarOpen(false)}
+                        onDocumentSelect={openDocument}
+                      />
+                    </ResizablePanel>
+                  </>
+                )}
+              </ResizablePanelGroup>
             </div>
-          </div>
-        </footer>
+
+            {/* Desktop Bottom Toolbar */}
+            <footer className="border-t bg-card">
+              <div className="flex items-center gap-3 p-3 min-h-[68px]">
+                {/* Left Section - Voice & AI Chat */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <VoiceRecorder 
+                    onTranscription={handleVoiceTranscription}
+                    disabled={aiLoading}
+                  />
+                  {!rightSidebarOpen && (
+                    <Button
+                      size="sm"
+                      className="h-11 bg-muted hover:bg-muted/80 text-muted-foreground border-0 hidden sm:flex items-center gap-1.5"
+                      onClick={() => setRightSidebarOpen(true)}
+                    >
+                      💬 <span className="hidden md:inline">AI Chat</span>
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Center Section - Command Shortcuts */}
+                <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
+                  <CustomShortcuts 
+                    onShortcut={handleCustomShortcut} 
+                    isLoading={aiLoading}
+                    onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
+                  />
+                  <div className="w-px h-6 bg-border mx-2" />
+                  <AdvancedAICommands
+                    selectedDocuments={selectedDocuments}
+                    onDocumentCreated={handleDocumentCreated}
+                    onTextInsert={handleTextInsert}
+                    onTextReplace={handleTextReplace}
+                    getCurrentText={getCurrentText}
+                    getSelectedText={getSelectedText}
+                    getCursorContext={getCursorContext}
+                  />
+                </div>
+                
+                {/* Right Section - Word Count & Save */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {currentDocument && (
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        {(() => {
+                          const count = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
+                          return `${count} words`;
+                        })()}
+                      </div>
+                      {!aiLoading && (
+                        <div className="auto-save-indicator text-xs text-green-600 dark:text-green-400 animate-fadeInScale">
+                          ✓ <span className="hidden sm:inline">Saved</span>
+                        </div>
+                      )}
+                      {aiLoading && (
+                        <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span className="hidden sm:inline">Processing...</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <Button 
+                    size="sm" 
+                    className="h-11 bg-save-button hover:bg-save-button/90 text-save-button-foreground border-0 min-w-fit"
+                    onClick={saveDocument}
+                    disabled={!currentDocument}
+                  >
+                    💾 <span className="hidden sm:inline ml-1">Save</span>
+                  </Button>
+                </div>
+              </div>
+            </footer>
+          </>
+        )}
 
         {/* AI Suggestion Panel */}
         <AISuggestionPanel
@@ -855,19 +1006,6 @@ export default function Dashboard() {
           onClose={() => setShowCommandSettings(false)}
           onCommandsUpdated={() => setCommandSettingsKey(prev => prev + 1)}
         />
-
-        {/* Mobile AI Chat Overlay */}
-        {isMobileView && (
-          <Sheet open={rightSidebarOpen} onOpenChange={setRightSidebarOpen}>
-            <SheetContent side="right" className="w-full p-0">
-              <AIChatSidebar
-                isOpen={rightSidebarOpen}
-                onClose={() => setRightSidebarOpen(false)}
-                onDocumentSelect={openDocument}
-              />
-            </SheetContent>
-          </Sheet>
-        )}
       </div>
     </div>
   );
