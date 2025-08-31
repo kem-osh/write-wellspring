@@ -5,6 +5,12 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -509,7 +515,7 @@ export function DocumentList({
                 <ContextMenuTrigger asChild>
                    <div
                      className={`
-                       group relative flex items-center p-3 rounded-lg border cursor-pointer 
+                       group relative flex items-start gap-3 p-3 rounded-lg border cursor-pointer 
                        transition-all hover:bg-accent
                        ${isCurrent ? 'bg-accent border-primary/50' : ''}
                        ${isSelected ? 'bg-primary/10 border-primary' : ''}
@@ -523,7 +529,7 @@ export function DocumentList({
                      }}
                    >
                      {/* Selection checkbox (visible on hover or in multi-select mode) */}
-                     <div className={`mr-3 transition-opacity ${
+                     <div className={`flex-shrink-0 transition-opacity ${
                        isMultiSelectMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                      }`}>
                        <Checkbox
@@ -533,10 +539,10 @@ export function DocumentList({
                        />
                      </div>
 
-                     {/* Document content */}
-                     <div className="flex-1 min-w-0">
-                       {/* Title */}
-                       <div className="flex items-center justify-between mb-1">
+                     {/* Document content - flexible container */}
+                     <div className="flex-1 min-w-0 overflow-hidden">
+                       {/* Title row with proper truncation */}
+                       <div className="mb-1">
                          {isEditing ? (
                            <Input
                              value={editingTitle}
@@ -546,19 +552,30 @@ export function DocumentList({
                                if (e.key === 'Escape') cancelRename();
                              }}
                              onBlur={saveRename}
-                             className="h-6 text-sm mr-2"
+                             className="h-6 text-sm w-full"
                              autoFocus
                              onClick={(e) => e.stopPropagation()}
                            />
                          ) : (
-                           <h3 className="font-medium text-sm truncate">
-                             {highlightSearchTerm(doc.title, searchQuery)}
-                           </h3>
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <h3 className="font-medium text-sm overflow-hidden text-ellipsis whitespace-nowrap block">
+                                   {highlightSearchTerm(doc.title, searchQuery)}
+                                 </h3>
+                               </TooltipTrigger>
+                               {doc.title.length > 40 && (
+                                 <TooltipContent>
+                                   <p className="max-w-xs">{doc.title}</p>
+                                 </TooltipContent>
+                               )}
+                             </Tooltip>
+                           </TooltipProvider>
                          )}
                        </div>
 
-                       {/* Content preview */}
-                       <p className="text-xs text-muted-foreground mb-2 line-clamp-2 leading-relaxed">
+                       {/* Content preview with proper truncation */}
+                       <p className="text-xs text-muted-foreground mb-2 overflow-hidden text-ellipsis whitespace-nowrap leading-relaxed">
                          {doc.content.trim() ? (
                            highlightSearchTerm(getPreviewText(doc.content, 50), searchQuery)
                          ) : (
@@ -566,19 +583,19 @@ export function DocumentList({
                          )}
                        </p>
 
-                       {/* Metadata row */}
-                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                         <span className="flex items-center gap-1">
+                       {/* Metadata row with flex wrap for responsiveness */}
+                       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                         <span className="flex items-center gap-1 flex-shrink-0">
                            <Calendar className="h-3 w-3" />
                            {format(new Date(doc.updated_at), 'MM/dd')}
                          </span>
-                         <span className="flex items-center gap-1">
+                         <span className="flex items-center gap-1 flex-shrink-0">
                            <Hash className="h-3 w-3" />
                            {formatWordCount(doc.word_count || 0)} words
                          </span>
                          
                          {/* Status dot */}
-                         <div className="flex items-center gap-1">
+                         <div className="flex items-center gap-1 flex-shrink-0">
                            <div 
                              className={`w-2 h-2 rounded-full ${
                                doc.status === 'draft' ? 'bg-yellow-500' :
@@ -590,7 +607,7 @@ export function DocumentList({
                          </div>
                          
                          {/* Category badge */}
-                         <div className="flex items-center gap-1">
+                         <div className="flex items-center gap-1 flex-shrink-0">
                            <div 
                              className="w-2 h-2 rounded-full" 
                              style={{ backgroundColor: getCategoryColor(doc.category) }}
@@ -602,9 +619,9 @@ export function DocumentList({
                        </div>
                      </div>
 
-                     {/* Three-dot menu (visible on hover) */}
+                     {/* Three-dot menu - always visible and accessible */}
                      {!isEditing && (
-                       <div className={`ml-2 transition-opacity ${
+                       <div className={`flex-shrink-0 transition-opacity ${
                          isMultiSelectMode ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
                        }`}>
                          <DropdownMenu>
@@ -612,7 +629,7 @@ export function DocumentList({
                              <Button
                                variant="ghost"
                                size="sm"
-                               className="h-8 w-8 p-0"
+                               className="h-8 w-8 p-0 min-w-8"
                                onClick={(e) => e.stopPropagation()}
                              >
                                <MoreVertical className="h-4 w-4" />
