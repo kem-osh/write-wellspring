@@ -267,8 +267,9 @@ export default function Dashboard() {
   const createNewDocument = async () => {
     if (!user) return;
 
-    // Don't create empty documents in database immediately
-    // Instead, create a local document state that will be saved when content is added
+    console.log('Creating new document...'); // Debug log
+
+    // Create a temporary document object that shows the editor
     const newDoc: Document = {
       id: 'temp-' + Date.now(),
       title: "New Document",
@@ -281,10 +282,22 @@ export default function Dashboard() {
       updated_at: new Date().toISOString()
     };
 
-    setCurrentDocument(null); // Set to null so auto-save knows to create new document
+    // Set the temporary document as current so editor shows
+    setCurrentDocument(newDoc);
     setDocumentTitle(newDoc.title);
     setDocumentContent(newDoc.content);
     
+    // Reset save indicators
+    setSaveIndicator(null);
+    setLastSaved(null);
+
+    // Close sidebars on mobile for better focus
+    if (window.innerWidth < 768) {
+      setLeftSidebarOpen(false);
+      setRightSidebarOpen(false);
+    }
+    
+    console.log('New document created'); // Debug log
     toast({
       title: "New document ready",
       description: "Start typing to create your document.",
@@ -347,8 +360,8 @@ export default function Dashboard() {
       const wordCount = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
 
       // Save document with generated or existing title
-      if (currentDocument?.id) {
-        // Update existing document
+      if (currentDocument?.id && !currentDocument.id.startsWith('temp-')) {
+        // Update existing document in database
         const { error } = await supabase
           .from('documents')
           .update({
@@ -379,7 +392,7 @@ export default function Dashboard() {
           throw error;
         }
       } else {
-        // Create new document (only if has content)
+        // Create new document in database (for temp documents or null currentDocument)
         const { data: newDoc, error } = await supabase
           .from('documents')
           .insert({
@@ -395,7 +408,7 @@ export default function Dashboard() {
 
         if (newDoc && !error) {
           setCurrentDocument(newDoc);
-          setDocuments([newDoc, ...documents]);
+          setDocuments([newDoc, ...documents.filter(d => !d.id.startsWith('temp-'))]);
           setLastSaved(new Date());
           setSaveIndicator('saved');
         } else {
