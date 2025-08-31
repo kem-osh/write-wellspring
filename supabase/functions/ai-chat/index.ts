@@ -64,8 +64,8 @@ serve(async (req) => {
     const { data: relevantDocs, error: searchError } = await supabase.rpc('match_documents', {
       query_embedding: queryEmbedding,
       user_id: userId,
-      match_threshold: 0.5, // Lower threshold for more results
-      match_count: 5
+      match_threshold: 0.1, // Very low threshold to catch more results
+      match_count: 10
     });
 
     if (searchError) {
@@ -74,25 +74,58 @@ serve(async (req) => {
     }
 
     console.log(`Found ${relevantDocs?.length || 0} relevant documents`);
+    
+    // If no documents found with semantic search, try getting user's recent documents
+    let fallbackDocs = null;
+    if (!relevantDocs || relevantDocs.length === 0) {
+      console.log('No relevant documents found via embedding search, trying recent documents...');
+      const { data: recentDocs, error: recentError } = await supabase
+        .from('documents')
+        .select('id, title, content')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(5);
+      
+      if (!recentError && recentDocs && recentDocs.length > 0) {
+        fallbackDocs = recentDocs.map(doc => ({
+          id: doc.id,
+          title: doc.title,
+          content: doc.content,
+          similarity: 0.5 // Default similarity for fallback docs
+        }));
+        console.log(`Found ${fallbackDocs.length} recent documents as fallback`);
+      }
+    }
 
-    // Build context from relevant documents
+    // Build context from relevant documents or fallback documents
+    const docsToUse = relevantDocs && relevantDocs.length > 0 ? relevantDocs : fallbackDocs;
     let context = '';
-    if (relevantDocs && relevantDocs.length > 0) {
-      context = relevantDocs
+    let hasDocuments = false;
+    
+    if (docsToUse && docsToUse.length > 0) {
+      hasDocuments = true;
+      context = docsToUse
         .map((doc: any) => 
           `Document: "${doc.title}"\nContent: ${doc.content.substring(0, 800)}...\n`
         )
         .join('\n');
+      console.log(`Using ${docsToUse.length} documents for context`);
+    } else {
+      console.log('No documents found - user may not have any documents yet');
     }
 
     // Prepare the system message with context
-    const systemMessage = `You are an AI writing assistant with access to the user's document library. 
+    const systemMessage = hasDocuments 
+      ? `You are an AI writing assistant with access to the user's document library. 
 Use the provided context to give accurate, helpful responses about their writing.
-If referring to specific documents, mention them by title.
-Be conversational but informative.
-If no relevant context is provided, still be helpful with general writing advice.
+Always reference specific documents by title when answering questions about their content.
+Be conversational and helpful.
 
-${context ? `Context from user's documents:\n${context}` : 'No specific documents found relevant to this query.'}`;
+Context from user's documents:
+${context}`
+      : `You are an AI writing assistant. The user doesn't seem to have any documents in their library yet, or their query doesn't match their existing content.
+Encourage them to create some documents first, or ask more specific questions about their writing needs.
+Be helpful and suggest how they can get started with their writing projects.`;
 
     // Call OpenAI for the chat response
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -131,7 +164,7 @@ ${context ? `Context from user's documents:\n${context}` : 'No specific document
     return new Response(
       JSON.stringify({ 
         message: assistantMessage,
-        sources: relevantDocs || []
+        sources: docsToUse || []
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
