@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText } = await req.json();
+    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
 
     if (!content && !selectedText) {
       throw new Error('Content or selectedText is required');
@@ -24,6 +24,9 @@ serve(async (req) => {
     }
 
     const textToCondense = selectedText || content;
+    const systemPrompt = customPrompt || 'Reduce this content by 60-70% while preserving all key points and the author\'s voice.';
+    const aiModel = model || 'gpt-5-mini-2025-08-07';
+    const maxCompletionTokens = maxTokens || 800;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -32,18 +35,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: aiModel,
         messages: [
           {
             role: 'system',
-            content: 'Condense the given content by 60-70% while preserving all key points and the author\'s unique voice and tone. Remove redundancy, unnecessary words, and filler content while maintaining the core message and impact. Keep the same writing style and personality.'
+            content: systemPrompt
           },
           {
             role: 'user',
             content: textToCondense
           }
         ],
-        max_completion_tokens: Math.max(400, Math.ceil(textToCondense.length * 0.5))
+        max_completion_tokens: maxCompletionTokens
       }),
     });
 

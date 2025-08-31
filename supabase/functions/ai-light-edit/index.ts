@@ -14,12 +14,17 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText } = await req.json();
+    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
+    
     const textToEdit = selectedText || content;
 
     if (!textToEdit) {
       throw new Error('No content provided');
     }
+
+    const systemPrompt = customPrompt || 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
+    const aiModel = model || 'gpt-5-nano-2025-08-07';
+    const maxCompletionTokens = maxTokens || Math.max(500, Math.ceil(textToEdit.length * 1.2));
 
     console.log('Processing light edit for text length:', textToEdit.length);
 
@@ -30,18 +35,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: aiModel,
         messages: [
           {
             role: 'system',
-            content: 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.'
+            content: systemPrompt
           },
           {
             role: 'user',
             content: textToEdit
           }
         ],
-        max_completion_tokens: Math.max(500, Math.ceil(textToEdit.length * 1.2))
+        max_completion_tokens: maxCompletionTokens
       }),
     });
 

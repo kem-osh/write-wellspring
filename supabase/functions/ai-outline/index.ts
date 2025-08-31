@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText } = await req.json();
+    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
 
     if (!content && !selectedText) {
       throw new Error('Content or selectedText is required');
@@ -24,6 +24,9 @@ serve(async (req) => {
     }
 
     const textToOutline = selectedText || content;
+    const systemPrompt = customPrompt || 'Create a structured outline with headers and bullet points based on the given content. Use proper heading hierarchy (##, ###) and bullet points (-) to organize the information clearly. Maintain the original tone and key points while restructuring into an outline format.';
+    const aiModel = model || 'gpt-5-nano-2025-08-07';
+    const maxCompletionTokens = maxTokens || 1000;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -32,18 +35,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: aiModel,
         messages: [
           {
             role: 'system',
-            content: 'Create a structured outline with headers and bullet points based on the given content. Use proper heading hierarchy (##, ###) and bullet points (-) to organize the information clearly. Maintain the original tone and key points while restructuring into an outline format.'
+            content: systemPrompt
           },
           {
             role: 'user',
             content: textToOutline
           }
         ],
-        max_completion_tokens: 1000,
+        max_completion_tokens: maxCompletionTokens,
       }),
     });
 

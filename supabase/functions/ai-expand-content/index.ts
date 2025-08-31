@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText } = await req.json();
+    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
 
     if (!content && !selectedText) {
       throw new Error('Content or selectedText is required');
@@ -24,6 +24,9 @@ serve(async (req) => {
     }
 
     const textToExpand = selectedText || content;
+    const systemPrompt = customPrompt || 'Expand this content by 20-40% while maintaining the original tone. Add depth, examples, and supporting details.';
+    const aiModel = model || 'gpt-5-mini-2025-08-07';
+    const maxCompletionTokens = maxTokens || 1500;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -32,18 +35,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: aiModel,
         messages: [
           {
             role: 'system',
-            content: 'Expand the given content by 30-50% while maintaining the exact same tone, voice, and writing style. Add relevant details, examples, explanations, or supporting information that enhances the original message. Keep the same structure and flow. Preserve the author\'s unique voice completely.'
+            content: systemPrompt
           },
           {
             role: 'user',
             content: textToExpand
           }
         ],
-        max_completion_tokens: Math.max(800, Math.ceil(textToExpand.length * 1.5))
+        max_completion_tokens: maxCompletionTokens,
       }),
     });
 

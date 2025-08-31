@@ -22,6 +22,7 @@ import { DocumentList } from "@/components/DocumentList";
 import { DocumentStats } from "@/components/DocumentStats";
 import { useEmbeddings } from "@/hooks/useEmbeddings";
 import { Badge } from "@/components/ui/badge";
+import { CommandSettings } from "@/components/CommandSettings";
 
 interface Document {
   id: string;
@@ -88,6 +89,8 @@ export default function Dashboard() {
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [showCommandSettings, setShowCommandSettings] = useState(false);
+  const [commandSettingsKey, setCommandSettingsKey] = useState(0);
   
   const isMobileView = useIsMobile();
 
@@ -319,7 +322,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleCustomShortcut = async (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string) => {
+  const handleCustomShortcut = async (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string, model?: string, maxTokens?: number) => {
     if (!currentDocument) {
       toast({
         title: "No document selected",
@@ -350,7 +353,10 @@ export default function Dashboard() {
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: { 
           content: selectedText ? undefined : documentContent,
-          selectedText: selectedText || undefined
+          selectedText: selectedText || undefined,
+          customPrompt: prompt,
+          model: model || 'gpt-5-nano-2025-08-07',
+          maxTokens: maxTokens || 500
         }
       });
 
@@ -616,6 +622,14 @@ export default function Dashboard() {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setShowCommandSettings(true)}
+              title="Customize AI Commands"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setIsFocusMode(!isFocusMode)}
             >
               {isFocusMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -774,6 +788,7 @@ export default function Dashboard() {
               <CustomShortcuts 
                 onShortcut={handleCustomShortcut} 
                 isLoading={aiLoading}
+                onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
               />
               <div className="w-px h-6 bg-border mx-2" />
               <AdvancedAICommands
@@ -832,6 +847,13 @@ export default function Dashboard() {
           onAccept={handleAcceptSuggestion}
           onReject={handleRejectSuggestion}
           onClose={() => setAiSuggestion(null)}
+        />
+
+        {/* Command Settings Modal */}
+        <CommandSettings
+          showSettings={showCommandSettings}
+          onClose={() => setShowCommandSettings(false)}
+          onCommandsUpdated={() => setCommandSettingsKey(prev => prev + 1)}
         />
 
         {/* Mobile AI Chat Overlay */}
