@@ -61,6 +61,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				'voice-button': {
+					DEFAULT: 'hsl(var(--voice-button))',
+					foreground: 'hsl(var(--voice-button-foreground))'
+				},
+				'save-button': {
+					DEFAULT: 'hsl(var(--save-button))',
+					foreground: 'hsl(var(--save-button-foreground))'
+				},
+				'command-button': {
+					DEFAULT: 'hsl(var(--command-button))',
+					foreground: 'hsl(var(--command-button-foreground))'
 				}
 			},
 			borderRadius: {

@@ -556,44 +556,57 @@ export default function Dashboard() {
         </div>
 
         {/* Bottom Toolbar */}
-        <footer className="p-4 border-t bg-card">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+        <footer className="border-t bg-card">
+          <div className="flex items-center gap-3 p-3 min-h-[68px]">
+            {/* Left Section - Voice & AI Chat */}
+            <div className="flex items-center gap-2 shrink-0">
               <VoiceRecorder 
                 onTranscription={handleVoiceTranscription}
                 disabled={aiLoading}
               />
               {!rightSidebarOpen && (
                 <Button
-                  variant="outline"
                   size="sm"
+                  className="h-11 bg-muted hover:bg-muted/80 text-muted-foreground border-0 hidden sm:flex items-center gap-1.5"
                   onClick={() => setRightSidebarOpen(true)}
                 >
-                  💬 AI Chat
+                  💬 <span className="hidden md:inline">AI Chat</span>
                 </Button>
               )}
             </div>
             
-            <div className="flex-1 max-w-md">
-              <CustomShortcuts 
-                onShortcut={handleCustomShortcut} 
-                isLoading={aiLoading}
-              />
-            </div>
+            {/* Center Section - Command Shortcuts */}
+            <CustomShortcuts 
+              onShortcut={handleCustomShortcut} 
+              isLoading={aiLoading}
+            />
             
-            <div className="flex items-center gap-2">
+            {/* Right Section - Word Count & Save */}
+            <div className="flex items-center gap-2 shrink-0">
               {currentDocument && (
-                <div className="text-xs text-muted-foreground mr-2">
-                  {documentContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">
+                    {(() => {
+                      const count = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
+                      const isMobile = window.innerWidth < 640;
+                      if (isMobile && count >= 1000) {
+                        return `${(count / 1000).toFixed(1)}k words`;
+                      }
+                      return `${count} words`;
+                    })()}
+                  </div>
+                  <div className="auto-save-indicator text-xs text-green-600 dark:text-green-400">
+                    ✓ <span className="hidden sm:inline">Saved</span>
+                  </div>
                 </div>
               )}
               <Button 
-                variant="outline" 
                 size="sm" 
+                className="h-11 bg-save-button hover:bg-save-button/90 text-save-button-foreground border-0 min-w-fit"
                 onClick={saveDocument}
                 disabled={!currentDocument}
               >
-                💾 Save
+                💾 <span className="hidden sm:inline ml-1">Save</span>
               </Button>
             </div>
           </div>

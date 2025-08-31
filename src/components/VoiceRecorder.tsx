@@ -188,36 +188,11 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
 
   if (state === 'unsupported') {
     return (
-      <Button variant="outline" size="sm" disabled>
-        <MicOff className="h-3 w-3 mr-1" />
-        Not Supported
+      <Button className="h-11 w-11 rounded-full bg-muted/50 cursor-not-allowed" disabled>
+        <MicOff className="h-4 w-4 text-muted-foreground" />
       </Button>
     );
   }
-
-  const getButtonVariant = () => {
-    switch (state) {
-      case 'recording':
-        return 'destructive';
-      case 'processing':
-        return 'secondary';
-      case 'error':
-        return 'destructive';
-      default:
-        return 'default';
-    }
-  };
-
-  const getButtonClass = () => {
-    const baseClass = 'transition-all duration-200';
-    if (state === 'recording') {
-      return `${baseClass} animate-pulse bg-destructive hover:bg-destructive/90 border-destructive`;
-    }
-    if (state === 'ready') {
-      return `${baseClass} bg-primary/10 hover:bg-primary/20 border-primary/20 text-primary`;
-    }
-    return baseClass;
-  };
 
   // Haptic feedback for mobile devices
   const triggerHapticFeedback = () => {
@@ -227,22 +202,24 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
   };
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="relative">
       <Button
-        variant={getButtonVariant()}
-        size="sm"
         onClick={handleClick}
         disabled={disabled || state === 'processing' || state === 'error'}
-        className={getButtonClass()}
+        className={`
+          relative transition-all duration-200 h-11 w-11 rounded-full flex items-center justify-center min-w-fit
+          ${state === 'recording' 
+            ? 'bg-red-500 hover:bg-red-600 animate-pulse shadow-lg shadow-red-500/25' 
+            : 'bg-voice-button hover:bg-voice-button/90'
+          }
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        `}
       >
         {state === 'processing' ? (
-          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-        ) : state === 'recording' ? (
-          <Mic className="h-3 w-3 mr-1" />
+          <Loader2 className="h-4 w-4 animate-spin text-white" />
         ) : (
-          <Mic className="h-3 w-3 mr-1" />
+          <Mic className="h-4 w-4 text-white" />
         )}
-        {state === 'processing' ? 'Processing...' : state === 'recording' ? 'Recording' : 'Voice'}
       </Button>
       
       {transcript && state === 'recording' && (

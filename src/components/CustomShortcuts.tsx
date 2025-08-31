@@ -55,26 +55,28 @@ export function CustomShortcuts({ onShortcut, isLoading }: CustomShortcutsProps)
   ];
 
   return (
-    <ScrollArea className="w-full">
-      <div className="flex items-center gap-2 pb-2">
+    <div className="relative flex-1 max-w-lg">
+      <div 
+        className="flex items-center gap-2 overflow-x-auto scroll-area-horizontal py-1 px-1"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         {shortcuts.map((shortcut) => (
           <Button
             key={shortcut.id}
-            variant="outline"
             size="sm"
-            className="flex items-center gap-1 whitespace-nowrap"
+            className="flex items-center gap-1.5 whitespace-nowrap min-w-fit h-11 bg-command-button text-command-button-foreground hover:bg-command-button/80 border-0 transition-all duration-200"
             onClick={shortcut.action}
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               shortcut.icon
             )}
-            {shortcut.name}
+            <span className="text-sm font-medium">{shortcut.name}</span>
           </Button>
         ))}
       </div>
-    </ScrollArea>
+    </div>
   );
 }
