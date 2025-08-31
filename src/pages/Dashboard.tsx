@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings } from "lucide-react";
+import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { MonacoEditor } from "@/components/MonacoEditor";
+import { UserMenu } from "@/components/UserMenu";
+import { CustomShortcuts } from "@/components/CustomShortcuts";
 
 interface Document {
   id: string;
@@ -166,11 +168,11 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleCustomShortcut = (prompt: string) => {
+    // Placeholder for AI functionality
     toast({
-      title: "Signed out",
-      description: "You have been successfully signed out.",
+      title: "AI Shortcut",
+      description: `Will process: ${prompt}`,
     });
   };
 
@@ -218,11 +220,7 @@ export default function Dashboard() {
             >
               {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Avatar className="h-8 w-8 cursor-pointer" onClick={handleSignOut}>
-              <AvatarFallback>
-                {user?.email?.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <UserMenu />
           </div>
         </header>
 
@@ -233,7 +231,17 @@ export default function Dashboard() {
             {(leftSidebarOpen && !isFocusMode) && (
               <>
                 <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                  <div className="h-full flex flex-col border-r bg-card">
+                  <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft">
+                    <div className="p-4 border-b flex items-center justify-between">
+                      <h3 className="font-medium">Documents</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setLeftSidebarOpen(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <div className="p-4 border-b">
                       <Button onClick={createNewDocument} className="w-full">
                         <Plus className="h-4 w-4 mr-2" />
@@ -276,12 +284,11 @@ export default function Dashboard() {
             <ResizablePanel>
               <div className="h-full flex flex-col">
                 {currentDocument ? (
-                  <div className="flex-1 p-6">
-                    <textarea
+                  <div className="flex-1">
+                    <MonacoEditor
                       value={documentContent}
-                      onChange={(e) => setDocumentContent(e.target.value)}
-                      className="w-full h-full resize-none border-none outline-none bg-transparent text-foreground font-mono text-sm leading-relaxed"
-                      placeholder="Start writing..."
+                      onChange={setDocumentContent}
+                      isDarkMode={isDarkMode}
                     />
                   </div>
                 ) : (
@@ -307,9 +314,16 @@ export default function Dashboard() {
               <>
                 <ResizableHandle />
                 <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                  <div className="h-full flex flex-col border-l bg-card">
-                    <div className="p-4 border-b">
+                  <div className="h-full flex flex-col border-l bg-card sidebar-transition animate-slideInRight">
+                    <div className="p-4 border-b flex items-center justify-between">
                       <h3 className="font-medium">AI Assistant</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRightSidebarOpen(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                     <div className="flex-1 p-4 flex items-center justify-center text-center">
                       <div>
@@ -328,10 +342,11 @@ export default function Dashboard() {
 
         {/* Bottom Toolbar */}
         <footer className="p-4 border-t bg-card">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
-                🎤 Voice
+                <Mic className="h-3 w-3 mr-1" />
+                Voice
               </Button>
               <Button variant="outline" size="sm">
                 ✨ Light Edit
@@ -346,6 +361,11 @@ export default function Dashboard() {
                 </Button>
               )}
             </div>
+            
+            <div className="flex-1 max-w-md">
+              <CustomShortcuts onShortcut={handleCustomShortcut} />
+            </div>
+            
             <Button variant="outline" size="sm" onClick={saveDocument}>
               Save
             </Button>
