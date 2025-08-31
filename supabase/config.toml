@@ -59,5 +59,11 @@ verify_jwt = false
 [functions.ai-outline]
 verify_jwt = false
 
+[functions.generate-embeddings]
+verify_jwt = true
+
+[functions.ai-chat]
+verify_jwt = true
+
 [edge_runtime]
 policy = "per_worker"

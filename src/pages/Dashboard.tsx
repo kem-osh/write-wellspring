@@ -12,10 +12,12 @@ import { UserMenu } from "@/components/UserMenu";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
+import { AIChatSidebar } from "@/components/AIChatSidebar";
 import { DocumentSearch } from "@/components/DocumentSearch";
 import { DocumentFilters } from "@/components/DocumentFilters";
 import { DocumentList } from "@/components/DocumentList";
 import { DocumentStats } from "@/components/DocumentStats";
+import { useEmbeddings } from "@/hooks/useEmbeddings";
 import { Badge } from "@/components/ui/badge";
 
 interface Document {
@@ -55,6 +57,7 @@ interface AISuggestion {
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { generateEmbeddingsSilently } = useEmbeddings();
   
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -276,6 +279,11 @@ export default function Dashboard() {
       setDocuments(documents.map(doc => 
         doc.id === currentDocument.id ? updatedDoc : doc
       ));
+      
+      // Generate embeddings in the background for AI search
+      if (documentContent.trim()) {
+        generateEmbeddingsSilently(currentDocument.id, documentContent);
+      }
     }
   };
 
@@ -681,31 +689,16 @@ export default function Dashboard() {
               </div>
             </ResizablePanel>
 
-            {/* Right Sidebar - AI Assistant (placeholder) */}
+            {/* Right Sidebar - AI Assistant */}
             {(rightSidebarOpen && !isFocusMode) && (
               <>
                 <ResizableHandle />
-                <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                  <div className="h-full flex flex-col border-l bg-card sidebar-transition animate-slideInRight">
-                    <div className="p-4 border-b flex items-center justify-between">
-                      <h3 className="font-medium">AI Assistant</h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setRightSidebarOpen(false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex-1 p-4 flex items-center justify-center text-center">
-                      <div>
-                        <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                        <p className="text-sm text-muted-foreground">
-                          AI assistant coming soon
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
+                  <AIChatSidebar
+                    isOpen={rightSidebarOpen}
+                    onClose={() => setRightSidebarOpen(false)}
+                    onDocumentSelect={openDocument}
+                  />
                 </ResizablePanel>
               </>
             )}
