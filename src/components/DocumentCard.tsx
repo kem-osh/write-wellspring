@@ -18,7 +18,9 @@ import {
   Trash2, 
   Calendar,
   Hash,
-  Clock
+  Clock,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -42,6 +44,8 @@ interface DocumentCardProps {
   onDelete?: (docId: string) => void;
   searchQuery?: string;
   compact?: boolean;
+  showCheckbox?: boolean;
+  onSelectionToggle?: (documentId: string) => void;
 }
 
 export function DocumentCard({
@@ -52,7 +56,9 @@ export function DocumentCard({
   onDuplicate,
   onDelete,
   searchQuery,
-  compact = false
+  compact = false,
+  showCheckbox = false,
+  onSelectionToggle
 }: DocumentCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -95,10 +101,17 @@ export function DocumentCard({
     );
   };
 
-  const handleCardClick = () => {
-    if (!isMenuOpen) {
-      onSelect(document);
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger selection if clicking on checkbox or menu
+    if ((e.target as Element).closest('[data-checkbox]') || isMenuOpen) {
+      return;
     }
+    onSelect(document);
+  };
+
+  const handleCheckboxToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectionToggle?.(document.id);
   };
 
   return (
@@ -111,29 +124,38 @@ export function DocumentCard({
         <div className="space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <h3 className="text-heading-sm truncate">
-                  {highlightSearchTerm(document.title, searchQuery)}
-                </h3>
-              </div>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {/* Selection Checkbox */}
+              {showCheckbox && (
+                <button
+                  onClick={handleCheckboxToggle}
+                  data-checkbox
+                  className="touch-target p-1 -m-1 rounded hover:bg-muted/50 transition-colors"
+                >
+                  {isSelected ? (
+                    <CheckSquare className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Square className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+              )}
               
-              <div className="flex items-center gap-2 text-caption">
-                <Calendar className="h-3 w-3" />
-                <span>{format(new Date(document.updated_at), 'MMM d, yyyy')}</span>
-                <span>•</span>
-                <Hash className="h-3 w-3" />
-                <span>{formatWordCount(document.word_count)} words</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <h3 className="text-heading-sm truncate">
+                    {highlightSearchTerm(document.title, searchQuery)}
+                  </h3>
+                </div>
               </div>
             </div>
 
             <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity touch-target"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -164,6 +186,15 @@ export function DocumentCard({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+
+          {/* Metadata */}
+          <div className="flex items-center gap-2 text-caption">
+            <Calendar className="h-3 w-3" />
+            <span>{format(new Date(document.updated_at), 'MMM d, yyyy')}</span>
+            <span>•</span>
+            <Hash className="h-3 w-3" />
+            <span>{formatWordCount(document.word_count)} words</span>
           </div>
 
           {/* Content Preview */}

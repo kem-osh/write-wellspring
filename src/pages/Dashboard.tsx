@@ -28,6 +28,8 @@ import { DocumentStats } from "@/components/DocumentStats";
 import { useEmbeddings } from "@/hooks/useEmbeddings";
 import { Badge } from "@/components/ui/badge";
 import { CommandSettings } from "@/components/CommandSettings";
+import { useDocumentSelection } from "@/hooks/useDocumentSelection";
+import { ContextualAIToolbar } from "@/components/ContextualAIToolbar";
 
 interface Document {
   id: string;
@@ -93,7 +95,6 @@ export default function Dashboard() {
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [showCommandSettings, setShowCommandSettings] = useState(false);
   const [commandSettingsKey, setCommandSettingsKey] = useState(0);
   
@@ -102,6 +103,16 @@ export default function Dashboard() {
   const [mobileAICommandsOpen, setMobileAICommandsOpen] = useState(false);
   
   const { isMobile, isTablet, isDesktop } = useDevice();
+  
+  // Document selection hook
+  const {
+    selectedDocuments,
+    toggleDocumentSelection,
+    selectAllDocuments,
+    clearSelection,
+    isDocumentSelected,
+    selectionCount
+  } = useDocumentSelection();
 
   // Load documents and categories on mount
   useEffect(() => {
@@ -612,8 +623,8 @@ export default function Dashboard() {
         {/* Mobile Layout */}
         {isMobile ? (
           <>
-            {/* Mobile Header */}
-            <header className="flex items-center justify-between p-3 border-b bg-card h-14">
+            {/* Mobile Header - Sticky */}
+            <header className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-card/95 backdrop-blur-sm h-14">
               <Button
                 variant="ghost"
                 size="icon"
@@ -641,7 +652,7 @@ export default function Dashboard() {
             </header>
 
             {/* Mobile Editor */}
-            <main className="flex-1 overflow-hidden">
+            <main className="flex-1 overflow-hidden pb-16"> {/* Add bottom padding for fixed nav */}
               {currentDocument ? (
                 <MobileEditor
                   value={documentContent}
@@ -665,8 +676,8 @@ export default function Dashboard() {
               )}
             </main>
 
-            {/* Mobile Bottom Navigation */}
-            <nav className="flex items-center justify-around border-t bg-card h-16 px-2 pb-safe">
+            {/* Mobile Bottom Navigation - Fixed */}
+            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t bg-card/95 backdrop-blur-sm h-16 px-2 pb-safe">
               <Button
                 variant="ghost"
                 onClick={() => setMobileDocumentLibraryOpen(true)}
@@ -728,6 +739,20 @@ export default function Dashboard() {
               onFiltersChange={setFilters}
               categories={categories}
               loading={searchLoading}
+              selectedDocuments={selectedDocuments}
+              onSelectionChange={(selected) => {
+                // Update selected documents directly
+                selected.forEach(id => !selectedDocuments.includes(id) && toggleDocumentSelection(id));
+                selectedDocuments.forEach(id => !selected.includes(id) && toggleDocumentSelection(id));
+              }}
+              onSynthesizeSelected={() => {
+                // Handle synthesis
+                console.log('Synthesizing documents:', selectedDocuments);
+              }}
+              onCompareSelected={() => {
+                // Handle comparison
+                console.log('Comparing documents:', selectedDocuments);
+              }}
             />
 
             {/* Mobile AI Commands Overlay */}
@@ -737,6 +762,14 @@ export default function Dashboard() {
               onCommand={handleCustomShortcut}
               aiLoading={aiLoading}
               selectedText={selectedText}
+            />
+
+            {/* Contextual AI Toolbar */}
+            <ContextualAIToolbar
+              selectedText={selectedText}
+              onCommand={handleCustomShortcut}
+              aiLoading={aiLoading}
+              onClose={() => setSelectedText('')}
             />
 
             {/* Mobile AI Chat Overlay */}
@@ -855,7 +888,11 @@ export default function Dashboard() {
                                     onDocumentUpdate={loadDocuments}
                                     searchQuery={searchQuery}
                                     selectedDocuments={selectedDocuments}
-                                    onDocumentSelectionChange={setSelectedDocuments}
+                                     onDocumentSelectionChange={(newSelection: string[]) => {
+                                       // Clear current selection and set new one
+                                       clearSelection();
+                                       newSelection.forEach(id => toggleDocumentSelection(id));
+                                     }}
                                   />
                                </div>
                                

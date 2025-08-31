@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { SelectionToolbar } from '@/components/SelectionToolbar';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { DocumentCard } from '@/components/DocumentCard';
@@ -32,6 +34,10 @@ interface MobileDocumentLibraryProps {
   onFiltersChange: (filters: any) => void;
   categories: any[];
   loading: boolean;
+  selectedDocuments: string[];
+  onSelectionChange: (selected: string[]) => void;
+  onSynthesizeSelected: () => void;
+  onCompareSelected: () => void;
 }
 
 export function MobileDocumentLibrary({
@@ -46,16 +52,68 @@ export function MobileDocumentLibrary({
   filters,
   onFiltersChange,
   categories,
-  loading
+  loading,
+  selectedDocuments,
+  onSelectionChange,
+  onSynthesizeSelected,
+  onCompareSelected
 }: MobileDocumentLibraryProps) {
-  const [swipedItem, setSwipedItem] = useState<string | null>(null);
-
   const [showFilters, setShowFilters] = useState(false);
+
+  // Swipe to close gesture
+  const swipeHandlers = useSwipeGesture({
+    onSwipeRight: onClose,
+    threshold: 50
+  });
+
+  const hasSelection = selectedDocuments.length > 0;
+
+  const handleSelectAll = () => {
+    if (selectedDocuments.length === documents.length) {
+      onSelectionChange([]);
+    } else {
+      onSelectionChange(documents.map(doc => doc.id));
+    }
+  };
+
+  const handleClearSelection = () => {
+    onSelectionChange([]);
+  };
+
+  const handleDeleteSelected = () => {
+    selectedDocuments.forEach(docId => onDeleteDocument(docId));
+    onSelectionChange([]);
+  };
+
+  const handleDocumentSelectionToggle = (documentId: string) => {
+    const isSelected = selectedDocuments.includes(documentId);
+    if (isSelected) {
+      onSelectionChange(selectedDocuments.filter(id => id !== documentId));
+    } else {
+      onSelectionChange([...selectedDocuments, documentId]);
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-full sm:max-w-full p-0 mobile-sheet">
+      <SheetContent 
+        side="left" 
+        className="w-[80vw] max-w-sm p-0 mobile-sheet data-[state=open]:slide-in-from-left-0" 
+        {...swipeHandlers}
+      >
         <div className="flex flex-col h-full bg-background">
+          {/* Selection Toolbar */}
+          {hasSelection && (
+            <SelectionToolbar
+              selectedCount={selectedDocuments.length}
+              totalCount={documents.length}
+              onClearSelection={handleClearSelection}
+              onSelectAll={handleSelectAll}
+              onSynthesizeSelected={onSynthesizeSelected}
+              onCompareSelected={onCompareSelected}
+              onDeleteSelected={handleDeleteSelected}
+            />
+          )}
           {/* Enhanced Header */}
           <div className="flex items-center justify-between p-4 border-b bg-surface/50 backdrop-blur-sm">
             <div className="flex items-center gap-3">
@@ -163,6 +221,7 @@ export function MobileDocumentLibrary({
                     <DocumentCard
                       key={doc.id}
                       document={doc}
+                      isSelected={selectedDocuments.includes(doc.id)}
                       onSelect={(doc) => {
                         onDocumentSelect(doc);
                         onClose();
@@ -170,6 +229,8 @@ export function MobileDocumentLibrary({
                       onDelete={onDeleteDocument}
                       searchQuery={searchQuery}
                       compact={true}
+                      showCheckbox={true}
+                      onSelectionToggle={handleDocumentSelectionToggle}
                     />
                   ))}
                 </div>

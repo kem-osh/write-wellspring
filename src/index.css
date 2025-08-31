@@ -250,22 +250,36 @@
     @apply transform translate-y-0 shadow-md;
   }
 
-  /* Enhanced button variants */
+  /* Enhanced button variants with dark mode fixes */
   .btn-voice {
-    @apply bg-voice-button text-voice-button-foreground hover:bg-voice-button-hover;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
     @apply shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95;
     @apply transition-all duration-200;
   }
 
   .btn-ai {
-    @apply bg-ai-button text-ai-button-foreground hover:bg-ai-button-hover;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
     @apply shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95;
     @apply transition-all duration-200;
   }
 
   .btn-save {
-    @apply bg-save-button text-save-button-foreground hover:bg-save-button-hover;
+    @apply bg-accent text-accent-foreground hover:bg-accent/80;
     @apply shadow-md hover:shadow-lg transition-all duration-200;
+  }
+
+  /* Enhanced touch targets for mobile */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    @apply flex items-center justify-center;
+  }
+
+  @media (max-width: 640px) {
+    .touch-target {
+      min-height: 48px;
+      min-width: 48px;
+    }
   }
 
   /* Enhanced navigation */
@@ -379,15 +393,38 @@
     animation: fadeInScale 0.3s ease-out;
   }
 
-  /* Mobile Optimizations */
-  .touch-target {
-    min-height: 48px;
-    min-width: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Animation keyframes */
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 
+  @keyframes slideOutLeft {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+
+  .animate-slideInLeft {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  .animate-slideOutLeft {
+    animation: slideOutLeft 0.3s ease-out;
+  }
+
+  /* Mobile Optimizations */
   .mobile-layout button {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -401,20 +438,12 @@
     overscroll-behavior-y: contain;
   }
 
-  .mobile-sheet {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
-  }
-
+  /* Scrollbar styling */
   .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  
+
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
@@ -428,30 +457,52 @@
     padding-top: env(safe-area-inset-top);
   }
 
+  /* Mobile-specific optimizations */
+  .mobile-sheet {
+    overflow: hidden;
+  }
+
+  .mobile-sheet .sheet-content {
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
   /* Prevent iOS zoom on input focus */
   input, textarea, select {
     font-size: 16px !important;
   }
 
-  /* Mobile-specific text size adjustments */
   body {
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
   }
 
-  /* Line clamp utility */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+  /* Line clamping utilities */
+  .line-clamp-1 {
     overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
     overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .line-clamp-4 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
   }
 }
