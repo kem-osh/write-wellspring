@@ -221,6 +221,27 @@ Be helpful and suggest how they can get started with their writing projects.`;
     const chatData = await chatResponse.json();
     const assistantMessage = chatData.choices[0].message.content;
 
+    // Track usage for cost monitoring
+    const usage = chatData.usage;
+    if (usage) {
+      try {
+        await supabase.from('ai_usage').insert({
+          user_id: userId,
+          function_name: 'ai-chat',
+          model: 'gpt-5-mini-2025-08-07',
+          tokens_input: usage.prompt_tokens,
+          tokens_output: usage.completion_tokens,
+          cost_estimate: (usage.prompt_tokens * 0.00000025) + (usage.completion_tokens * 0.000001) // GPT-5 Mini pricing
+        });
+        console.log('Usage tracked:', {
+          total_tokens: usage.total_tokens,
+          cost_usd: ((usage.prompt_tokens * 0.00000025) + (usage.completion_tokens * 0.000001)).toFixed(6)
+        });
+      } catch (trackingError) {
+        console.error('Failed to track usage (non-critical):', trackingError);
+      }
+    }
+
     console.log('Generated AI response successfully');
 
     return new Response(
