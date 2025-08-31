@@ -1,14 +1,16 @@
 import { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import type { Settings } from '@/stores/settingsStore';
 
 interface MobileEditorProps {
   value: string;
   onChange: (value: string) => void;
   isDarkMode: boolean;
+  settings: Settings;
   placeholder?: string;
 }
 
-export function MobileEditor({ value, onChange, isDarkMode, placeholder = "Start writing..." }: MobileEditorProps) {
+export function MobileEditor({ value, onChange, isDarkMode, settings, placeholder = "Start writing..." }: MobileEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -30,7 +32,8 @@ export function MobileEditor({ value, onChange, isDarkMode, placeholder = "Start
         ref={textareaRef}
         className={cn(
           "w-full flex-1 p-4 resize-none border-none outline-none bg-background text-foreground",
-          "font-mono leading-relaxed",
+          settings.fontFamily === 'serif' ? "font-serif" : 
+          settings.fontFamily === 'mono' ? "font-mono" : "font-sans",
           // Prevent iOS zoom on focus
           "text-base sm:text-sm",
           // Mobile-specific optimizations
@@ -46,8 +49,12 @@ export function MobileEditor({ value, onChange, isDarkMode, placeholder = "Start
         autoCapitalize="sentences"
         spellCheck="true"
         style={{
-          fontSize: '16px', // Prevent iOS zoom
-          lineHeight: '1.6',
+          fontSize: `${Math.max(16, settings.fontSize)}px`, // Prevent iOS zoom with minimum 16px
+          lineHeight: settings.lineHeight === 'compact' ? '1.4' : 
+                      settings.lineHeight === 'relaxed' ? '1.8' : '1.6',
+          fontFamily: settings.fontFamily === 'serif' ? 'Georgia, Times, serif' : 
+                      settings.fontFamily === 'mono' ? "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace" : 
+                      'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
           WebkitTextSizeAdjust: '100%',
           minHeight: '100%'
         }}

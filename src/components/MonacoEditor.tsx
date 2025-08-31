@@ -1,13 +1,15 @@
 import { useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
+import type { Settings } from '@/stores/settingsStore';
 
 interface MonacoEditorProps {
   value: string;
   onChange: (value: string) => void;
   isDarkMode: boolean;
+  settings: Settings;
 }
 
-export function MonacoEditor({ value, onChange, isDarkMode }: MonacoEditorProps) {
+export function MonacoEditor({ value, onChange, isDarkMode, settings }: MonacoEditorProps) {
   const editorRef = useRef<any>(null);
 
   function handleEditorDidMount(editor: any, monaco: any) {
@@ -59,9 +61,12 @@ export function MonacoEditor({ value, onChange, isDarkMode }: MonacoEditorProps)
           lineNumbers: 'off',
           wordWrap: 'on',
           padding: { top: 20, bottom: 20 },
-          fontSize: 16,
-          fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-          lineHeight: 1.8,
+          fontSize: settings.fontSize,
+          fontFamily: settings.fontFamily === 'serif' ? 'Georgia, Times, serif' : 
+                      settings.fontFamily === 'mono' ? "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace" : 
+                      'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+          lineHeight: settings.lineHeight === 'compact' ? 1.4 : 
+                      settings.lineHeight === 'relaxed' ? 1.8 : 1.6,
           scrollBeyondLastLine: false,
           folding: false,
           glyphMargin: false,

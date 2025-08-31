@@ -31,6 +31,7 @@ import { CommandSettings } from "@/components/CommandSettings";
 import { useDocumentSelection } from "@/hooks/useDocumentSelection";
 import { ContextualAIToolbar } from "@/components/ContextualAIToolbar";
 import { SettingsModal } from "@/components/SettingsModal";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 interface Document {
   id: string;
@@ -70,6 +71,7 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { generateEmbeddingsSilently } = useEmbeddings();
+  const { settings } = useSettingsStore();
   
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -127,21 +129,39 @@ export default function Dashboard() {
     applyFiltersAndSearch();
   }, [documents, searchQuery, filters]);
 
-  // Auto-save document content
+  // Theme management from settings
   useEffect(() => {
-    if (currentDocument && documentContent !== currentDocument.content) {
+    const applyTheme = () => {
+      if (settings.theme === 'dark' || 
+         (settings.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+        setIsDarkMode(true);
+      } else {
+        document.documentElement.classList.remove('dark');
+        setIsDarkMode(false);
+      }
+    };
+
+    applyTheme();
+
+    if (settings.theme === 'auto') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = applyTheme;
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [settings.theme]);
+
+  // Auto-save document content based on settings
+  useEffect(() => {
+    if (currentDocument && documentContent !== currentDocument.content && settings.autoSaveInterval > 0) {
       const timeoutId = setTimeout(() => {
         saveDocument();
-      }, 5000);
+      }, settings.autoSaveInterval);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [documentContent, currentDocument]);
-
-  // Persist dark mode
-  useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
+  }, [documentContent, currentDocument, settings.autoSaveInterval]);
 
   const loadDocuments = async () => {
     if (!user) return;
@@ -239,10 +259,10 @@ export default function Dashboard() {
     if (!user) return;
 
       const newDoc = {
-        title: "New Document",
+        title: settings.autoGenerateTitles ? "New Document" : "New Document",
         content: "",
         user_id: user.id,
-        category: "general",
+        category: settings.defaultCategory,
         status: "draft",
         word_count: 0,
       };
@@ -660,6 +680,7 @@ export default function Dashboard() {
                   value={documentContent}
                   onChange={setDocumentContent}
                   isDarkMode={isDarkMode}
+                  settings={settings}
                 />
               ) : (
                 <div className="flex-1 flex items-center justify-center text-center p-8">
@@ -920,6 +941,7 @@ export default function Dashboard() {
                           value={documentContent}
                           onChange={setDocumentContent}
                           isDarkMode={isDarkMode}
+                          settings={settings}
                         />
                       </div>
                     ) : (
