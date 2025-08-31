@@ -77,6 +77,7 @@ export default function Dashboard() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
@@ -152,46 +153,52 @@ export default function Dashboard() {
   };
 
   const applyFiltersAndSearch = () => {
-    let filtered = [...documents];
+    setSearchLoading(true);
+    
+    // Add small delay to show loading state for very fast searches
+    setTimeout(() => {
+      let filtered = [...documents];
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(doc => 
-        doc.title.toLowerCase().includes(query) ||
-        doc.content.toLowerCase().includes(query) ||
-        doc.category.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply category filter
-    if (filters.category !== 'all') {
-      filtered = filtered.filter(doc => doc.category === filters.category);
-    }
-
-    // Apply status filter
-    if (filters.status.length > 0) {
-      filtered = filtered.filter(doc => filters.status.includes(doc.status));
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'oldest':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'az':
-          return a.title.localeCompare(b.title);
-        case 'za':
-          return b.title.localeCompare(a.title);
-        case 'wordcount':
-          return (b.word_count || 0) - (a.word_count || 0);
-        case 'recent':
-        default:
-          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      // Apply search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(doc => 
+          doc.title.toLowerCase().includes(query) ||
+          doc.content.toLowerCase().includes(query) ||
+          doc.category.toLowerCase().includes(query)
+        );
       }
-    });
 
-    setFilteredDocuments(filtered);
+      // Apply category filter
+      if (filters.category !== 'all') {
+        filtered = filtered.filter(doc => doc.category === filters.category);
+      }
+
+      // Apply status filter
+      if (filters.status.length > 0) {
+        filtered = filtered.filter(doc => filters.status.includes(doc.status));
+      }
+
+      // Apply sorting
+      filtered.sort((a, b) => {
+        switch (filters.sortBy) {
+          case 'oldest':
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          case 'az':
+            return a.title.localeCompare(b.title);
+          case 'za':
+            return b.title.localeCompare(a.title);
+          case 'wordcount':
+            return (b.word_count || 0) - (a.word_count || 0);
+          case 'recent':
+          default:
+            return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        }
+      });
+
+      setFilteredDocuments(filtered);
+      setSearchLoading(false);
+    }, searchQuery.trim() ? 100 : 0);
   };
 
   const createNewDocument = async () => {
@@ -602,10 +609,11 @@ export default function Dashboard() {
                            <Plus className="h-4 w-4 mr-2" />
                            New Document
                          </Button>
-                         <DocumentSearch 
-                           onSearch={handleDocumentSearch}
-                           onClear={clearDocumentSearch}
-                         />
+                        <DocumentSearch 
+                          onSearch={handleDocumentSearch}
+                          onClear={clearDocumentSearch}
+                          isLoading={searchLoading}
+                        />
                        </div>
                      </div>
                      

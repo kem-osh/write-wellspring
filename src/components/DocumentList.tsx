@@ -263,10 +263,25 @@ export function DocumentList({
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
         <FileText className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-        <h3 className="text-lg font-medium mb-2">No documents found</h3>
+        <h3 className="text-lg font-medium mb-2">
+          {searchQuery ? 'No documents found' : 'No documents yet'}
+        </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          {searchQuery ? "Try adjusting your search terms" : "Create your first document to get started"}
+          {searchQuery 
+            ? `No documents match "${searchQuery}". Try different keywords or check your filters.`
+            : "Create your first document to get started with LogosScribe."
+          }
         </p>
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}
+            className="text-xs"
+          >
+            Clear search to see all documents
+          </Button>
+        )}
       </div>
     );
   }
@@ -396,8 +411,12 @@ export function DocumentList({
                       </div>
 
                       {/* Content preview */}
-                      <p className="text-xs text-muted-foreground italic mb-2 line-clamp-2">
-                        {highlightSearchTerm(getPreviewText(doc.content), searchQuery)}
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2 leading-relaxed">
+                        {doc.content.trim() ? (
+                          highlightSearchTerm(getPreviewText(doc.content, 80), searchQuery)
+                        ) : (
+                          <span className="italic opacity-75">No content yet...</span>
+                        )}
                       </p>
 
                       {/* Metadata */}
@@ -405,31 +424,35 @@ export function DocumentList({
                         <div className="flex items-center gap-3">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(doc.updated_at), 'MMM d')}
+                            {format(new Date(doc.updated_at), 'MM/dd')}
                           </span>
                           <span className="flex items-center gap-1">
                             <Hash className="h-3 w-3" />
-                            {formatWordCount(doc.word_count || 0)}
+                            {formatWordCount(doc.word_count || 0)} words
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-2">
+                          {/* Status indicator dot */}
+                          <div 
+                            className={`w-2 h-2 rounded-full ${
+                              doc.status === 'draft' ? 'bg-yellow-500' :
+                              doc.status === 'polished' ? 'bg-blue-500' :
+                              doc.status === 'final' ? 'bg-green-500' : 'bg-gray-400'
+                            }`}
+                            title={`Status: ${doc.status}`}
+                          />
+                          
                           {/* Category badge */}
                           <div className="flex items-center gap-1">
                             <div 
                               className="w-2 h-2 rounded-full" 
                               style={{ backgroundColor: getCategoryColor(doc.category) }}
                             />
-                            <span className="text-xs">{doc.category}</span>
+                            <span className="text-xs truncate max-w-16" title={doc.category}>
+                              {doc.category}
+                            </span>
                           </div>
-                          
-                          {/* Status badge */}
-                          <Badge 
-                            variant="secondary" 
-                            className={`text-xs h-4 ${getStatusColor(doc.status)}`}
-                          >
-                            {doc.status}
-                          </Badge>
                         </div>
                       </div>
                     </div>

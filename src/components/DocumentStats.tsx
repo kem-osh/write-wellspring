@@ -42,7 +42,11 @@ export function DocumentStats({ documents }: DocumentStatsProps) {
     if (count >= 1000) {
       return `${(count / 1000).toFixed(1)}k`;
     }
-    return count.toString();
+    return count.toLocaleString();
+  };
+
+  const formatDocumentCount = (count: number) => {
+    return count.toLocaleString();
   };
 
   return (
@@ -58,7 +62,7 @@ export function DocumentStats({ documents }: DocumentStatsProps) {
             <FileText className="h-3 w-3" />
             Documents
           </span>
-          <span className="font-medium">{stats.total}</span>
+          <span className="font-medium">{formatDocumentCount(stats.total)}</span>
         </div>
         
         <div className="flex items-center justify-between">
@@ -74,21 +78,33 @@ export function DocumentStats({ documents }: DocumentStatsProps) {
       {stats.total > 0 && (
         <div className="space-y-2">
           <div className="text-xs text-muted-foreground">By Status:</div>
-          <div className="flex flex-wrap gap-1">
+          <div className="space-y-1 text-xs">
             {stats.drafts > 0 && (
-              <Badge variant="secondary" className="text-xs h-5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                {stats.drafts} Draft{stats.drafts !== 1 ? 's' : ''}
-              </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                  <span>Drafts</span>
+                </div>
+                <span className="font-medium">{stats.drafts}</span>
+              </div>
             )}
             {stats.polished > 0 && (
-              <Badge variant="secondary" className="text-xs h-5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                {stats.polished} Polished
-              </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>Polished</span>
+                </div>
+                <span className="font-medium">{stats.polished}</span>
+              </div>
             )}
             {stats.final > 0 && (
-              <Badge variant="secondary" className="text-xs h-5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                {stats.final} Final
-              </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>Final</span>
+                </div>
+                <span className="font-medium">{stats.final}</span>
+              </div>
             )}
           </div>
         </div>
