@@ -545,25 +545,21 @@ export default function Dashboard() {
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
       <div className="flex flex-col h-screen bg-background">
         {/* Top Bar */}
-        <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-          <div className="flex items-center gap-4 min-w-0 flex-1">
+        <header className="flex items-center justify-between p-4 border-b bg-card">
+          <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-              className="shrink-0 relative z-[51]"
-              aria-label="Toggle document library"
             >
               <FileText className="h-4 w-4" />
             </Button>
-            <div className="min-w-0 flex-1 max-w-md">
-              <Input
-                value={documentTitle}
-                onChange={(e) => setDocumentTitle(e.target.value)}
-                className="text-lg font-medium bg-transparent border-none focus:border-border w-full overflow-hidden text-ellipsis"
-                placeholder="Document title..."
-              />
-            </div>
+            <Input
+              value={documentTitle}
+              onChange={(e) => setDocumentTitle(e.target.value)}
+              className="text-lg font-medium bg-transparent border-none focus:border-border max-w-md"
+              placeholder="Document title..."
+            />
           </div>
           
           <div className="flex items-center gap-2">
@@ -585,21 +581,8 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Mobile Fallback Trigger - Only shown when sidebar is closed */}
-        {!leftSidebarOpen && !isFocusMode && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLeftSidebarOpen(true)}
-            className="fixed left-2 top-2 z-50 md:hidden shrink-0"
-            aria-label="Open document library"
-          >
-            <FileText className="h-4 w-4" />
-          </Button>
-        )}
-
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden relative z-0">
+        <div className="flex-1 overflow-hidden">
           <ResizablePanelGroup direction="horizontal">
             {/* Left Sidebar - Document Library */}
             {(leftSidebarOpen && !isFocusMode) && (

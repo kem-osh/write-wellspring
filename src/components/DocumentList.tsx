@@ -450,7 +450,7 @@ export function DocumentList({
                   Category
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="z-[60] bg-card">
+              <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => bulkChangeCategory('General')}>General</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => bulkChangeCategory('Blog')}>Blog</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => bulkChangeCategory('Book')}>Book</DropdownMenuItem>
@@ -467,7 +467,7 @@ export function DocumentList({
                   Status
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="z-[60] bg-card">
+              <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => bulkChangeStatus('draft')}>
                   <Circle className="w-3 h-3 mr-2 fill-yellow-400 text-yellow-400" /> Draft
                 </DropdownMenuItem>
@@ -635,7 +635,7 @@ export function DocumentList({
                                <MoreVertical className="h-4 w-4" />
                              </Button>
                            </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end" className="z-[60] bg-card">
+                           <DropdownMenuContent align="end">
                              <DropdownMenuItem onClick={() => startRename(doc)}>
                                <Edit2 className="w-4 h-4 mr-2" />
                                Rename
@@ -646,23 +646,23 @@ export function DocumentList({
                                  <Tag className="w-4 h-4 mr-2" />
                                  Category
                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent className="z-[60] bg-card">
-                                  <DropdownMenuItem onClick={() => changeCategory(doc.id, 'General')}>
-                                    General
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Blog')}>
-                                    Blog
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Book')}>
-                                    Book
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Essay')}>
-                                    Essay
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Notes')}>
-                                    Notes
-                                  </DropdownMenuItem>
-                                </DropdownMenuSubContent>
+                               <DropdownMenuSubContent>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'General')}>
+                                   General
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Blog')}>
+                                   Blog
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Book')}>
+                                   Book
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Essay')}>
+                                   Essay
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Notes')}>
+                                   Notes
+                                 </DropdownMenuItem>
+                               </DropdownMenuSubContent>
                              </DropdownMenuSub>
                              
                              <DropdownMenuSub>
@@ -670,20 +670,20 @@ export function DocumentList({
                                  <Circle className="w-4 h-4 mr-2" />
                                  Status
                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent className="z-[60] bg-card">
-                                  <DropdownMenuItem onClick={() => changeStatus(doc.id, 'draft')}>
-                                    <Circle className="w-3 h-3 mr-2 fill-yellow-500 text-yellow-500" />
-                                    Draft
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => changeStatus(doc.id, 'polished')}>
-                                    <Circle className="w-3 h-3 mr-2 fill-blue-500 text-blue-500" />
-                                    Polished
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => changeStatus(doc.id, 'final')}>
-                                    <Circle className="w-3 h-3 mr-2 fill-green-500 text-green-500" />
-                                    Final
-                                  </DropdownMenuItem>
-                                </DropdownMenuSubContent>
+                               <DropdownMenuSubContent>
+                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'draft')}>
+                                   <Circle className="w-3 h-3 mr-2 fill-yellow-500 text-yellow-500" />
+                                   Draft
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'polished')}>
+                                   <Circle className="w-3 h-3 mr-2 fill-blue-500 text-blue-500" />
+                                   Polished
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'final')}>
+                                   <Circle className="w-3 h-3 mr-2 fill-green-500 text-green-500" />
+                                   Final
+                                 </DropdownMenuItem>
+                               </DropdownMenuSubContent>
                              </DropdownMenuSub>
                              
                              <DropdownMenuItem onClick={() => duplicateDocument(doc)}>
