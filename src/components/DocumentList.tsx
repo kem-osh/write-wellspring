@@ -539,6 +539,93 @@ export function DocumentList({
                        />
                      </div>
 
+                     {/* Three-dot menu - moved to left side, always visible on mobile, hover on desktop */}
+                     {!isEditing && (
+                       <div className={`flex-shrink-0 transition-opacity ${
+                         isMultiSelectMode ? 'opacity-0' : 'md:opacity-0 md:group-hover:opacity-100 opacity-100'
+                       }`}>
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className="h-8 w-8 p-0 min-w-8"
+                               onClick={(e) => e.stopPropagation()}
+                               aria-label="Document actions"
+                             >
+                               <MoreVertical className="h-4 w-4" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="start" className="z-[60] bg-card">
+                             <DropdownMenuItem onClick={() => startRename(doc)}>
+                               <Edit2 className="w-4 h-4 mr-2" />
+                               Rename
+                             </DropdownMenuItem>
+                             
+                             <DropdownMenuSub>
+                               <DropdownMenuSubTrigger>
+                                 <Tag className="w-4 h-4 mr-2" />
+                                 Category
+                               </DropdownMenuSubTrigger>
+                               <DropdownMenuSubContent>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'General')}>
+                                   General
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Blog')}>
+                                   Blog
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Book')}>
+                                   Book
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Essay')}>
+                                   Essay
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Notes')}>
+                                   Notes
+                                 </DropdownMenuItem>
+                               </DropdownMenuSubContent>
+                             </DropdownMenuSub>
+                             
+                             <DropdownMenuSub>
+                               <DropdownMenuSubTrigger>
+                                 <Circle className="w-4 h-4 mr-2" />
+                                 Status
+                               </DropdownMenuSubTrigger>
+                               <DropdownMenuSubContent>
+                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'draft')}>
+                                   <Circle className="w-3 h-3 mr-2 fill-yellow-500 text-yellow-500" />
+                                   Draft
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'polished')}>
+                                   <Circle className="w-3 h-3 mr-2 fill-blue-500 text-blue-500" />
+                                   Polished
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'final')}>
+                                   <Circle className="w-3 h-3 mr-2 fill-green-500 text-green-500" />
+                                   Final
+                                 </DropdownMenuItem>
+                               </DropdownMenuSubContent>
+                             </DropdownMenuSub>
+                             
+                             <DropdownMenuItem onClick={() => duplicateDocument(doc)}>
+                               <Copy className="w-4 h-4 mr-2" />
+                               Duplicate
+                             </DropdownMenuItem>
+                             
+                             <DropdownMenuSeparator />
+                             
+                             <DropdownMenuItem 
+                               onClick={() => setDeleteConfirmId(doc.id)}
+                               className="text-destructive focus:text-destructive"
+                             >
+                               <Trash2 className="w-4 h-4 mr-2" />
+                               Delete
+                             </DropdownMenuItem>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </div>
+                     )}
+
                      {/* Document content - flexible container */}
                      <div className="flex-1 min-w-0 overflow-hidden">
                        {/* Title row with proper truncation */}
@@ -618,92 +705,6 @@ export function DocumentList({
                          </div>
                        </div>
                      </div>
-
-                     {/* Three-dot menu - always visible and accessible */}
-                     {!isEditing && (
-                       <div className={`flex-shrink-0 transition-opacity ${
-                         isMultiSelectMode ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
-                       }`}>
-                         <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="h-8 w-8 p-0 min-w-8"
-                               onClick={(e) => e.stopPropagation()}
-                             >
-                               <MoreVertical className="h-4 w-4" />
-                             </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end">
-                             <DropdownMenuItem onClick={() => startRename(doc)}>
-                               <Edit2 className="w-4 h-4 mr-2" />
-                               Rename
-                             </DropdownMenuItem>
-                             
-                             <DropdownMenuSub>
-                               <DropdownMenuSubTrigger>
-                                 <Tag className="w-4 h-4 mr-2" />
-                                 Category
-                               </DropdownMenuSubTrigger>
-                               <DropdownMenuSubContent>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'General')}>
-                                   General
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Blog')}>
-                                   Blog
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Book')}>
-                                   Book
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Essay')}>
-                                   Essay
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Notes')}>
-                                   Notes
-                                 </DropdownMenuItem>
-                               </DropdownMenuSubContent>
-                             </DropdownMenuSub>
-                             
-                             <DropdownMenuSub>
-                               <DropdownMenuSubTrigger>
-                                 <Circle className="w-4 h-4 mr-2" />
-                                 Status
-                               </DropdownMenuSubTrigger>
-                               <DropdownMenuSubContent>
-                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'draft')}>
-                                   <Circle className="w-3 h-3 mr-2 fill-yellow-500 text-yellow-500" />
-                                   Draft
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'polished')}>
-                                   <Circle className="w-3 h-3 mr-2 fill-blue-500 text-blue-500" />
-                                   Polished
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'final')}>
-                                   <Circle className="w-3 h-3 mr-2 fill-green-500 text-green-500" />
-                                   Final
-                                 </DropdownMenuItem>
-                               </DropdownMenuSubContent>
-                             </DropdownMenuSub>
-                             
-                             <DropdownMenuItem onClick={() => duplicateDocument(doc)}>
-                               <Copy className="w-4 h-4 mr-2" />
-                               Duplicate
-                             </DropdownMenuItem>
-                             
-                             <DropdownMenuSeparator />
-                             
-                             <DropdownMenuItem 
-                               onClick={() => setDeleteConfirmId(doc.id)}
-                               className="text-destructive focus:text-destructive"
-                             >
-                               <Trash2 className="w-4 h-4 mr-2" />
-                               Delete
-                             </DropdownMenuItem>
-                           </DropdownMenuContent>
-                         </DropdownMenu>
-                       </div>
-                     )}
                    </div>
                 </ContextMenuTrigger>
                 
