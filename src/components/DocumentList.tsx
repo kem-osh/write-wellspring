@@ -72,6 +72,8 @@ interface DocumentListProps {
   onDocumentSelect: (doc: Document) => void;
   onDocumentUpdate: () => void;
   searchQuery?: string;
+  selectedDocuments?: string[];
+  onDocumentSelectionChange?: (documentIds: string[]) => void;
 }
 
 export function DocumentList({
@@ -80,14 +82,22 @@ export function DocumentList({
   currentDocument,
   onDocumentSelect,
   onDocumentUpdate,
-  searchQuery = ''
+  searchQuery = '',
+  selectedDocuments = [],
+  onDocumentSelectionChange
 }: DocumentListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
-  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set(selectedDocuments));
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(selectedDocuments.length > 0);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Sync external selection with internal state
+  useEffect(() => {
+    setSelectedDocs(new Set(selectedDocuments));
+    setIsMultiSelectMode(selectedDocuments.length > 0);
+  }, [selectedDocuments]);
 
   const getCategoryColor = useCallback((categoryName: string) => {
     const category = categories.find(c => c.name === categoryName);
@@ -240,6 +250,10 @@ export function DocumentList({
     }
     setSelectedDocs(newSelected);
 
+    // Notify parent component of selection change
+    const selectedArray = Array.from(newSelected);
+    onDocumentSelectionChange?.(selectedArray);
+
     if (newSelected.size === 0) {
       setIsMultiSelectMode(false);
     } else if (!isMultiSelectMode) {
@@ -248,28 +262,33 @@ export function DocumentList({
   };
 
   const toggleSelectAll = () => {
+    let newSelected: Set<string>;
     if (selectedDocs.size === documents.length) {
       // Deselect all
-      setSelectedDocs(new Set());
+      newSelected = new Set();
       setIsMultiSelectMode(false);
     } else {
       // Select all
-      const allIds = new Set(documents.map(doc => doc.id));
-      setSelectedDocs(allIds);
+      newSelected = new Set(documents.map(doc => doc.id));
       setIsMultiSelectMode(true);
     }
+    setSelectedDocs(newSelected);
+    onDocumentSelectionChange?.(Array.from(newSelected));
   };
 
   const enterMultiSelectMode = (docId?: string) => {
     setIsMultiSelectMode(true);
     if (docId) {
-      setSelectedDocs(new Set([docId]));
+      const newSelected = new Set([docId]);
+      setSelectedDocs(newSelected);
+      onDocumentSelectionChange?.([docId]);
     }
   };
 
   const exitMultiSelectMode = () => {
     setIsMultiSelectMode(false);
     setSelectedDocs(new Set());
+    onDocumentSelectionChange?.([]);
   };
 
   // Bulk operations

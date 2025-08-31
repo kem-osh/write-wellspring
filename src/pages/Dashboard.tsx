@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { UserMenu } from "@/components/UserMenu";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
+import { AdvancedAICommands } from "@/components/AdvancedAICommands";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
@@ -86,6 +87,7 @@ export default function Dashboard() {
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   
   const isMobileView = useIsMobile();
 
@@ -545,6 +547,42 @@ export default function Dashboard() {
     setFilters(newFilters);
   };
 
+  // Advanced AI command handlers
+  const handleDocumentCreated = (documentId: string) => {
+    loadDocuments();
+    // Open the newly created document
+    setTimeout(() => {
+      const newDoc = documents.find(doc => doc.id === documentId);
+      if (newDoc) {
+        openDocument(newDoc);
+      }
+    }, 500);
+  };
+
+  const handleTextInsert = (text: string) => {
+    if (currentDocument) {
+      // Insert text at cursor position or append to document
+      const newContent = documentContent + text;
+      setDocumentContent(newContent);
+    }
+  };
+
+  const handleTextReplace = (text: string) => {
+    if (selectedText && currentDocument) {
+      // Replace selected text
+      const newContent = documentContent.replace(selectedText, text);
+      setDocumentContent(newContent);
+      setSelectedText('');
+    }
+  };
+
+  const getCurrentText = () => documentContent;
+  const getSelectedText = () => selectedText;
+  const getCursorContext = () => {
+    // Return last 500 characters as cursor context
+    return documentContent.slice(-500);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -641,14 +679,16 @@ export default function Dashboard() {
                            
                            {/* Document List */}
                            <div className="min-h-0">
-                             <DocumentList
-                               documents={filteredDocuments}
-                               categories={categories}
-                               currentDocument={currentDocument}
-                               onDocumentSelect={openDocument}
-                               onDocumentUpdate={loadDocuments}
-                               searchQuery={searchQuery}
-                             />
+                              <DocumentList
+                                documents={filteredDocuments}
+                                categories={categories}
+                                currentDocument={currentDocument}
+                                onDocumentSelect={openDocument}
+                                onDocumentUpdate={loadDocuments}
+                                searchQuery={searchQuery}
+                                selectedDocuments={selectedDocuments}
+                                onDocumentSelectionChange={setSelectedDocuments}
+                              />
                            </div>
                            
                            {/* Stats - at bottom of scrollable area */}
@@ -730,10 +770,22 @@ export default function Dashboard() {
             </div>
             
             {/* Center Section - Command Shortcuts */}
-            <CustomShortcuts 
-              onShortcut={handleCustomShortcut} 
-              isLoading={aiLoading}
-            />
+            <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
+              <CustomShortcuts 
+                onShortcut={handleCustomShortcut} 
+                isLoading={aiLoading}
+              />
+              <div className="w-px h-6 bg-border mx-2" />
+              <AdvancedAICommands
+                selectedDocuments={selectedDocuments}
+                onDocumentCreated={handleDocumentCreated}
+                onTextInsert={handleTextInsert}
+                onTextReplace={handleTextReplace}
+                getCurrentText={getCurrentText}
+                getSelectedText={getSelectedText}
+                getCursorContext={getCursorContext}
+              />
+            </div>
             
             {/* Right Section - Word Count & Save */}
             <div className="flex items-center gap-2 shrink-0">
