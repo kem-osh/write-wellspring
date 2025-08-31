@@ -29,7 +29,10 @@ export default function Dashboard() {
   const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentContent, setDocumentContent] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
@@ -50,6 +53,11 @@ export default function Dashboard() {
       return () => clearTimeout(timeoutId);
     }
   }, [documentContent, currentDocument]);
+
+  // Persist dark mode
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
 
   const loadDocuments = async () => {
     if (!user) return;
@@ -77,7 +85,7 @@ export default function Dashboard() {
     if (!user) return;
 
     const newDoc = {
-      title: "Untitled Document",
+      title: "New Document",
       content: "",
       user_id: user.id,
       category: "general",
