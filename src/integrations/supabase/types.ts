@@ -50,6 +50,7 @@ export type Database = {
           content: string | null
           created_at: string | null
           display_order: number | null
+          embedding: string | null
           folder_id: string | null
           id: string
           status: string | null
@@ -64,6 +65,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           display_order?: number | null
+          embedding?: string | null
           folder_id?: string | null
           id?: string
           status?: string | null
@@ -78,6 +80,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           display_order?: number | null
+          embedding?: string | null
           folder_id?: string | null
           id?: string
           status?: string | null
