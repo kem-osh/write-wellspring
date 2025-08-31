@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, Expand, Shrink, List, BookOpen, Zap } from 'lucide-react';
+import { Sparkles, Expand, Shrink, List, BookOpen, Zap, Loader2 } from 'lucide-react';
 
 interface Shortcut {
   id: string;
@@ -10,46 +10,47 @@ interface Shortcut {
 }
 
 interface CustomShortcutsProps {
-  onShortcut: (prompt: string) => void;
+  onShortcut: (type: 'light-edit' | 'expand' | 'condense', prompt: string) => void;
+  isLoading?: boolean;
 }
 
-export function CustomShortcuts({ onShortcut }: CustomShortcutsProps) {
+export function CustomShortcuts({ onShortcut, isLoading }: CustomShortcutsProps) {
   const shortcuts: Shortcut[] = [
     {
       id: 'expand',
       name: 'Expand',
       icon: <Expand className="h-3 w-3" />,
-      action: () => onShortcut('Expand this text with more detail and depth'),
+      action: () => onShortcut('expand', 'Expand this content by 30-50% while maintaining tone'),
     },
     {
       id: 'condense',
       name: 'Condense',
       icon: <Shrink className="h-3 w-3" />,
-      action: () => onShortcut('Condense this text to be more concise'),
+      action: () => onShortcut('condense', 'Condense this content by 60-70% while preserving key points'),
     },
     {
       id: 'outline',
       name: 'Outline',
       icon: <List className="h-3 w-3" />,
-      action: () => onShortcut('Create an outline from this text'),
+      action: () => onShortcut('light-edit', 'Create an outline from this text'),
     },
     {
       id: 'improve',
-      name: 'Improve',
+      name: 'Light Edit',
       icon: <Sparkles className="h-3 w-3" />,
-      action: () => onShortcut('Improve the writing quality and clarity'),
+      action: () => onShortcut('light-edit', 'Fix spelling, grammar, and formatting while preserving voice'),
     },
     {
       id: 'summarize',
       name: 'Summarize',
       icon: <BookOpen className="h-3 w-3" />,
-      action: () => onShortcut('Summarize the key points'),
+      action: () => onShortcut('condense', 'Summarize the key points concisely'),
     },
     {
       id: 'energize',
       name: 'Energize',
       icon: <Zap className="h-3 w-3" />,
-      action: () => onShortcut('Make this text more engaging and energetic'),
+      action: () => onShortcut('expand', 'Make this text more engaging and energetic'),
     },
   ];
 
@@ -63,8 +64,13 @@ export function CustomShortcuts({ onShortcut }: CustomShortcutsProps) {
             size="sm"
             className="flex items-center gap-1 whitespace-nowrap"
             onClick={shortcut.action}
+            disabled={isLoading}
           >
-            {shortcut.icon}
+            {isLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              shortcut.icon
+            )}
             {shortcut.name}
           </Button>
         ))}

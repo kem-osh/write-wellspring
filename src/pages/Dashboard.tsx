@@ -10,6 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { UserMenu } from "@/components/UserMenu";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { AISuggestionPanel } from "@/components/AISuggestionPanel";
+import { DocumentSearch } from "@/components/DocumentSearch";
+import { Badge } from "@/components/ui/badge";
 
 interface Document {
   id: string;
@@ -19,6 +23,15 @@ interface Document {
   status: string;
   created_at: string;
   updated_at: string;
+  word_count?: number;
+}
+
+interface AISuggestion {
+  id: string;
+  type: 'light-edit' | 'expand' | 'condense';
+  originalText: string;
+  suggestedText: string;
+  changes?: boolean;
 }
 
 export default function Dashboard() {
@@ -26,6 +39,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentContent, setDocumentContent] = useState("");
@@ -37,11 +51,19 @@ export default function Dashboard() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
 
   // Load documents on mount
   useEffect(() => {
     loadDocuments();
   }, []);
+
+  // Update filtered documents when documents change
+  useEffect(() => {
+    setFilteredDocuments(documents);
+  }, [documents]);
 
   // Auto-save document content
   useEffect(() => {
@@ -125,6 +147,8 @@ export default function Dashboard() {
   const saveDocument = async () => {
     if (!currentDocument) return;
 
+    const wordCount = documentContent.trim().split(/\s+/).filter(word => word.length > 0).length;
+
     const { error } = await supabase
       .from("documents")
       .update({ 
@@ -142,7 +166,12 @@ export default function Dashboard() {
       });
     } else {
       // Update local state
-      const updatedDoc = { ...currentDocument, title: documentTitle, content: documentContent };
+      const updatedDoc = { 
+        ...currentDocument, 
+        title: documentTitle, 
+        content: documentContent,
+        word_count: wordCount 
+      };
       setCurrentDocument(updatedDoc);
       setDocuments(documents.map(doc => 
         doc.id === currentDocument.id ? updatedDoc : doc
@@ -176,12 +205,168 @@ export default function Dashboard() {
     }
   };
 
-  const handleCustomShortcut = (prompt: string) => {
-    // Placeholder for AI functionality
+  const handleCustomShortcut = async (type: 'light-edit' | 'expand' | 'condense', prompt: string) => {
+    if (!currentDocument) {
+      toast({
+        title: "No document selected",
+        description: "Please select or create a document first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const textToProcess = selectedText || documentContent;
+    if (!textToProcess.trim()) {
+      toast({
+        title: "No content to process",
+        description: "Please add some content to your document first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAiLoading(true);
+
+    try {
+      const functionName = type === 'light-edit' ? 'ai-light-edit' : 
+                          type === 'expand' ? 'ai-expand-content' : 
+                          'ai-condense-content';
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: { 
+          content: selectedText ? undefined : documentContent,
+          selectedText: selectedText || undefined
+        }
+      });
+
+      if (error) throw error;
+
+      const suggestion: AISuggestion = {
+        id: Date.now().toString(),
+        type,
+        originalText: textToProcess,
+        suggestedText: data[type === 'light-edit' ? 'editedText' : 
+                          type === 'expand' ? 'expandedText' : 'condensedText'],
+        changes: type === 'light-edit' ? data.changes : true
+      };
+
+      setAiSuggestion(suggestion);
+    } catch (error) {
+      console.error('AI processing error:', error);
+      toast({
+        title: "AI processing failed",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleVoiceTranscription = async (text: string) => {
+    if (currentDocument) {
+      // Append to existing document
+      const newContent = documentContent + (documentContent ? '\n\n' : '') + text;
+      setDocumentContent(newContent);
+      toast({
+        title: "Voice added to document",
+        description: "Transcription has been added to your current document.",
+      });
+    } else {
+      // Create new document
+      await createNewDocumentFromVoice(text);
+    }
+  };
+
+  const createNewDocumentFromVoice = async (content: string) => {
+    if (!user) return;
+
+    try {
+      // Generate AI title first
+      const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
+        body: { content }
+      });
+
+      const title = titleData?.title || 'Voice Note';
+
+      const newDoc = {
+        title,
+        content,
+        user_id: user.id,
+        category: "voice-note",
+        status: "draft",
+      };
+
+      const { data, error } = await supabase
+        .from("documents")
+        .insert([newDoc])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setDocuments([data, ...documents]);
+      setCurrentDocument(data);
+      setDocumentTitle(data.title);
+      setDocumentContent(data.content);
+      
+      toast({
+        title: "Voice note created",
+        description: `Created "${title}" from your voice input.`,
+      });
+    } catch (error) {
+      console.error('Error creating voice document:', error);
+      toast({
+        title: "Error creating document",
+        description: "Failed to create document from voice input.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAcceptSuggestion = async (suggestion: AISuggestion) => {
+    if (selectedText) {
+      // Replace selected text
+      const newContent = documentContent.replace(selectedText, suggestion.suggestedText);
+      setDocumentContent(newContent);
+    } else {
+      // Replace entire document
+      setDocumentContent(suggestion.suggestedText);
+    }
+
+    setSelectedText('');
+    
     toast({
-      title: "AI Shortcut",
-      description: `Will process: ${prompt}`,
+      title: "Changes applied",
+      description: "AI suggestion has been applied to your document.",
     });
+  };
+
+  const handleRejectSuggestion = () => {
+    setSelectedText('');
+    toast({
+      title: "Changes rejected",
+      description: "AI suggestion has been discarded.",
+    });
+  };
+
+  const handleDocumentSearch = (query: string) => {
+    if (!query.trim()) {
+      setFilteredDocuments(documents);
+      return;
+    }
+
+    const filtered = documents.filter(doc => 
+      doc.title.toLowerCase().includes(query.toLowerCase()) ||
+      doc.content.toLowerCase().includes(query.toLowerCase()) ||
+      doc.category.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    setFilteredDocuments(filtered);
+  };
+
+  const clearDocumentSearch = () => {
+    setFilteredDocuments(documents);
   };
 
   if (loading) {
@@ -251,21 +436,29 @@ export default function Dashboard() {
                       </Button>
                     </div>
                     <div className="p-4 border-b">
-                      <Button onClick={createNewDocument} className="w-full">
+                      <Button onClick={createNewDocument} className="w-full mb-3">
                         <Plus className="h-4 w-4 mr-2" />
                         New Document
                       </Button>
+                      <DocumentSearch 
+                        onSearch={handleDocumentSearch}
+                        onClear={clearDocumentSearch}
+                      />
                     </div>
                     <ScrollArea className="flex-1">
                       <div className="p-4 space-y-2">
-                        {documents.length === 0 ? (
+                        {filteredDocuments.length === 0 ? (
                           <div className="text-center text-muted-foreground py-8">
                             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p className="text-sm">No documents yet</p>
-                            <p className="text-xs">Create your first document to get started</p>
+                            <p className="text-sm">
+                              {documents.length === 0 ? "No documents yet" : "No matching documents"}
+                            </p>
+                            <p className="text-xs">
+                              {documents.length === 0 ? "Create your first document to get started" : "Try a different search term"}
+                            </p>
                           </div>
                         ) : (
-                          documents.map((doc) => (
+                          filteredDocuments.map((doc) => (
                             <div
                               key={doc.id}
                               className={`p-3 rounded-lg border cursor-pointer hover:bg-accent transition-colors ${
@@ -273,10 +466,22 @@ export default function Dashboard() {
                               }`}
                               onClick={() => openDocument(doc)}
                             >
-                              <h3 className="font-medium text-sm truncate">{doc.title}</h3>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(doc.updated_at).toLocaleDateString()}
-                              </p>
+                              <div className="flex items-center justify-between mb-1">
+                                <h3 className="font-medium text-sm truncate flex-1">{doc.title}</h3>
+                                <Badge variant="secondary" className="text-xs">
+                                  {doc.status}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(doc.updated_at).toLocaleDateString()}
+                                </p>
+                                {doc.word_count && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {doc.word_count} words
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           ))
                         )}
@@ -352,11 +557,16 @@ export default function Dashboard() {
         <footer className="p-4 border-t bg-card">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Mic className="h-3 w-3 mr-1" />
-                Voice
-              </Button>
-              <Button variant="outline" size="sm">
+              <VoiceRecorder 
+                onTranscription={handleVoiceTranscription}
+                disabled={aiLoading}
+              />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleCustomShortcut('light-edit', 'Fix spelling, grammar, and formatting')}
+                disabled={!currentDocument || aiLoading || !documentContent.trim()}
+              >
                 ✨ Light Edit
               </Button>
               {!rightSidebarOpen && (
@@ -371,14 +581,33 @@ export default function Dashboard() {
             </div>
             
             <div className="flex-1 max-w-md">
-              <CustomShortcuts onShortcut={handleCustomShortcut} />
+              <CustomShortcuts 
+                onShortcut={handleCustomShortcut} 
+                isLoading={aiLoading}
+              />
             </div>
             
-            <Button variant="outline" size="sm" onClick={saveDocument}>
-              Save
-            </Button>
+            <div className="flex items-center gap-2">
+              {currentDocument && (
+                <div className="text-xs text-muted-foreground mr-2">
+                  {documentContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
+                </div>
+              )}
+              <Button variant="outline" size="sm" onClick={saveDocument}>
+                Save
+              </Button>
+            </div>
           </div>
         </footer>
+
+        {/* AI Suggestion Panel */}
+        <AISuggestionPanel
+          suggestion={aiSuggestion}
+          isLoading={aiLoading}
+          onAccept={handleAcceptSuggestion}
+          onReject={handleRejectSuggestion}
+          onClose={() => setAiSuggestion(null)}
+        />
       </div>
     </div>
   );
