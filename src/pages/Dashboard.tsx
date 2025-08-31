@@ -13,6 +13,9 @@ import { CustomShortcuts } from "@/components/CustomShortcuts";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { DocumentSearch } from "@/components/DocumentSearch";
+import { DocumentFilters } from "@/components/DocumentFilters";
+import { DocumentList } from "@/components/DocumentList";
+import { DocumentStats } from "@/components/DocumentStats";
 import { Badge } from "@/components/ui/badge";
 
 interface Document {
@@ -21,9 +24,24 @@ interface Document {
   content: string;
   category: string;
   status: string;
+  word_count: number;
+  folder_id?: string;
   created_at: string;
   updated_at: string;
-  word_count?: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  color: string;
+  is_default: boolean;
+}
+
+interface FilterOptions {
+  category: string;
+  status: string[];
+  sortBy: 'recent' | 'oldest' | 'az' | 'za' | 'wordcount';
+  folderId?: string;
 }
 
 interface AISuggestion {
@@ -40,9 +58,17 @@ export default function Dashboard() {
   
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentContent, setDocumentContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<FilterOptions>({
+    category: 'all',
+    status: [],
+    sortBy: 'recent',
+    folderId: undefined
+  });
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved !== null ? JSON.parse(saved) : false;
@@ -55,15 +81,16 @@ export default function Dashboard() {
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
 
-  // Load documents on mount
+  // Load documents and categories on mount
   useEffect(() => {
     loadDocuments();
+    loadCategories();
   }, []);
 
-  // Update filtered documents when documents change
+  // Update filtered documents when documents, search, or filters change
   useEffect(() => {
-    setFilteredDocuments(documents);
-  }, [documents]);
+    applyFiltersAndSearch();
+  }, [documents, searchQuery, filters]);
 
   // Auto-save document content
   useEffect(() => {
@@ -98,21 +125,86 @@ export default function Dashboard() {
         variant: "destructive",
       });
     } else {
-      setDocuments(data || []);
+      // Calculate word count for documents that don't have it
+      const documentsWithWordCount = (data || []).map(doc => ({
+        ...doc,
+        word_count: doc.word_count || doc.content.trim().split(/\s+/).filter(word => word.length > 0).length
+      })) as Document[];
+      setDocuments(documentsWithWordCount);
     }
     setLoading(false);
+  };
+
+  const loadCategories = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("display_order");
+
+    if (error) {
+      console.error("Error loading categories:", error);
+    } else {
+      setCategories(data || []);
+    }
+  };
+
+  const applyFiltersAndSearch = () => {
+    let filtered = [...documents];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(doc => 
+        doc.title.toLowerCase().includes(query) ||
+        doc.content.toLowerCase().includes(query) ||
+        doc.category.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply category filter
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(doc => doc.category === filters.category);
+    }
+
+    // Apply status filter
+    if (filters.status.length > 0) {
+      filtered = filtered.filter(doc => filters.status.includes(doc.status));
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (filters.sortBy) {
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'az':
+          return a.title.localeCompare(b.title);
+        case 'za':
+          return b.title.localeCompare(a.title);
+        case 'wordcount':
+          return (b.word_count || 0) - (a.word_count || 0);
+        case 'recent':
+        default:
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+    });
+
+    setFilteredDocuments(filtered);
   };
 
   const createNewDocument = async () => {
     if (!user) return;
 
-    const newDoc = {
-      title: "New Document",
-      content: "",
-      user_id: user.id,
-      category: "general",
-      status: "draft",
-    };
+      const newDoc = {
+        title: "New Document",
+        content: "",
+        user_id: user.id,
+        category: "general",
+        status: "draft",
+        word_count: 0,
+      };
 
     const { data, error } = await supabase
       .from("documents")
@@ -154,6 +246,7 @@ export default function Dashboard() {
       .update({ 
         title: documentTitle,
         content: documentContent,
+        word_count: wordCount,
         updated_at: new Date().toISOString()
       })
       .eq("id", currentDocument.id);
@@ -365,6 +458,7 @@ export default function Dashboard() {
         user_id: user.id,
         category: "voice-note",
         status: "draft",
+        word_count: content.trim().split(/\s+/).filter(word => word.length > 0).length,
       };
 
       const { data, error } = await supabase
@@ -421,22 +515,15 @@ export default function Dashboard() {
   };
 
   const handleDocumentSearch = (query: string) => {
-    if (!query.trim()) {
-      setFilteredDocuments(documents);
-      return;
-    }
-
-    const filtered = documents.filter(doc => 
-      doc.title.toLowerCase().includes(query.toLowerCase()) ||
-      doc.content.toLowerCase().includes(query.toLowerCase()) ||
-      doc.category.toLowerCase().includes(query.toLowerCase())
-    );
-    
-    setFilteredDocuments(filtered);
+    setSearchQuery(query);
   };
 
   const clearDocumentSearch = () => {
-    setFilteredDocuments(documents);
+    setSearchQuery('');
+  };
+
+  const handleFiltersChange = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
   };
 
   if (loading) {
@@ -493,71 +580,51 @@ export default function Dashboard() {
             {/* Left Sidebar - Document Library */}
             {(leftSidebarOpen && !isFocusMode) && (
               <>
-                <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                  <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft">
-                    <div className="p-4 border-b flex items-center justify-between">
-                      <h3 className="font-medium">Documents</h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setLeftSidebarOpen(false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="p-4 border-b">
-                      <Button onClick={createNewDocument} className="w-full mb-3">
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Document
-                      </Button>
-                      <DocumentSearch 
-                        onSearch={handleDocumentSearch}
-                        onClear={clearDocumentSearch}
-                      />
-                    </div>
-                    <ScrollArea className="flex-1">
-                      <div className="p-4 space-y-2">
-                        {filteredDocuments.length === 0 ? (
-                          <div className="text-center text-muted-foreground py-8">
-                            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p className="text-sm">
-                              {documents.length === 0 ? "No documents yet" : "No matching documents"}
-                            </p>
-                            <p className="text-xs">
-                              {documents.length === 0 ? "Create your first document to get started" : "Try a different search term"}
-                            </p>
-                          </div>
-                        ) : (
-                          filteredDocuments.map((doc) => (
-                            <div
-                              key={doc.id}
-                              className={`p-3 rounded-lg border cursor-pointer hover:bg-accent transition-colors ${
-                                currentDocument?.id === doc.id ? 'bg-accent' : ''
-                              }`}
-                              onClick={() => openDocument(doc)}
-                            >
-                              <div className="flex items-center justify-between mb-1">
-                                <h3 className="font-medium text-sm truncate flex-1">{doc.title}</h3>
-                                <Badge variant="secondary" className="text-xs">
-                                  {doc.status}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(doc.updated_at).toLocaleDateString()}
-                                </p>
-                                {doc.word_count && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {doc.word_count} words
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </div>
+                 <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                   <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft">
+                     {/* Header */}
+                     <div className="p-4 border-b flex items-center justify-between">
+                       <h3 className="font-medium">Documents</h3>
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => setLeftSidebarOpen(false)}
+                       >
+                         <X className="h-4 w-4" />
+                       </Button>
+                     </div>
+                     
+                     {/* New Document & Search */}
+                     <div className="p-4 border-b space-y-3">
+                       <Button onClick={createNewDocument} className="w-full">
+                         <Plus className="h-4 w-4 mr-2" />
+                         New Document
+                       </Button>
+                       <DocumentSearch 
+                         onSearch={handleDocumentSearch}
+                         onClear={clearDocumentSearch}
+                       />
+                     </div>
+                     
+                     {/* Filters */}
+                     <DocumentFilters 
+                       onFiltersChange={handleFiltersChange}
+                       initialFilters={filters}
+                     />
+                     
+                     {/* Document List */}
+                     <DocumentList
+                       documents={filteredDocuments}
+                       categories={categories}
+                       currentDocument={currentDocument}
+                       onDocumentSelect={openDocument}
+                       onDocumentUpdate={loadDocuments}
+                       searchQuery={searchQuery}
+                     />
+                     
+                     {/* Stats */}
+                     <DocumentStats documents={documents} />
+                   </div>
                 </ResizablePanel>
                 <ResizableHandle />
               </>
