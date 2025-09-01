@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { Loader2, CheckCircle, XCircle, Edit3, Copy, RotateCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -115,11 +116,13 @@ export function AISuggestionPanel({
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
-                    <div className="bg-muted/30 p-4 rounded-lg border min-h-[200px] max-h-[300px] overflow-auto">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {suggestion.originalText}
-                      </p>
-                    </div>
+                    <Card variant="elevated" className="min-h-[200px] max-h-[300px] overflow-auto">
+                      <CardContent padding="sm">
+                        <p className="text-body-sm leading-relaxed whitespace-pre-wrap text-foreground/80">
+                          {suggestion.originalText}
+                        </p>
+                      </CardContent>
+                    </Card>
                   </div>
                   
                   <div className="space-y-3">
@@ -129,11 +132,13 @@ export function AISuggestionPanel({
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
-                    <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border min-h-[200px] max-h-[300px] overflow-auto">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {suggestion.suggestedText}
-                      </p>
-                    </div>
+                    <Card variant="elevated" className="min-h-[200px] max-h-[300px] overflow-auto bg-accent/5 border-accent/20">
+                      <CardContent padding="sm">
+                        <p className="text-body-sm leading-relaxed whitespace-pre-wrap">
+                          {suggestion.suggestedText}
+                        </p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </TabsContent>
@@ -169,11 +174,13 @@ export function AISuggestionPanel({
                       className="min-h-[250px] text-sm leading-relaxed"
                     />
                   ) : (
-                    <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border min-h-[250px] overflow-auto">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {editedText}
-                      </p>
-                    </div>
+                    <Card variant="elevated" className="min-h-[250px] overflow-auto bg-accent/5 border-accent/20">
+                      <CardContent padding="sm">
+                        <p className="text-body-sm leading-relaxed whitespace-pre-wrap">
+                          {editedText}
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
               </TabsContent>

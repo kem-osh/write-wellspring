@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -173,19 +174,27 @@ export function FullScreenAIChat({
                     <p className="text-muted-foreground">Ask questions about your documents and I'll help you find answers.</p>
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-2 text-left">
+                  <div className="grid grid-cols-1 gap-3 text-left max-w-md mx-auto">
                     {[
-                      "What are the main themes in my documents?",
-                      "Find documents about mythology",
-                      "Summarize my recent writings"
+                      { icon: "🎯", text: "What are the main themes in my documents?" },
+                      { icon: "📚", text: "Find documents about mythology" },
+                      { icon: "📝", text: "Summarize my recent writings" }
                     ].map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => sendMessage(suggestion)}
-                        className="p-3 text-sm text-left rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-border transition-all duration-200"
+                      <Card
+                        key={suggestion.text}
+                        variant="elevated"
+                        className="group cursor-pointer hover-scale transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                        onClick={() => sendMessage(suggestion.text)}
                       >
-                        {suggestion}
-                      </button>
+                        <CardContent padding="sm">
+                          <div className="flex items-center gap-3 text-left">
+                            <span className="text-lg flex-shrink-0">{suggestion.icon}</span>
+                            <span className="text-body-sm font-medium group-hover:text-primary transition-colors">
+                              {suggestion.text}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 </div>
