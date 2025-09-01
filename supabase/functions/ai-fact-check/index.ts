@@ -41,12 +41,18 @@ serve(async (req) => {
       },
     });
 
-    // Use command configuration as source of truth
+    // Use command object values directly - NO hardcoded fallbacks
     const commandConfig = command;
-    const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
+    
+    // Validate required fields
+    if (!commandConfig.ai_model) throw new Error('ai_model is required in command config');
+    if (!commandConfig.system_prompt) throw new Error('system_prompt is required in command config');
+    if (!commandConfig.prompt) throw new Error('prompt is required in command config');
+    
+    const model = commandConfig.ai_model;
     const maxTokens = commandConfig.max_tokens || 1000;
-    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
-    const userPrompt = commandConfig.prompt || 'You are a fact-checking assistant. Analyze the following text for factual accuracy and consistency.';
+    const systemPrompt = commandConfig.system_prompt;
+    const userPrompt = commandConfig.prompt;
     
     // Determine token parameter based on model
     const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
@@ -58,14 +64,13 @@ serve(async (req) => {
     const claimsRequestBody = {
       model: model,
       messages: [
-// Fix the ai-fact-check hardcoded prompts - lines 64-67
         {
           role: 'system',
-          content: commandConfig.system_prompt || 'You are a helpful AI writing assistant.'
+          content: systemPrompt
         },
         {
           role: 'user',
-          content: `${commandConfig.prompt || 'Extract specific claims, facts, or statements that could be verified. List them clearly.'}\n\n---\n\n${textToProcess}`
+          content: `${userPrompt}\n\n---\n\n${textToProcess}`
         }
       ]
     };

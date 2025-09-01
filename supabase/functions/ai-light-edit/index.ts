@@ -26,13 +26,17 @@ serve(async (req) => {
       throw new Error('No text provided to process.');
     }
 
-    // 3) The 'command' object from the frontend is the single source of truth
+    // 3) Use command object values directly - NO hardcoded fallbacks
     const commandConfig = command;
 
-    // 4) Configure model strictly from commandConfig
-    const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
-    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
-    const userPrompt = commandConfig.prompt || 'Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
+    // Validate required fields
+    if (!commandConfig.ai_model) throw new Error('ai_model is required in command config');
+    if (!commandConfig.system_prompt) throw new Error('system_prompt is required in command config');
+    if (!commandConfig.prompt) throw new Error('prompt is required in command config');
+
+    const aiModel = commandConfig.ai_model;
+    const systemPrompt = commandConfig.system_prompt;
+    const userPrompt = commandConfig.prompt;
     const maxCompletionTokens = commandConfig.max_tokens || 2000;
 
     console.log('Processing light edit for text length:', textToProcess.length, 'with maxCompletionTokens:', maxCompletionTokens);

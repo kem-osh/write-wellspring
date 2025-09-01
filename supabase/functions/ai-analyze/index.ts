@@ -63,12 +63,18 @@ serve(async (req) => {
       );
     }
 
-    // 3) The 'command' object from the frontend is the single source of truth
+    // 3) Use command object values directly - NO hardcoded fallbacks
     const commandConfig = command;
-    const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
+    
+    // Validate required fields
+    if (!commandConfig.ai_model) throw new Error('ai_model is required in command config');
+    if (!commandConfig.system_prompt) throw new Error('system_prompt is required in command config');
+    if (!commandConfig.prompt) throw new Error('prompt is required in command config');
+    
+    const model = commandConfig.ai_model;
     const maxTokens = commandConfig.max_tokens || 1500;
-    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
-    const userPrompt = commandConfig.prompt || 'Analyze the following text and provide comprehensive feedback.';
+    const systemPrompt = commandConfig.system_prompt;
+    const userPrompt = commandConfig.prompt;
 
     console.log(`Making OpenAI API call for analysis with model: ${model}`);
     

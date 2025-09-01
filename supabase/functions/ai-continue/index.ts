@@ -41,12 +41,18 @@ serve(async (req) => {
       },
     });
 
-    // Use user command configuration as source of truth
+    // Use command object values directly - NO hardcoded fallbacks
     const commandConfig = command;
-    const model = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    
+    // Validate required fields
+    if (!commandConfig.ai_model) throw new Error('ai_model is required in command config');
+    if (!commandConfig.system_prompt) throw new Error('system_prompt is required in command config');
+    if (!commandConfig.prompt) throw new Error('prompt is required in command config');
+    
+    const model = commandConfig.ai_model;
     const maxTokens = commandConfig.max_tokens || 500;
-    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
-    const userPrompt = commandConfig.prompt || 'Continue writing in the exact same style and voice as the provided text.';
+    const systemPrompt = commandConfig.system_prompt;
+    const userPrompt = commandConfig.prompt;
     
     // Determine token parameter based on model
     const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');

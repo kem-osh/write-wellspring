@@ -29,11 +29,17 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // 3) The 'command' object from the frontend is the single source of truth
+    // 3) Use command object values directly - NO hardcoded fallbacks
     const commandConfig = command;
-    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
-    const userPrompt = commandConfig.prompt || 'Create a structured outline with headers and bullet points based on the given content. Use proper heading hierarchy (##, ###) and bullet points (-) to organize the information clearly. Maintain the original tone and key points while restructuring into an outline format.';
-    const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    
+    // Validate required fields
+    if (!commandConfig.ai_model) throw new Error('ai_model is required in command config');
+    if (!commandConfig.system_prompt) throw new Error('system_prompt is required in command config');
+    if (!commandConfig.prompt) throw new Error('prompt is required in command config');
+    
+    const systemPrompt = commandConfig.system_prompt;
+    const userPrompt = commandConfig.prompt;
+    const aiModel = commandConfig.ai_model;
     const maxCompletionTokens = commandConfig.max_tokens || 1000;
     
     // Determine token parameter based on model

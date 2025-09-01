@@ -29,17 +29,23 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // 3) The 'command' object from the frontend is the single source of truth
+    // 3) Use command object values directly - NO hardcoded fallbacks
     const commandConfig = command;
-    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
-    const userPrompt = commandConfig.prompt || 'Classify this document content and determine its category and status. Respond with ONLY a JSON object: {"category": "category_name", "status": "status_name"}.';
-
+    
+    // Validate required fields
+    if (!commandConfig.ai_model) throw new Error('ai_model is required in command config');
+    if (!commandConfig.system_prompt) throw new Error('system_prompt is required in command config');
+    if (!commandConfig.prompt) throw new Error('prompt is required in command config');
+    
+    const systemPrompt = commandConfig.system_prompt;
+    const userPrompt = commandConfig.prompt;
+    
     // Extract first few paragraphs for classification
     const paragraphs = textToProcess.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     const classificationContent = paragraphs.slice(0, 3).join('\n\n').slice(0, 1000);
     
     // Determine token parameter based on model
-    const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    const aiModel = commandConfig.ai_model;
     const isNewerModel = aiModel.includes('gpt-5') || aiModel.includes('gpt-4.1') || aiModel.includes('o3') || aiModel.includes('o4');
     const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
 
