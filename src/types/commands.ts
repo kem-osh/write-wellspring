@@ -16,7 +16,7 @@ export interface UnifiedCommand {
   // UI metadata fields (calculated/derived)
   function_name: string; // Maps to edge function name
   icon: string;
-  category: 'edit' | 'structure' | 'analyze' | 'style';
+  category: 'edit' | 'structure' | 'analyze' | 'style' | 'custom';
   description: string;
   estimated_time: string;
 }

@@ -7,6 +7,9 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, Trash, Save, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { UnifiedCommand } from '@/types/commands';
+import { restoreDefaultCommands } from '@/utils/commandMigration';
 
 interface CommandSettingsProps {
   showSettings: boolean;
@@ -14,60 +17,12 @@ interface CommandSettingsProps {
   onCommandsUpdated: () => void;
 }
 
-export interface CustomCommand {
-  id: string;
-  name: string;
-  prompt: string;
-  icon: string;
-  model: 'gpt-5-nano-2025-08-07' | 'gpt-5-mini-2025-08-07';
-  maxTokens: number;
-  sortOrder: number;
-}
-
-const DEFAULT_COMMANDS: CustomCommand[] = [
-  {
-    id: 'light-edit',
-    name: 'Light Edit',
-    prompt: 'Fix spelling, grammar, and basic formatting. Preserve the author\'s voice and style completely. Make minimal changes.',
-    icon: 'sparkles',
-    model: 'gpt-5-nano-2025-08-07',
-    maxTokens: 500,
-    sortOrder: 1
-  },
-  {
-    id: 'expand',
-    name: 'Expand',
-    prompt: 'Expand this content by 20-40% while maintaining the original tone. Add depth, examples, and supporting details.',
-    icon: 'expand',
-    model: 'gpt-5-mini-2025-08-07',
-    maxTokens: 1500,
-    sortOrder: 2
-  },
-  {
-    id: 'condense',
-    name: 'Condense',
-    prompt: 'Reduce this content by 60-70% while preserving all key points and the author\'s voice.',
-    icon: 'shrink',
-    model: 'gpt-5-mini-2025-08-07',
-    maxTokens: 800,
-    sortOrder: 3
-  },
-  {
-    id: 'outline',
-    name: 'Outline',
-    prompt: 'Create a structured outline with headers and bullet points based on this content.',
-    icon: 'list',
-    model: 'gpt-5-nano-2025-08-07',
-    maxTokens: 500,
-    sortOrder: 4
-  }
-];
-
 export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: CommandSettingsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [commands, setCommands] = useState<CustomCommand[]>([]);
+  const [commands, setCommands] = useState<UnifiedCommand[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     loadCommands();
@@ -76,12 +31,48 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
   const loadCommands = async () => {
     if (!user) return;
 
-    // Load user's custom commands from localStorage
-    const savedCommands = localStorage.getItem(`commands_${user.id}`);
-    if (savedCommands) {
-      setCommands(JSON.parse(savedCommands));
-    } else {
-      setCommands(DEFAULT_COMMANDS);
+    try {
+      // Use type assertion to work around TypeScript limitations
+      const { data, error } = await (supabase as any)
+        .from('user_commands')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('sort_order');
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const unifiedCommands: UnifiedCommand[] = data.map((cmd: any) => ({
+          id: cmd.id,
+          name: cmd.name,
+          prompt: cmd.prompt,
+          system_prompt: cmd.system_prompt,
+          function_name: cmd.name.toLowerCase().replace(/\s+/g, '-'),
+          ai_model: cmd.ai_model,
+          max_tokens: cmd.max_tokens,
+          temperature: cmd.temperature,
+          sort_order: cmd.sort_order,
+          user_id: cmd.user_id,
+          created_at: cmd.created_at,
+          updated_at: cmd.updated_at,
+          icon: 'sparkles',
+          category: 'custom' as const,
+          description: cmd.prompt,
+          estimated_time: '30s'
+        }));
+        setCommands(unifiedCommands);
+      } else {
+        // No commands found, restore defaults
+        await restoreDefaultCommands(user.id);
+        loadCommands(); // Reload after restoring defaults
+      }
+    } catch (error) {
+      console.error('Error loading commands:', error);
+      toast({
+        title: "Load failed",
+        description: "Failed to load your commands. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -90,8 +81,43 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
     
     setIsSaving(true);
     try {
-      // Save to localStorage
-      localStorage.setItem(`commands_${user.id}`, JSON.stringify(commands));
+      // Update existing commands
+      for (const command of commands) {
+        if (command.id) {
+          const { error } = await (supabase as any)
+            .from('user_commands')
+            .update({
+              name: command.name,
+              prompt: command.prompt,
+              system_prompt: command.system_prompt,
+              ai_model: command.ai_model,
+              max_tokens: command.max_tokens,
+              temperature: command.temperature,
+              sort_order: command.sort_order,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', command.id)
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+        } else {
+          // Insert new command
+          const { error } = await (supabase as any)
+            .from('user_commands')
+            .insert({
+              name: command.name,
+              prompt: command.prompt,
+              system_prompt: command.system_prompt,
+              ai_model: command.ai_model,
+              max_tokens: command.max_tokens,
+              temperature: command.temperature,
+              sort_order: command.sort_order,
+              user_id: user.id
+            });
+
+          if (error) throw error;
+        }
+      }
       
       onCommandsUpdated();
       
@@ -102,6 +128,7 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
       
       onClose();
     } catch (error) {
+      console.error('Error saving commands:', error);
       toast({
         title: "Save failed",
         description: "Failed to save your commands. Please try again.",
@@ -113,25 +140,34 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
   };
 
   const addCommand = () => {
-    const newCommand: CustomCommand = {
-      id: `custom_${Date.now()}`,
+    const newCommand: UnifiedCommand = {
+      id: undefined, // Will be generated by database
       name: 'New Command',
       prompt: 'Enter your custom prompt here',
+      system_prompt: 'You are a helpful AI writing assistant.',
+      function_name: `custom-${Date.now()}`,
+      ai_model: 'gpt-5-mini-2025-08-07',
+      max_tokens: 2000,
+      temperature: 0.3,
+      sort_order: Math.max(...commands.map(c => c.sort_order), 0) + 1,
+      user_id: user!.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       icon: 'sparkles',
-      model: 'gpt-5-nano-2025-08-07',
-      maxTokens: 500,
-      sortOrder: commands.length + 1
+      category: 'custom',
+      description: 'Enter your custom prompt here',
+      estimated_time: '30s'
     };
     setCommands([...commands, newCommand]);
   };
 
-  const updateCommand = (id: string, updates: Partial<CustomCommand>) => {
-    setCommands(commands.map(cmd => 
-      cmd.id === id ? { ...cmd, ...updates } : cmd
-    ));
+  const updateCommand = (index: number, updates: Partial<UnifiedCommand>) => {
+    const updatedCommands = [...commands];
+    updatedCommands[index] = { ...updatedCommands[index], ...updates };
+    setCommands(updatedCommands);
   };
 
-  const deleteCommand = (id: string) => {
+  const deleteCommand = async (index: number) => {
     if (commands.length <= 1) {
       toast({
         title: "Cannot delete",
@@ -140,12 +176,61 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
       });
       return;
     }
-    setCommands(commands.filter(cmd => cmd.id !== id));
+
+    const command = commands[index];
+    
+    try {
+      // If command has an ID, delete from database
+      if (command.id) {
+        const { error } = await (supabase as any)
+          .from('user_commands')
+          .delete()
+          .eq('id', command.id)
+          .eq('user_id', user!.id);
+
+        if (error) throw error;
+      }
+      
+      // Remove from local state
+      setCommands(commands.filter((_, i) => i !== index));
+      
+      toast({
+        title: "Command deleted",
+        description: "The command has been removed.",
+      });
+    } catch (error) {
+      console.error('Error deleting command:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the command. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const resetToDefaults = () => {
-    if (confirm('Reset all commands to defaults? Your custom commands will be lost.')) {
-      setCommands(DEFAULT_COMMANDS);
+  const resetToDefaults = async () => {
+    if (!confirm('Reset all commands to defaults? Your custom commands will be lost.')) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await restoreDefaultCommands(user!.id);
+      await loadCommands();
+      
+      toast({
+        title: "Commands reset",
+        description: "All commands have been reset to defaults.",
+      });
+    } catch (error) {
+      console.error('Error resetting commands:', error);
+      toast({
+        title: "Reset failed",
+        description: "Failed to reset commands. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -162,14 +247,14 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
         <div className="space-y-6 py-4">
           {/* Command List */}
           <div className="space-y-4">
-            {commands.map((command) => (
-              <div key={command.id} className="border rounded-lg p-4 space-y-3">
+            {commands.map((command, index) => (
+              <div key={command.id || index} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">{command.name}</h4>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteCommand(command.id)}
+                    onClick={() => deleteCommand(index)}
                     disabled={commands.length <= 1}
                   >
                     <Trash className="h-4 w-4" />
@@ -181,7 +266,7 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                     <Label>Command Name</Label>
                     <Input
                       value={command.name}
-                      onChange={(e) => updateCommand(command.id, { name: e.target.value })}
+                      onChange={(e) => updateCommand(index, { name: e.target.value })}
                       placeholder="e.g., Improve Clarity"
                     />
                   </div>
@@ -189,8 +274,8 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                   <div>
                     <Label>AI Model</Label>
                     <select
-                      value={command.model}
-                      onChange={(e) => updateCommand(command.id, { model: e.target.value as any })}
+                      value={command.ai_model}
+                      onChange={(e) => updateCommand(index, { ai_model: e.target.value as any })}
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                     >
                       <option value="gpt-5-nano-2025-08-07">GPT-5 Nano (Fastest, Cheapest)</option>
@@ -200,24 +285,46 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                 </div>
 
                 <div>
-                  <Label>System Prompt</Label>
+                  <Label>User Prompt</Label>
                   <Textarea
                     value={command.prompt}
-                    onChange={(e) => updateCommand(command.id, { prompt: e.target.value })}
+                    onChange={(e) => updateCommand(index, { prompt: e.target.value })}
+                    placeholder="Enter the user-facing description..."
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <Label>System Prompt</Label>
+                  <Textarea
+                    value={command.system_prompt}
+                    onChange={(e) => updateCommand(index, { system_prompt: e.target.value })}
                     placeholder="Enter the instruction for the AI..."
                     rows={3}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label>Max Tokens</Label>
                     <Input
                       type="number"
-                      value={command.maxTokens}
-                      onChange={(e) => updateCommand(command.id, { maxTokens: parseInt(e.target.value) })}
+                      value={command.max_tokens}
+                      onChange={(e) => updateCommand(index, { max_tokens: parseInt(e.target.value) })}
                       min={50}
                       max={4000}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Temperature</Label>
+                    <Input
+                      type="number"
+                      value={command.temperature}
+                      onChange={(e) => updateCommand(index, { temperature: parseFloat(e.target.value) })}
+                      min={0}
+                      max={1}
+                      step={0.1}
                     />
                   </div>
 
@@ -225,8 +332,8 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                     <Label>Sort Order</Label>
                     <Input
                       type="number"
-                      value={command.sortOrder}
-                      onChange={(e) => updateCommand(command.id, { sortOrder: parseInt(e.target.value) })}
+                      value={command.sort_order}
+                      onChange={(e) => updateCommand(index, { sort_order: parseInt(e.target.value) })}
                       min={1}
                     />
                   </div>
@@ -242,9 +349,9 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                 <Plus className="h-4 w-4 mr-2" />
                 Add Command
               </Button>
-              <Button onClick={resetToDefaults} variant="outline">
+              <Button onClick={resetToDefaults} variant="outline" disabled={isResetting}>
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Reset to Defaults
+                {isResetting ? 'Resetting...' : 'Reset to Defaults'}
               </Button>
             </div>
 
