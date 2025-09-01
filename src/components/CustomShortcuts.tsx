@@ -8,11 +8,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useHaptics } from '@/hooks/useHaptics';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { UnifiedCommand } from '@/types/commands';
-import { loadUserCommands } from '@/utils/commandMigration';
 
 interface CustomShortcutsProps {
-  onShortcut: (command: UnifiedCommand, selectedText?: string) => void;
+  onShortcut: (command: UnifiedCommand) => void;
   isLoading?: boolean;
   onCommandsChange?: () => void;
   selectedText?: string;
@@ -56,39 +57,121 @@ export function CustomShortcuts({
 }: CustomShortcutsProps) {
   const { user } = useAuth();
   const { selectionChanged, impactLight } = useHaptics();
+  const { toast } = useToast();
   const [commands, setCommands] = useState<UnifiedCommand[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CommandCategory>('edit');
 
   useEffect(() => {
-    if (user) {
-      loadCommands();
-    }
-  }, [user, onCommandsChange]);
+    void loadCommands();
+  }, [user?.id]);
 
   const loadCommands = async () => {
-    if (!user) return;
+    if (!user) {
+      setCommands([]);
+      return;
+    }
 
     setLoading(true);
     try {
-      const userCommands = await loadUserCommands(user.id);
-      setCommands(userCommands);
-      
-      // If no commands loaded, user needs to restore defaults
-      if (userCommands.length === 0) {
-        console.log('No commands found for user, they need to restore defaults');
+      const { data: dbCommands, error } = await supabase
+        .from('user_commands' as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .order('sort_order');
+
+      if (error) {
+        console.error("Error loading custom commands:", error);
+        toast({ 
+          title: "Error", 
+          description: "Could not load AI commands.", 
+          variant: "destructive" 
+        });
+        setCommands([]);
+        return;
       }
-    } catch (error) {
-      console.error('Error loading commands:', error);
+
+      // Map database response to UnifiedCommand format with UI metadata
+      const unifiedCommands: UnifiedCommand[] = (dbCommands || []).map((cmd: any) => ({
+        id: cmd.id,
+        user_id: cmd.user_id,
+        name: cmd.name,
+        prompt: cmd.prompt,
+        system_prompt: cmd.system_prompt,
+        ai_model: cmd.ai_model,
+        max_tokens: cmd.max_tokens,
+        temperature: cmd.temperature,
+        sort_order: cmd.sort_order,
+        created_at: cmd.created_at,
+        updated_at: cmd.updated_at,
+        // Add UI metadata fields based on function_name or name
+        function_name: getEntityFunctionName(cmd.name),
+        icon: getEntityIcon(cmd.name),
+        category: getEntityCategory(cmd.name),
+        description: cmd.prompt?.substring(0, 50) + '...' || 'Custom command',
+        estimated_time: '3-5s'
+      }));
+
+      // Single source of truth: DB
+      setCommands(unifiedCommands);
+    } catch (err) {
+      console.error("Failed to load commands:", err);
+      setCommands([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Helper functions to map command names to UI metadata
+  const getEntityFunctionName = (name: string): string => {
+    const mapping: Record<string, string> = {
+      'Light Polish': 'ai-light-edit',
+      'Heavy Polish': 'ai-rewrite', 
+      'Expand Content': 'ai-expand-content',
+      'Condense Content': 'ai-condense-content',
+      'Create Outline': 'ai-outline',
+      'Generate Title': 'ai-generate-title',
+      'Continue Writing': 'ai-continue',
+      'Analyze Text': 'ai-analyze',
+      'Fact Check': 'ai-fact-check'
+    };
+    return mapping[name] || 'ai-light-edit';
+  };
+
+  const getEntityIcon = (name: string): string => {
+    const mapping: Record<string, string> = {
+      'Light Polish': 'sparkles',
+      'Heavy Polish': 'pen-tool',
+      'Expand Content': 'expand',
+      'Condense Content': 'shrink',
+      'Create Outline': 'list',
+      'Generate Title': 'type',
+      'Continue Writing': 'plus',
+      'Analyze Text': 'brain',
+      'Fact Check': 'shield'
+    };
+    return mapping[name] || 'sparkles';
+  };
+
+  const getEntityCategory = (name: string): 'edit' | 'structure' | 'analyze' | 'style' | 'custom' => {
+    const mapping: Record<string, 'edit' | 'structure' | 'analyze' | 'style' | 'custom'> = {
+      'Light Polish': 'edit',
+      'Heavy Polish': 'edit', 
+      'Expand Content': 'structure',
+      'Condense Content': 'structure',
+      'Create Outline': 'structure',
+      'Generate Title': 'structure',
+      'Continue Writing': 'structure',
+      'Analyze Text': 'analyze',
+      'Fact Check': 'analyze'
+    };
+    return mapping[name] || 'edit';
+  };
+
   const handleCommandClick = (command: UnifiedCommand) => {
-    selectionChanged(); // Haptic feedback
-    impactLight(); // Secondary haptic
-    onShortcut(command, selectedText);
+    selectionChanged?.();
+    impactLight?.();
+    onShortcut(command); // Pass the WHOLE object
   };
 
   // Show loading state

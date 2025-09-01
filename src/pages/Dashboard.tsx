@@ -495,8 +495,7 @@ export default function Dashboard() {
 
   // Update handleCustomShortcut to use the new executeAICommand
   const handleCustomShortcut = useCallback(async (
-    command: UnifiedCommand,
-    selectedText?: string
+    command: UnifiedCommand
   ) => {
     await executeAICommand(command);
   }, [executeAICommand]);
