@@ -19,8 +19,11 @@ serve(async (req) => {
     // Validate input
     if (!text || !userId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: text, userId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Missing required fields: text, userId',
+          success: false
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -32,8 +35,11 @@ serve(async (req) => {
     if (!openAIApiKey || !supabaseUrl || !supabaseServiceKey) {
       console.error('Missing environment variables');
       return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Server configuration error',
+          success: false
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -50,8 +56,11 @@ serve(async (req) => {
 
     if (count && count >= 30) { // 30 requests per 5 minutes
       return new Response(
-        JSON.stringify({ error: 'Rate limit exceeded. Please wait a moment before trying again.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Please wait a moment before trying again.',
+          success: false
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -118,8 +127,11 @@ Be specific, actionable, and constructive in your feedback.`;
       const errorData = await response.text();
       console.error('OpenAI API error:', errorData);
       return new Response(
-        JSON.stringify({ error: 'AI analysis failed. Please try again.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'AI analysis failed. Please try again.',
+          success: false
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -133,8 +145,11 @@ Be specific, actionable, and constructive in your feedback.`;
     } catch (e) {
       console.error('Failed to parse analysis JSON:', e);
       return new Response(
-        JSON.stringify({ error: 'Analysis formatting error. Please try again.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Analysis formatting error. Please try again.',
+          success: false
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -167,8 +182,11 @@ Be specific, actionable, and constructive in your feedback.`;
   } catch (error) {
     console.error('Error in ai-analyze function:', error);
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: 'An unexpected error occurred. Please try again.',
+        success: false
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

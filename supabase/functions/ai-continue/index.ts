@@ -136,6 +136,19 @@ serve(async (req) => {
     const chatData = await chatResponse.json();
     const continuation = chatData.choices[0].message.content;
     
+    // Validate result is not empty - return original as fallback
+    if (!continuation || continuation.trim().length === 0) {
+      console.error('OpenAI returned empty continuation result - returning original text as fallback');
+      return new Response(
+        JSON.stringify({ 
+          continuation: context,
+          fallback: true,
+          message: 'AI returned empty response, original text preserved'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     console.log('Generated continuation successfully');
     
     return new Response(
@@ -145,9 +158,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Continue error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false
+      }),
       { 
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

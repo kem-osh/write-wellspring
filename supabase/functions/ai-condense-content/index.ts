@@ -58,16 +58,20 @@ serve(async (req) => {
     const data = await response.json();
     const condensedText = data.choices[0]?.message?.content?.trim();
 
-    // Validate result is not empty
+    // Validate result is not empty - return original as fallback
     if (!condensedText || condensedText === '') {
-      console.error('OpenAI returned empty condensation result');
+      console.error('OpenAI returned empty condensation result - returning original text as fallback');
       return new Response(
         JSON.stringify({ 
-          error: 'AI generated empty content. Please try again with different text.',
-          success: false
+          result: textToCondense,
+          originalText: textToCondense,
+          condensedText: textToCondense,
+          success: true,
+          fallback: true,
+          message: 'AI returned empty response, original text preserved'
         }),
         {
-          status: 502,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -90,9 +94,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-condense-content:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false 
+      }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

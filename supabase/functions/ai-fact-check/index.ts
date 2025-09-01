@@ -176,6 +176,26 @@ serve(async (req) => {
     const consistencyData = await consistencyResponse.json();
     const analysis = consistencyData.choices[0].message.content;
     
+    // Validate result is not empty
+    if (!analysis || analysis.trim().length === 0) {
+      console.error('OpenAI returned empty fact-check result');
+      return new Response(
+        JSON.stringify({ 
+          analysis: 'Unable to complete fact-check analysis. Please try again.',
+          extractedClaims: claims || 'No claims extracted',
+          referencedDocuments: relevantDocs?.map(d => ({ 
+            id: d.id, 
+            title: d.title,
+            relevance: (d.similarity * 100).toFixed(1) + '%'
+          })) || [],
+          hasReferences: relevantDocs.length > 0,
+          fallback: true,
+          message: 'AI returned empty response'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     console.log('Fact-check completed successfully');
     
     return new Response(
@@ -194,9 +214,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Fact-check error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false
+      }),
       { 
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

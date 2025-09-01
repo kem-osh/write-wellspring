@@ -68,8 +68,20 @@ serve(async (req) => {
     console.log('Raw edited text:', JSON.stringify(editedText));
     
     if (!editedText || editedText.trim().length === 0) {
-      console.error('OpenAI returned empty or null content for text length:', textToEdit.length);
-      throw new Error('AI model returned empty result. Please try again or use a different model.');
+      console.error('OpenAI returned empty or null content for text length:', textToEdit.length, '- returning original text as fallback');
+      return new Response(
+        JSON.stringify({ 
+          result: textToEdit,
+          editedText: textToEdit, 
+          changes: false,
+          originalLength: textToEdit.length,
+          editedLength: textToEdit.length,
+          success: true,
+          fallback: true,
+          message: 'AI returned empty response, original text preserved'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Check if there are actually changes
@@ -92,9 +104,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-light-edit function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false
+      }),
       { 
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
