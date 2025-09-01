@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCommandRanking } from '@/hooks/useCommandRanking';
+import useEmblaCarousel from 'embla-carousel-react';
 import { 
   Sparkles, 
   Zap, 
@@ -109,8 +110,14 @@ const ALL_COMMANDS: AICommand[] = [
 
 export function AISmartCarousel({ onCommand, aiLoading, selectedText, onOpenSettings, className }: AISmartCarouselProps) {
   const { getRankedCommands, recordUsage } = useCommandRanking();
-  const [activeIndex, setActiveIndex] = useState(0);
   const [commands, setCommands] = useState<AICommand[]>([]);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    align: 'center',
+    containScroll: 'trimSnaps',
+    dragFree: true,
+    slidesToScroll: 1
+  });
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     const rankedCommands = getRankedCommands(ALL_COMMANDS, { selectedText });
@@ -122,62 +129,70 @@ export function AISmartCarousel({ onCommand, aiLoading, selectedText, onOpenSett
     onCommand(action);
   }, [onCommand, recordUsage]);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    const itemWidth = 120; // Approximate width of each item
-    const newIndex = Math.round(container.scrollLeft / itemWidth);
-    setActiveIndex(newIndex);
-  };
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    onSelect();
+    emblaApi.on('reInit', onSelect);
+    emblaApi.on('select', onSelect);
+    
+    return () => {
+      emblaApi.off('reInit', onSelect);
+      emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Carousel Container */}
-      <div 
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-4 py-2 scroll-smooth"
-        onScroll={handleScroll}
-        style={{
-          scrollSnapType: 'x mandatory',
-          WebkitOverflowScrolling: 'touch'
-        }}
-      >
-        {/* AI Commands */}
-        {commands.map((command, index) => {
-          const Icon = command.icon;
-          const isCenter = index === Math.floor(commands.length / 2);
-          const isActive = index === activeIndex;
+      {/* Embla Carousel Container */}
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex gap-3 px-4 py-2">
+          {/* AI Commands */}
+          {commands.map((command, index) => {
+            const Icon = command.icon;
+            const isSelected = index === selectedIndex;
+            const isCenterish = Math.abs(index - selectedIndex) <= 1;
+            
+            return (
+              <div key={command.id} className="flex-[0_0_auto] min-w-0">
+                <Button
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleCommand(command.action)}
+                  disabled={aiLoading}
+                  className={`
+                    flex flex-col items-center gap-1 h-16 w-24 p-2 transition-all duration-300
+                    ${isSelected ? 'scale-110 shadow-lg' : isCenterish ? 'scale-105' : 'scale-100'}
+                    ${isSelected ? 'ring-2 ring-primary/20' : ''}
+                  `}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-xs font-medium truncate w-full text-center">
+                    {command.name}
+                  </span>
+                </Button>
+              </div>
+            );
+          })}
           
-          return (
+          {/* More Button */}
+          <div className="flex-[0_0_auto] min-w-0">
             <Button
-              key={command.id}
-              variant={isCenter ? "default" : "outline"}
+              variant="ghost"
               size="sm"
-              onClick={() => handleCommand(command.action)}
-              disabled={aiLoading}
-              className={`
-                flex-shrink-0 flex flex-col items-center gap-1 h-16 w-24 p-2 transition-all duration-300
-                ${isCenter ? 'scale-110 shadow-lg' : 'scale-100'}
-                ${isActive ? 'ring-2 ring-primary/20' : ''}
-                scroll-snap-align: center;
-              `}
+              onClick={onOpenSettings}
+              className="flex flex-col items-center gap-1 h-16 w-24 p-2 transition-all duration-300"
             >
-              <Icon className="h-4 w-4" />
-              <span className="text-xs font-medium truncate w-full text-center">
-                {command.name}
-              </span>
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="text-xs font-medium">More</span>
             </Button>
-          );
-        })}
-        
-        {/* More Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onOpenSettings}
-          className="flex-shrink-0 flex flex-col items-center gap-1 h-16 w-24 p-2 scroll-snap-align: center;"
-        >
-          <MoreHorizontal className="h-4 w-4" />
-          <span className="text-xs font-medium">More</span>
-        </Button>
+          </div>
+        </div>
       </div>
       
       {/* Context Indicator */}
@@ -195,11 +210,12 @@ export function AISmartCarousel({ onCommand, aiLoading, selectedText, onOpenSett
       {/* Scroll Indicators */}
       <div className="flex justify-center gap-1 px-4 py-1">
         {commands.map((_, index) => (
-          <div
+          <button
             key={index}
             className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${
-              index === activeIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+              index === selectedIndex ? 'bg-primary' : 'bg-muted-foreground/30'
             }`}
+            onClick={() => emblaApi?.scrollTo(index)}
           />
         ))}
       </div>

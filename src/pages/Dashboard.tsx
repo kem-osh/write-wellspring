@@ -14,7 +14,6 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { MobileEditor } from "@/components/MobileEditor";
 import { MobileDocumentLibrary } from "@/components/MobileDocumentLibrary";
 // Removed MobileAICommands - using AISmartCarousel instead
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { UserMenu } from "@/components/UserMenu";
 import { AISmartCarousel } from "@/components/AISmartCarousel";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
@@ -1637,14 +1636,16 @@ export default function Dashboard() {
                       )}
                     </div>
                   )}
-                  <Button 
-                    size="sm" 
-                    className="h-11 bg-save-button hover:bg-save-button/90 text-save-button-foreground border-0 min-w-fit"
-                    onClick={saveDocument}
-                    disabled={!currentDocument}
-                  >
-                    💾 <span className="hidden sm:inline ml-1">Save</span>
-                  </Button>
+                  {!isMobile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRightSidebarOpen(true)}
+                      className="h-11 hover:bg-muted/50 transition-colors relative"
+                    >
+                      💬 <span className="hidden md:inline">AI Chat</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </footer>

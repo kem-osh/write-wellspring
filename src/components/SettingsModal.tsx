@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -380,6 +381,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex flex-col h-full p-6">
               <DialogHeader className="pb-4">
                 <DialogTitle className="text-xl">Settings</DialogTitle>
+                <DialogDescription>
+                  Customize your writing experience, AI preferences, and application behavior.
+                </DialogDescription>
               </DialogHeader>
               <SettingsContent />
             </div>

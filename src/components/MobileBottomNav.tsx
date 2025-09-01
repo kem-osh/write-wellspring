@@ -14,7 +14,6 @@ import {
 interface MobileBottomNavProps {
   onDocumentLibrary: () => void;
   onVoiceRecord: () => void;
-  onAICommands: () => void;
   onAIChat: () => void;
   onSettings: () => void;
   aiLoading?: boolean;
@@ -25,7 +24,6 @@ interface MobileBottomNavProps {
 export function MobileBottomNav({
   onDocumentLibrary,
   onVoiceRecord,
-  onAICommands,
   onAIChat,
   onSettings,
   aiLoading = false,
@@ -56,15 +54,6 @@ export function MobileBottomNav({
       action: onVoiceRecord,
       badge: null,
       special: 'voice'
-    },
-    {
-      id: 'ai',
-      icon: Sparkles,
-      label: 'AI',
-      action: onAICommands,
-      badge: null,
-      loading: aiLoading,
-      special: 'ai'
     },
     {
       id: 'chat',
@@ -104,7 +93,7 @@ export function MobileBottomNav({
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
-          const isSpecial = item.special === 'voice' || item.special === 'ai';
+          const isSpecial = item.special === 'voice';
           
           if (item.id === 'voice') {
             // Skip the voice button as it's the FAB
@@ -137,13 +126,7 @@ export function MobileBottomNav({
               )}
 
               {/* Loading state for AI */}
-              {item.loading ? (
-                <div className="animate-spin">
-                  <Icon className="h-5 w-5" />
-                </div>
-              ) : (
-                <Icon className="h-5 w-5" />
-              )}
+              <Icon className="h-5 w-5" />
               
               <span className={`
                 text-xs font-medium transition-all duration-200
