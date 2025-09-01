@@ -89,9 +89,9 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
         }));
         setCommands(unifiedCommands);
       } else {
-        // No commands found, restore defaults
-        await restoreDefaultCommands(user.id);
-        loadCommands(); // Reload after restoring defaults
+        // No commands found - let user manually restore if desired
+        setCommands([]);
+        console.log('No commands found for user - showing empty state');
       }
     } catch (error) {
       console.error('Error loading commands:', error);

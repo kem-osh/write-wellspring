@@ -1,6 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { DEFAULT_COMMANDS_TEMPLATE, UnifiedCommand, MigrationResult } from '@/types/commands';
 
+// ⚠️ DO NOT IMPORT INTO MAIN APP RUNTIME — This is for one-time migration and restore defaults only.
+// This file should only be used by CommandSettings.tsx for the "Restore Defaults" functionality.
+
 /**
  * Migrates localStorage commands to Supabase database
  * This is a one-time migration helper for existing users
