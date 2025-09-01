@@ -31,25 +31,8 @@ serve(async (req) => {
 
     // 3) The 'command' object from the frontend is the single source of truth
     const commandConfig = command;
-    const systemPrompt = commandConfig.system_prompt || `Classify this document content and determine its category and status.
-
-Categories (choose the best fit):
-- Personal: personal thoughts, diary entries, reflections
-- Business: professional documents, reports, proposals
-- Creative: stories, poems, creative writing
-- Technical: documentation, tutorials, how-to guides
-- Academic: research, studies, educational content
-- Blog: blog posts, articles for publication
-- Notes: quick notes, meeting notes, reminders
-- General: anything that doesn't fit the above
-
-Status (choose based on content quality and completeness):
-- draft: rough ideas, incomplete thoughts, early stage
-- polished: well-structured, needs minor edits
-- final: complete, publication-ready
-
-Respond with ONLY a JSON object: {"category": "category_name", "status": "status_name"}`;
-    const userPrompt = commandConfig.prompt || 'Classify this content';
+    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
+    const userPrompt = commandConfig.prompt || 'Classify this document content and determine its category and status. Respond with ONLY a JSON object: {"category": "category_name", "status": "status_name"}.';
 
     // Extract first few paragraphs for classification
     const paragraphs = textToProcess.split(/\n\s*\n/).filter(p => p.trim().length > 0);

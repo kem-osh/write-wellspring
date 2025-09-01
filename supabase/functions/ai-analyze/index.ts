@@ -38,7 +38,7 @@ serve(async (req) => {
           error: 'Server configuration error',
           success: false
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -59,7 +59,7 @@ serve(async (req) => {
           error: 'Rate limit exceeded. Please wait a moment before trying again.',
           success: false
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -67,8 +67,8 @@ serve(async (req) => {
     const commandConfig = command;
     const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
     const maxTokens = commandConfig.max_tokens || 1500;
-    const systemPrompt = commandConfig.system_prompt || 'You are an expert writing analyst. Always respond with valid JSON only, no additional text.';
-    const userPrompt = commandConfig.prompt || 'Analyze the following text and provide comprehensive feedback in JSON format.';
+    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
+    const userPrompt = commandConfig.prompt || 'Analyze the following text and provide comprehensive feedback.';
 
     console.log(`Making OpenAI API call for analysis with model: ${model}`);
     
@@ -112,7 +112,7 @@ serve(async (req) => {
           error: 'AI analysis failed. Please try again.',
           success: false
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -130,7 +130,7 @@ serve(async (req) => {
           error: 'Analysis formatting error. Please try again.',
           success: false
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

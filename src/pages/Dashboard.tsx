@@ -399,34 +399,13 @@ export default function Dashboard() {
       
       console.log(`Calling ${functionName}...`);
       
-      let payload;
-      if (functionName === 'ai-rewrite') {
-        payload = {
-          text: textToProcess,
-          style: 'auto', // Could be enhanced to use command-specific styles
-          userId: user.id
-        };
-      } else if (functionName === 'ai-continue') {
-        payload = {
-          context: textToProcess,
-          currentDocumentId: currentDocument.id.startsWith('temp-') ? null : currentDocument.id,
-          userId: user.id
-        };
-      } else if (functionName === 'ai-fact-check') {
-        payload = {
-          text: textToProcess,
-          userId: user.id
-        };
-      } else {
-        payload = {
-          content: currentSelectedText ? undefined : documentContent,
-          selectedText: currentSelectedText || undefined,
-          customPrompt: command.prompt,
-          model: command.ai_model,
-          maxTokens: command.max_tokens,
-          userId: user.id
-        };
-      }
+      // Universal payload structure for ALL AI functions
+      const payload = {
+        command,
+        content: currentSelectedText ? undefined : documentContent,
+        selectedText: currentSelectedText || undefined,
+        userId: user.id
+      };
 
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: payload
@@ -437,25 +416,8 @@ export default function Dashboard() {
       
       if (error) throw error;
 
-      // Extract result from response based on command type (same logic as before)
-      let result;
-      
-      if (functionName === 'ai-rewrite') {
-        result = data?.alternatives?.[0]?.content || data?.result;
-      } else if (functionName === 'ai-continue') {
-        result = data?.continuation;
-      } else if (functionName === 'ai-fact-check') {
-        result = data?.analysis || data?.result;
-      } else if (functionName === 'ai-analyze') {
-        result = data?.analysis || data?.result;
-      } else {
-        result = data?.result || 
-                 data?.editedText || 
-                 data?.expandedText || 
-                 data?.condensedText || 
-                 data?.outlineText ||
-                 data?.content;
-      }
+      // Standardized response handling - all functions return { result }
+      const result = data?.result;
       
       console.log('Extracted result length:', result?.length || 0);
       console.log('Result preview:', result?.slice(0, 100) + '...');

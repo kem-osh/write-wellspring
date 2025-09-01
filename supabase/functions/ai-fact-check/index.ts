@@ -58,13 +58,14 @@ serve(async (req) => {
     const claimsRequestBody = {
       model: model,
       messages: [
+// Fix the ai-fact-check hardcoded prompts - lines 64-67
         {
           role: 'system',
-          content: 'Extract specific claims, facts, or statements that could be verified. List them clearly.'
+          content: commandConfig.system_prompt || 'You are a helpful AI writing assistant.'
         },
         {
           role: 'user',
-          content: `${userPrompt}\n\n---\n\n${textToProcess}`
+          content: `${commandConfig.prompt || 'Extract specific claims, facts, or statements that could be verified. List them clearly.'}\n\n---\n\n${textToProcess}`
         }
       ]
     };
