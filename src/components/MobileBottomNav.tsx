@@ -79,9 +79,10 @@ export function MobileBottomNav({
     <>
       {/* Floating Pill Navigation Container */}
       <nav className={`
-        fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50
+        fixed bottom-6 left-1/2 -translate-x-1/2 z-50
         nav-pill
         px-2 py-2
+        max-w-fit mx-auto
         ${className}
       `}>
         {/* Navigation Items */}
