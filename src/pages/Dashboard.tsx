@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare } from "lucide-react";
+import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare, Home, Save, Expand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDevice } from "@/hooks/useDevice";
 import { MonacoEditor } from "@/components/MonacoEditor";
@@ -16,6 +16,7 @@ import { MobileDocumentLibrary } from "@/components/MobileDocumentLibrary";
 import { MobileAICommands } from "@/components/MobileAICommands";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { UserMenu } from "@/components/UserMenu";
+import { AISmartCarousel } from "@/components/AISmartCarousel";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
 import { AdvancedAICommands } from "@/components/AdvancedAICommands";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
@@ -95,6 +96,8 @@ export default function Dashboard() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+  const [libraryExpanded, setLibraryExpanded] = useState(false);
+  const [chatExpanded, setChatExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
@@ -1115,14 +1118,26 @@ export default function Dashboard() {
           <>
             {/* Mobile Header - Sticky */}
             <header className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-card/95 backdrop-blur-sm h-14">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileDocumentLibraryOpen(true)}
-                className="touch-target"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMobileDocumentLibraryOpen(true)}
+                  className="touch-target"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCurrentDocument(null)}
+                  className="touch-target"
+                  title="Home"
+                >
+                  <Home className="h-4 w-4" />
+                </Button>
+              </div>
+              
               <div className="flex-1 mx-3 min-w-0">
                 <input
                   value={documentTitle || 'New Document'}
@@ -1131,23 +1146,26 @@ export default function Dashboard() {
                   placeholder="Document title..."
                 />
               </div>
+              
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setShowSettingsModal(true)}
-                  className="touch-target md:hidden"
-                  aria-label="Open settings"
+                  onClick={saveDocument}
+                  disabled={!currentDocument}
+                  className="touch-target"
+                  title="Save"
                 >
-                  <Settings className="h-5 w-5" />
+                  <Save className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  onClick={() => setShowSettingsModal(true)}
                   className="touch-target"
+                  aria-label="Open settings"
                 >
-                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  <Settings className="h-5 w-5" />
                 </Button>
               </div>
             </header>
@@ -1166,51 +1184,36 @@ export default function Dashboard() {
               )}
             </main>
 
-            {/* Mobile Bottom Navigation - Fixed */}
-            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t bg-card/95 backdrop-blur-sm h-16 px-2 pb-safe">
-              <Button
-                variant="ghost"
-                onClick={() => setMobileDocumentLibraryOpen(true)}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-              >
-                <FileText className="h-5 w-5" />
-                <span className="text-xs mt-1">Docs</span>
-              </Button>
-              
-              <VoiceRecorder 
-                onTranscription={handleVoiceTranscription}
-                disabled={aiLoading}
-              />
-              
-              <Button
-                variant="ghost"
-                onClick={() => setMobileAICommandsOpen(true)}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-                disabled={!currentDocument}
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span className="text-xs mt-1">AI</span>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setRightSidebarOpen(true)}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span className="text-xs mt-1">Chat</span>
-              </Button>
-              
-              <Button 
-                variant="ghost"
-                onClick={saveDocument}
-                disabled={!currentDocument}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-              >
-                <span className="text-lg">💾</span>
-                <span className="text-xs mt-1">Save</span>
-              </Button>
-            </nav>
+            {/* AI Smart Carousel - Fixed Bottom */}
+            {currentDocument && (
+              <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur-sm pb-safe">
+                <AISmartCarousel
+                  onCommand={executeAICommand}
+                  aiLoading={aiLoading}
+                  selectedText={selectedText}
+                  onOpenSettings={() => setShowCommandSettings(true)}
+                  className="py-2"
+                />
+              </div>
+            )}
+
+            {/* Mobile Bottom Navigation - Fixed (when no document) */}
+            {!currentDocument && (
+              <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-center border-t bg-card/95 backdrop-blur-sm h-16 px-2 pb-safe">
+                <VoiceRecorder 
+                  onTranscription={handleVoiceTranscription}
+                  disabled={aiLoading}
+                />
+                <Button
+                  variant="ghost"
+                  onClick={() => setRightSidebarOpen(true)}
+                  className="flex flex-col items-center justify-center p-2 min-w-0 touch-target ml-4"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                  <span className="text-xs mt-1">Chat</span>
+                </Button>
+              </nav>
+            )}
 
             {/* Mobile Document Library Overlay */}
             <MobileDocumentLibrary
@@ -1231,17 +1234,18 @@ export default function Dashboard() {
               loading={searchLoading}
               selectedDocuments={selectedDocuments}
               onSelectionChange={(selected) => {
-                // Update selected documents directly
                 selected.forEach(id => !selectedDocuments.includes(id) && toggleDocumentSelection(id));
                 selectedDocuments.forEach(id => !selected.includes(id) && toggleDocumentSelection(id));
               }}
               onSynthesizeSelected={() => {
-                // Handle synthesis
                 console.log('Synthesizing documents:', selectedDocuments);
               }}
               onCompareSelected={() => {
-                // Handle comparison
                 console.log('Comparing documents:', selectedDocuments);
+              }}
+              onExpandToggle={() => {
+                setMobileDocumentLibraryOpen(false);
+                setLibraryExpanded(true);
               }}
             />
 
@@ -1264,14 +1268,56 @@ export default function Dashboard() {
 
             {/* Mobile AI Chat Overlay */}
             <Sheet open={rightSidebarOpen} onOpenChange={setRightSidebarOpen}>
-              <SheetContent side="right" className="w-full p-0 mobile-sheet">
+              <SheetContent 
+                side="right" 
+                className={`p-0 mobile-sheet ${chatExpanded ? 'w-full' : 'w-[90vw] max-w-md'}`}
+              >
                 <AIChatSidebar
                   isOpen={rightSidebarOpen}
                   onClose={() => setRightSidebarOpen(false)}
                   onDocumentSelect={openDocument}
+                  expanded={chatExpanded}
+                  onExpandToggle={() => setChatExpanded(!chatExpanded)}
                 />
               </SheetContent>
             </Sheet>
+
+            {/* Full-Screen Library Overlay */}
+            {libraryExpanded && (
+              <Sheet open={libraryExpanded} onOpenChange={() => setLibraryExpanded(false)}>
+                <SheetContent side="left" className="w-full p-0">
+                  <MobileDocumentLibrary
+                    isOpen={libraryExpanded}
+                    onClose={() => setLibraryExpanded(false)}
+                    documents={filteredDocuments}
+                    onDocumentSelect={(doc) => {
+                      openDocument(doc);
+                      setLibraryExpanded(false);
+                    }}
+                    onCreateNew={() => createNewDocument()}
+                    onDeleteDocument={deleteDocument}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    categories={categories}
+                    loading={searchLoading}
+                    selectedDocuments={selectedDocuments}
+                    onSelectionChange={(selected) => {
+                      selected.forEach(id => !selectedDocuments.includes(id) && toggleDocumentSelection(id));
+                      selectedDocuments.forEach(id => !selected.includes(id) && toggleDocumentSelection(id));
+                    }}
+                    onSynthesizeSelected={() => {
+                      console.log('Synthesizing documents:', selectedDocuments);
+                    }}
+                    onCompareSelected={() => {
+                      console.log('Comparing documents:', selectedDocuments);
+                    }}
+                    expanded={libraryExpanded}
+                  />
+                </SheetContent>
+              </Sheet>
+            )}
           </>
         ) : (
           /* Desktop Layout */
@@ -1286,6 +1332,14 @@ export default function Dashboard() {
                 >
                   <FileText className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentDocument(null)}
+                  title="Home"
+                >
+                  <Home className="h-4 w-4" />
+                </Button>
                 <Input
                   value={documentTitle}
                   onChange={(e) => setDocumentTitle(e.target.value)}
@@ -1295,6 +1349,15 @@ export default function Dashboard() {
               </div>
               
               <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={saveDocument}
+                  disabled={!currentDocument}
+                  title="Save Document"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1329,19 +1392,26 @@ export default function Dashboard() {
                   <>
                      <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
                        <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft overflow-hidden">
-                         {/* ... existing sidebar content ... */}
-                         {/* Fixed Header Section */}
                          <div className="flex-shrink-0 border-b bg-card">
-                           {/* Title and Close Button */}
                            <div className="p-4 border-b flex items-center justify-between">
                              <h3 className="font-medium">Documents</h3>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => setLeftSidebarOpen(false)}
-                             >
-                               <X className="h-4 w-4" />
-                             </Button>
+                             <div className="flex items-center gap-1">
+                               <Button
+                                 variant="ghost"
+                                 size="icon"
+                                 onClick={() => setLibraryExpanded(true)}
+                                 title="Expand"
+                               >
+                                 <Expand className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => setLeftSidebarOpen(false)}
+                               >
+                                 <X className="h-4 w-4" />
+                               </Button>
+                             </div>
                            </div>
                            
                            {/* New Document & Search */}
@@ -1428,10 +1498,94 @@ export default function Dashboard() {
                         isOpen={rightSidebarOpen}
                         onClose={() => setRightSidebarOpen(false)}
                         onDocumentSelect={openDocument}
+                        expanded={chatExpanded}
+                        onExpandToggle={() => setChatExpanded(!chatExpanded)}
                       />
                     </ResizablePanel>
                   </>
                 )}
+
+            {/* Full-Screen Chat Overlay (Desktop) */}
+            {chatExpanded && (
+              <Sheet open={chatExpanded} onOpenChange={() => setChatExpanded(false)}>
+                <SheetContent side="right" className="w-full p-0">
+                  <AIChatSidebar
+                    isOpen={chatExpanded}
+                    onClose={() => setChatExpanded(false)}
+                    onDocumentSelect={openDocument}
+                    expanded={chatExpanded}
+                  />
+                </SheetContent>
+              </Sheet>
+            )}
+
+            {/* Full-Screen Library Overlay (Desktop) */}
+            {libraryExpanded && (
+              <Sheet open={libraryExpanded} onOpenChange={() => setLibraryExpanded(false)}>
+                <SheetContent side="left" className="w-full p-0">
+                  <div className="h-full flex flex-col bg-background">
+                    <div className="flex-shrink-0 border-b bg-card">
+                      <div className="p-4 border-b flex items-center justify-between">
+                        <h3 className="font-medium">Documents</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setLibraryExpanded(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="p-4 space-y-3">
+                        <Button onClick={() => createNewDocument()} className="w-full">
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Document
+                        </Button>
+                       <DocumentSearch 
+                         onSearch={handleDocumentSearch}
+                         onClear={clearDocumentSearch}
+                         isLoading={searchLoading}
+                       />
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      <ScrollArea className="flex-1">
+                        <div className="p-4 pb-20 space-y-4">
+                          <DocumentFilters 
+                            onFiltersChange={handleFiltersChange}
+                            initialFilters={filters}
+                          />
+                          
+                          <div className="min-h-0">
+                             <DocumentList
+                               documents={filteredDocuments}
+                               categories={categories}
+                               currentDocument={currentDocument}
+                               onDocumentSelect={(doc) => {
+                                 openDocument(doc);
+                                 setLibraryExpanded(false);
+                               }}
+                               onDocumentUpdate={loadDocuments}
+                               searchQuery={searchQuery}
+                               selectedDocuments={selectedDocuments}
+                                onDocumentSelectionChange={(newSelection: string[]) => {
+                                  clearSelection();
+                                  newSelection.forEach(id => toggleDocumentSelection(id));
+                                }}
+                             />
+                          </div>
+                          
+                          <div className="mt-auto pt-4 border-t">
+                            <DocumentStats documents={documents} />
+                          </div>
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
               </ResizablePanelGroup>
             </div>
 
