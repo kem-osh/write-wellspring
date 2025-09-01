@@ -701,12 +701,295 @@ export default function Dashboard() {
         });
         // Don't replace content for analysis, just show results
         return;
+      } else if (commandType === 'heavy-polish') {
+        console.log('Executing heavy-polish command via ai-rewrite');
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'polish',
+            customPrompt: customPrompt || 'Improve clarity, flow, and readability. Make style adjustments while preserving the author\'s voice. Enhance sentence structure and transitions.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const polishedText = data?.alternatives?.[0]?.content || data?.result;
+        if (polishedText) {
+          if (currentSelectedText) {
+            replaceSelectedText(polishedText);
+          } else {
+            setDocumentContent(polishedText);
+          }
+          toast({ title: "Success", description: "Content polished successfully" });
+        }
+      } else if (commandType === 'simplify') {
+        console.log('Executing simplify command via ai-rewrite');
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'simplify',
+            customPrompt: customPrompt || 'Rewrite for easier reading. Use shorter sentences, simpler words, and clearer structure. Target a general audience.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const simplifiedText = data?.alternatives?.[0]?.content || data?.result;
+        if (simplifiedText) {
+          if (currentSelectedText) {
+            replaceSelectedText(simplifiedText);
+          } else {
+            setDocumentContent(simplifiedText);
+          }
+          toast({ title: "Success", description: "Content simplified successfully" });
+        }
+      } else if (commandType === 'formalize') {
+        console.log('Executing formalize command via ai-rewrite');
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'formal',
+            customPrompt: customPrompt || 'Make this more professional and academic while keeping the core meaning intact.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const formalizedText = data?.alternatives?.[0]?.content || data?.result;
+        if (formalizedText) {
+          if (currentSelectedText) {
+            replaceSelectedText(formalizedText);
+          } else {
+            setDocumentContent(formalizedText);
+          }
+          toast({ title: "Success", description: "Content formalized successfully" });
+        }
+      } else if (commandType === 'casualize') {
+        console.log('Executing casualize command via ai-rewrite');
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'casual',
+            customPrompt: customPrompt || 'Make this more conversational and approachable while maintaining professionalism.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const casualizedText = data?.alternatives?.[0]?.content || data?.result;
+        if (casualizedText) {
+          if (currentSelectedText) {
+            replaceSelectedText(casualizedText);
+          } else {
+            setDocumentContent(casualizedText);
+          }
+          toast({ title: "Success", description: "Content casualized successfully" });
+        }
+      } else if (commandType === 'summarize') {
+        console.log('Executing summarize command via ai-condense-content');
+        const { data, error } = await supabase.functions.invoke('ai-condense-content', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt || 'Extract the key points into a concise summary that is about 25% of the original length.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 600,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.result;
+      } else if (commandType === 'bullet-points') {
+        console.log('Executing bullet-points command via ai-outline');
+        const { data, error } = await supabase.functions.invoke('ai-outline', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt || 'Convert this content into clear, scannable bullet points that capture all main ideas.',
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 600,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.result;
+      } else if (commandType === 'paragraph-breaks') {
+        console.log('Executing paragraph-breaks command via ai-outline');
+        const { data, error } = await supabase.functions.invoke('ai-outline', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt || 'Improve readability by adding appropriate paragraph breaks and better text structure.',
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 800,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.result;
+      } else if (commandType === 'add-headers') {
+        console.log('Executing add-headers command via ai-outline');
+        const { data, error } = await supabase.functions.invoke('ai-outline', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt || 'Add clear headers and subheaders to organize this content effectively.',
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 800,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.result;
+      } else if (commandType === 'analyze') {
+        console.log('Executing analyze command via ai-analyze');
+        const { data, error } = await supabase.functions.invoke('ai-analyze', {
+          body: {
+            content: currentDocument.content,
+            customPrompt: customPrompt || 'Comprehensive analysis with improvement recommendations',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1200,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        toast({ 
+          title: "Analysis Complete", 
+          description: "Review the analysis results",
+          duration: 5000
+        });
+        // Don't replace content for analysis, just show results
+        return;
+      } else if (commandType === 'match-voice') {
+        console.log('Executing match-voice command via ai-rewrite');
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'voice-match',
+            customPrompt: customPrompt || 'Match the user\'s natural writing voice and style',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 2000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const matchedText = data?.alternatives?.[0]?.content || data?.result;
+        if (matchedText) {
+          if (currentSelectedText) {
+            replaceSelectedText(matchedText);
+          } else {
+            setDocumentContent(matchedText);
+          }
+          toast({ title: "Success", description: "Content matched to your voice" });
+        }
+      } else if (commandType === 'change-tone') {
+        console.log('Executing change-tone command via ai-rewrite');
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'tone-change',
+            customPrompt: customPrompt || 'Adjust the tone while preserving the core message and meaning.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const tonedText = data?.alternatives?.[0]?.content || data?.result;
+        if (tonedText) {
+          if (currentSelectedText) {
+            replaceSelectedText(tonedText);
+          } else {
+            setDocumentContent(tonedText);
+          }
+          toast({ title: "Success", description: "Tone changed successfully" });
+        }
+      } else if (commandType === 'strengthen-args') {
+        console.log('Executing strengthen-args command via ai-rewrite');
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'strengthen',
+            customPrompt: customPrompt || 'Strengthen arguments with better evidence, clearer logic, and more persuasive language.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1500,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const strengthenedText = data?.alternatives?.[0]?.content || data?.result;
+        if (strengthenedText) {
+          if (currentSelectedText) {
+            replaceSelectedText(strengthenedText);
+          } else {
+            setDocumentContent(strengthenedText);
+          }
+          toast({ title: "Success", description: "Arguments strengthened successfully" });
+        }
+      } else if (commandType === 'add-examples') {
+        console.log('Executing add-examples command via ai-expand-content');
+        const { data, error } = await supabase.functions.invoke('ai-expand-content', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt || 'Add relevant examples, case studies, and illustrations to support the main points.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1500,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.result;
+      } else if (commandType === 'fact-check') {
+        console.log('Executing fact-check command via ai-fact-check');
+        const { data, error } = await supabase.functions.invoke('ai-fact-check', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt || 'Review this content for factual accuracy and provide verification suggestions.',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        toast({ 
+          title: "Fact Check Complete", 
+          description: "Review the fact-check results",
+          duration: 5000
+        });
+        // Don't replace content for fact-check, just show results
+        return;
       } else {
-        throw new Error(`Unknown command type: ${commandType}`);
+        console.log(`Unknown command type attempted: ${commandType}`);
+        toast({ 
+          title: "Command Not Supported", 
+          description: `The "${commandType}" command is not yet implemented. Available commands: light-edit, heavy-polish, expand, condense, simplify, formalize, casualize, outline, summarize, bullet-points, paragraph-breaks, add-headers, analyze, and others.`,
+          variant: "destructive" 
+        });
+        return;
       }
       
       // Handle result replacement for commands that return content
-      if (commandType !== 'continue' && commandType !== 'rewrite' && commandType !== 'voice-match') {
+      if (!['continue', 'rewrite', 'voice-match', 'heavy-polish', 'simplify', 'formalize', 'casualize', 'match-voice', 'change-tone', 'strengthen-args', 'analyze', 'fact-check'].includes(commandType)) {
         if (!result || typeof result !== 'string' || !result.trim()) {
           toast({ 
             title: "Empty AI Response", 
