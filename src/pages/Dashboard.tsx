@@ -469,15 +469,9 @@ export default function Dashboard() {
     loadDocuments();
     loadCategories();
   }, []);
-    if (!user) return;
-
-    // Don't save empty documents
-    if (!documentContent || documentContent.trim().length < MIN_CONTENT_LENGTH) {
-      console.log('Content too short, skipping save');
-      return;
-    }
 
   const handleAutoSave = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     // Don't save empty documents
