@@ -62,8 +62,10 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
+        result: expandedText,
         originalText: textToExpand,
-        expandedText: expandedText
+        expandedText: expandedText,
+        success: true
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

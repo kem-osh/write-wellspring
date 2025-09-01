@@ -62,8 +62,10 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
+        result: condensedText,
         originalText: textToCondense,
-        condensedText: condensedText
+        condensedText: condensedText,
+        success: true
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

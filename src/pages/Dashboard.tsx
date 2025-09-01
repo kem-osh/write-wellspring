@@ -347,7 +347,9 @@ export default function Dashboard() {
 
   // Enhanced AI command execution with proper error handling and text replacement
   const executeAICommand = useCallback(async (
-    commandType: 'light-edit' | 'expand' | 'condense' | 'outline',
+    commandType: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
+                 'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
+                 'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
     customPrompt?: string,
     model?: string,
     maxTokens?: number
@@ -387,22 +389,62 @@ export default function Dashboard() {
       if (!user) throw new Error('Not authenticated');
 
       // Map command types to edge function names
-      const functionName = commandType === 'light-edit' ? 'ai-light-edit' : 
-                          commandType === 'expand' ? 'ai-expand-content' : 
-                          commandType === 'condense' ? 'ai-condense-content' :
-                          'ai-outline';
+      let functionName = 'ai-light-edit'; // default
+      
+      switch (commandType) {
+        case 'light-edit':
+          functionName = 'ai-light-edit';
+          break;
+        case 'expand':
+          functionName = 'ai-expand-content';
+          break;
+        case 'condense':
+          functionName = 'ai-condense-content';
+          break;
+        case 'outline':
+          functionName = 'ai-outline';
+          break;
+        case 'heavy-polish':
+        case 'simplify':
+        case 'formalize':
+        case 'casualize':
+          functionName = 'ai-rewrite';
+          break;
+        case 'summarize':
+          functionName = 'ai-condense-content';
+          break;
+        case 'bullet-points':
+        case 'paragraph-breaks':
+        case 'add-headers':
+          functionName = 'ai-outline';
+          break;
+        default:
+          console.warn(`Unknown command type: ${commandType}, using light-edit`);
+          functionName = 'ai-light-edit';
+      }
 
       console.log(`Calling ${functionName}...`);
       
+      const payload = functionName === 'ai-rewrite' 
+        ? {
+            text: textToProcess,
+            style: commandType === 'heavy-polish' ? 'auto' : 
+                   commandType === 'simplify' ? 'casual' :
+                   commandType === 'formalize' ? 'formal' :
+                   commandType === 'casualize' ? 'casual' : 'auto',
+            userId: user.id
+          }
+        : {
+            content: currentSelectedText ? undefined : documentContent,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt,
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 500,
+            userId: user.id
+          };
+
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: {
-          content: currentSelectedText ? undefined : documentContent,
-          selectedText: currentSelectedText || undefined,
-          customPrompt: customPrompt,
-          model: model || 'gpt-5-nano-2025-08-07',
-          maxTokens: maxTokens || 500,
-          userId: user.id
-        }
+        body: payload
       });
 
       console.log('AI Command Result:', JSON.stringify(data, null, 2));
@@ -411,12 +453,20 @@ export default function Dashboard() {
       if (error) throw error;
 
       // Extract result from response based on command type
-      const result = data?.result || 
-                    data?.editedText || 
-                    data?.expandedText || 
-                    data?.condensedText || 
-                    data?.outlineText ||
-                    data?.content;
+      let result;
+      
+      if (functionName === 'ai-rewrite') {
+        // ai-rewrite returns alternatives array, take the first one
+        result = data?.alternatives?.[0]?.content || data?.result;
+      } else {
+        // Other functions should return result field consistently
+        result = data?.result || 
+                 data?.editedText || 
+                 data?.expandedText || 
+                 data?.condensedText || 
+                 data?.outlineText ||
+                 data?.content;
+      }
       
       console.log('Extracted result length:', result?.length || 0);
       console.log('Result preview:', result?.slice(0, 100) + '...');

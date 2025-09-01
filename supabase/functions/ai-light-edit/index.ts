@@ -66,10 +66,12 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
+        result: editedText.trim(),
         editedText: editedText.trim(), 
         changes: hasChanges,
         originalLength: textToEdit.length,
-        editedLength: editedText.trim().length
+        editedLength: editedText.trim().length,
+        success: true
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -62,8 +62,10 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
+        result: outlineText,
         originalText: textToOutline,
-        outlineText: outlineText
+        outlineText: outlineText,
+        success: true
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
