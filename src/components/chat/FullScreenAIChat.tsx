@@ -2,10 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
-import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UnifiedCommand } from '@/types/commands'; // Import the UnifiedCommand type
 
 interface ChatMessage {
   id: string;
@@ -19,23 +17,17 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-// Updated Document interface for consistency
 interface Document {
   id: string;
   title: string;
   content: string;
   created_at: string;
-  category: string;
-  status: string;
-  word_count: number;
-  updated_at: string;
-  user_id?: string;
 }
 
 interface FullScreenAIChatProps {
   isOpen: boolean;
   onClose: () => void;
-  onDocumentSelect?: (doc: Document) => void;
+  onDocumentSelect?: (documentId: string) => void;
   onVoiceInput?: () => void;
 }
 
@@ -101,37 +93,19 @@ export function FullScreenAIChat({
     setIsLoading(true);
 
     try {
-      // Create the required `command` object for the backend
-      const chatCommand: Partial<UnifiedCommand> = {
-        ai_model: 'gpt-5-mini-2025-08-07',
-        system_prompt: 'You are a helpful assistant that analyzes documents. Use the provided context to give accurate responses about their writing.',
-        max_tokens: 1500,
-        temperature: 0.7,
-      };
-
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { 
-          message: messageText, 
-          userId,
-          command: chatCommand // Add the command object to the payload
-        }
+        body: { message: messageText, userId }
       });
 
       if (error) throw error;
 
-      // Correctly access `data.message` for the response content
       addMessage({
         role: 'assistant',
-        content: data.message, 
+        content: data.response,
         sources: data.sources || []
       });
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add an error message directly to the chat for better UX
-      addMessage({
-        role: 'assistant',
-        content: "I'm sorry, but I encountered an error while processing your request. Please try again in a moment.",
-      });
       toast({
         title: "Chat Error",
         description: "Failed to send message. Please try again.",
@@ -152,11 +126,8 @@ export function FullScreenAIChat({
 
       if (error) throw error;
 
-      // Pass the full document object to the handler
-      if (data) {
-        onDocumentSelect?.(data);
-        onClose();
-      }
+      onDocumentSelect?.(sourceId);
+      onClose();
     } catch (error) {
       console.error('Error fetching document:', error);
       toast({
@@ -202,27 +173,19 @@ export function FullScreenAIChat({
                     <p className="text-muted-foreground">Ask questions about your documents and I'll help you find answers.</p>
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-3 text-left max-w-md mx-auto">
+                  <div className="grid grid-cols-1 gap-2 text-left">
                     {[
-                      { icon: "🎯", text: "What are the main themes in my documents?" },
-                      { icon: "📚", text: "Find documents about mythology" },
-                      { icon: "📝", text: "Summarize my recent writings" }
+                      "What are the main themes in my documents?",
+                      "Find documents about mythology",
+                      "Summarize my recent writings"
                     ].map((suggestion) => (
-                      <Card
-                        key={suggestion.text}
-                        variant="elevated"
-                        className="group cursor-pointer hover-scale transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-                        onClick={() => sendMessage(suggestion.text)}
+                      <button
+                        key={suggestion}
+                        onClick={() => sendMessage(suggestion)}
+                        className="p-3 text-sm text-left rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-border transition-all duration-200"
                       >
-                        <CardContent padding="sm">
-                          <div className="flex items-center gap-3 text-left">
-                            <span className="text-lg flex-shrink-0">{suggestion.icon}</span>
-                            <span className="text-body-sm font-medium group-hover:text-primary transition-colors">
-                              {suggestion.text}
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        {suggestion}
+                      </button>
                     ))}
                   </div>
                 </div>

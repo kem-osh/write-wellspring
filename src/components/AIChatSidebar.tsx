@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -206,28 +205,34 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
                 </p>
                 
                 {/* Enhanced Suggestion Cards */}
-                <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-                  {[
-                    { icon: "📝", text: "Summarize recent posts", query: "Summarize my recent blog posts" },
-                    { icon: "✨", text: "Improve my draft", query: "Help me improve this draft" },
-                    { icon: "🔍", text: "Analyze my topics", query: "What topics have I written about?" }
-                  ].map((suggestion) => (
-                    <Card
-                      key={suggestion.text}
-                      variant="elevated"
-                      className="group cursor-pointer hover-scale transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-                      onClick={() => sendMessage(suggestion.query)}
-                    >
-                      <CardContent padding="sm">
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg flex-shrink-0">{suggestion.icon}</span>
-                          <span className="text-body-sm font-medium group-hover:text-primary transition-colors">
-                            {suggestion.text}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="flex flex-col gap-3 w-full max-w-sm">
+                  <button
+                    onClick={() => sendMessage("Summarize my recent blog posts")}
+                    className="group p-4 text-sm bg-card hover:bg-sidebar-accent border border-border rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">📝</span>
+                      <span className="font-medium group-hover:text-sidebar-primary transition-colors">Summarize recent posts</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => sendMessage("Help me improve this draft")}
+                    className="group p-4 text-sm bg-card hover:bg-sidebar-accent border border-border rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">✨</span>
+                      <span className="font-medium group-hover:text-sidebar-primary transition-colors">Improve my draft</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => sendMessage("What topics have I written about?")}
+                    className="group p-4 text-sm bg-card hover:bg-sidebar-accent border border-border rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🔍</span>
+                      <span className="font-medium group-hover:text-sidebar-primary transition-colors">Analyze my topics</span>
+                    </div>
+                  </button>
                 </div>
               </div>
             ) : (
@@ -311,8 +316,8 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
         </ScrollArea>
       </div>
 
-      {/* Glass Morphism Input Area */}
-      <div className="flex-shrink-0 p-4 sm:p-5 border-t border-border/50 backdrop-blur-lg bg-surface/95 shadow-lg">
+      {/* Enhanced Input Area */}
+      <div className="flex-shrink-0 p-5 border-t border-sidebar-border bg-sidebar shadow-lg">
         <div className="flex gap-3 items-end">
           <div className="flex-1">
             <Textarea
@@ -320,7 +325,7 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about your documents, get writing help..."
-              className="min-h-[56px] max-h-[120px] resize-none bg-surface/50 border-border/50 focus:bg-surface focus:border-primary/40 rounded-xl shadow-sm transition-all duration-200 backdrop-blur-sm"
+              className="min-h-[56px] max-h-[120px] resize-none bg-card/50 border-border focus:bg-card focus:border-sidebar-primary/40 rounded-xl shadow-sm transition-all duration-200"
               disabled={isLoading}
             />
           </div>
@@ -328,7 +333,7 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
             onClick={() => sendMessage()} 
             disabled={!inputMessage.trim() || isLoading}
             size="icon"
-            className="h-[56px] w-[56px] flex-shrink-0 rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+            className="h-[56px] w-[56px] flex-shrink-0 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-sidebar-primary hover:bg-sidebar-primary/90"
           >
             <Send className="w-5 h-5" />
           </Button>
