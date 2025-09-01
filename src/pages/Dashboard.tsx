@@ -27,6 +27,7 @@ import { DocumentFilters } from "@/components/DocumentFilters";
 import { DocumentList } from "@/components/DocumentList";
 import { DocumentStats } from "@/components/DocumentStats";
 import { useEmbeddings } from "@/hooks/useEmbeddings";
+import { useDocumentStore } from "@/lib/stores/useDocumentStore";
 import { Badge } from "@/components/ui/badge";
 import { CommandSettings } from "@/components/CommandSettings";
 import { useDocumentSelection } from "@/hooks/useDocumentSelection";
@@ -48,6 +49,7 @@ interface Document {
   folder_id?: string;
   created_at: string;
   updated_at: string;
+  user_id?: string;
 }
 
 interface Category {
@@ -77,11 +79,22 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { generateEmbeddingsSilently } = useEmbeddings();
   const { settings } = useSettingsStore();
+  // Document state management via Zustand store
+  const {
+    documents,
+    currentDocument,
+    loading: documentsLoading,
+    hasMore,
+    setCurrentDocument,
+    loadDocuments,
+    loadMoreDocuments,
+    addDocument,
+    updateDocument,
+    removeDocument
+  } = useDocumentStore();
   
-  const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentContent, setDocumentContent] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -217,32 +230,18 @@ export default function Dashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const loadDocuments = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("documents")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      toast({
-        title: "Error loading documents",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      // Calculate word count for documents that don't have it
-      const documentsWithWordCount = (data || []).map(doc => ({
-        ...doc,
-        word_count: doc.word_count || doc.content.trim().split(/\s+/).filter(word => word.length > 0).length
-      })) as Document[];
-      setDocuments(documentsWithWordCount);
+  // Load initial data
+  useEffect(() => {
+    if (user) {
+      loadDocuments({ userId: user.id });
+      loadCategories();
     }
-    setLoading(false);
-  };
+  }, [user]);
+
+  // Update loading state based on store
+  useEffect(() => {
+    setLoading(documentsLoading && categories.length === 0);
+  }, [documentsLoading, categories]);
 
   const loadCategories = async () => {
     if (!user) return;
@@ -327,8 +326,9 @@ export default function Dashboard() {
       updated_at: new Date().toISOString()
     };
 
-    // Set the temporary document as current so editor shows
-    setCurrentDocument(newDoc);
+    // Set the temporary document as current so editor shows (add user_id)
+    const newDocWithUser = { ...newDoc, user_id: user?.id };
+    setCurrentDocument(newDocWithUser);
     setDocumentTitle(newDoc.title);
     setDocumentContent(newDoc.content);
     
@@ -350,7 +350,8 @@ export default function Dashboard() {
   };
 
   const openDocument = (doc: Document) => {
-    setCurrentDocument(doc);
+    const docWithUserId = { ...doc, user_id: doc.user_id || user?.id };
+    setCurrentDocument(docWithUserId);
     setDocumentTitle(doc.title);
     setDocumentContent(doc.content);
   };
@@ -502,9 +503,11 @@ export default function Dashboard() {
 
   // Load documents and categories on mount
   useEffect(() => {
-    loadDocuments();
-    loadCategories();
-  }, []);
+    if (user) {
+      loadDocuments({ userId: user.id });
+      loadCategories();
+    }
+  }, [user, loadDocuments]);
 
   const handleAutoSave = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -600,14 +603,12 @@ export default function Dashboard() {
           // Update local state
           const updatedDoc = { 
             ...currentDocument, 
-            title: finalTitle, 
-            content: documentContent,
-            word_count: wordCount 
+            title: documentTitle, 
+            content: documentContent, 
+            updated_at: new Date().toISOString() 
           };
           setCurrentDocument(updatedDoc);
-          setDocuments(documents.map(doc => 
-            doc.id === currentDocument.id ? updatedDoc : doc
-          ));
+          updateDocument(currentDocument.id, updatedDoc);
           
           setLastSaved(new Date());
           setSaveIndicator('saved');
@@ -632,7 +633,7 @@ export default function Dashboard() {
 
         if (newDoc && !error) {
           setCurrentDocument(newDoc);
-          setDocuments([newDoc, ...documents.filter(d => !d.id.startsWith('temp-'))]);
+          addDocument(newDoc);
           setLastSaved(new Date());
           setSaveIndicator('saved');
         } else {
@@ -705,9 +706,7 @@ export default function Dashboard() {
         word_count: wordCount 
       };
       setCurrentDocument(updatedDoc);
-      setDocuments(documents.map(doc => 
-        doc.id === currentDocument.id ? updatedDoc : doc
-      ));
+      updateDocument(currentDocument.id, updatedDoc);
       
       // Generate embeddings in the background for AI search
       if (documentContent.trim()) {
@@ -729,7 +728,7 @@ export default function Dashboard() {
         variant: "destructive",
       });
     } else {
-      setDocuments(documents.filter(doc => doc.id !== docId));
+      removeDocument(docId);
       if (currentDocument?.id === docId) {
         setCurrentDocument(null);
         setDocumentTitle("");
@@ -836,7 +835,7 @@ export default function Dashboard() {
 
       if (error) throw error;
 
-      setDocuments([data, ...documents]);
+      addDocument(data);
       setCurrentDocument(data);
       setDocumentTitle(data.title);
       setDocumentContent(data.content);
@@ -907,7 +906,9 @@ export default function Dashboard() {
 
   // Advanced AI command handlers
   const handleDocumentCreated = (documentId: string) => {
-    loadDocuments();
+    if (user) {
+      loadDocuments({ userId: user.id });
+    }
     // Open the newly created document
     setTimeout(() => {
       const newDoc = documents.find(doc => doc.id === documentId);
@@ -1224,20 +1225,23 @@ export default function Dashboard() {
                                
                                {/* Document List */}
                                <div className="min-h-0">
-                                  <DocumentList
-                                    documents={filteredDocuments}
-                                    categories={categories}
-                                    currentDocument={currentDocument}
-                                    onDocumentSelect={openDocument}
-                                    onDocumentUpdate={loadDocuments}
-                                    searchQuery={searchQuery}
-                                    selectedDocuments={selectedDocuments}
+                                   <DocumentList
+                                     documents={filteredDocuments}
+                                     categories={categories}
+                                     currentDocument={currentDocument}
+                                     onDocumentSelect={openDocument}
+                                     onDocumentUpdate={() => user && loadDocuments({ userId: user.id })}
+                                     searchQuery={searchQuery}
+                                     selectedDocuments={selectedDocuments}
                                      onDocumentSelectionChange={(newSelection: string[]) => {
                                        // Clear current selection and set new one
                                        clearSelection();
                                        newSelection.forEach(id => toggleDocumentSelection(id));
                                      }}
-                                  />
+                                     hasMore={hasMore}
+                                     loading={documentsLoading}
+                                     onLoadMore={() => user && loadMoreDocuments(user.id)}
+                                   />
                                </div>
                                
                                {/* Stats - at bottom of scrollable area */}

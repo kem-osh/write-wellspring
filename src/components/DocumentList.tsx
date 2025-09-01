@@ -74,6 +74,10 @@ interface DocumentListProps {
   searchQuery?: string;
   selectedDocuments?: string[];
   onDocumentSelectionChange?: (documentIds: string[]) => void;
+  // Pagination props
+  hasMore?: boolean;
+  loading?: boolean;
+  onLoadMore?: () => void;
 }
 
 export function DocumentList({
@@ -84,7 +88,10 @@ export function DocumentList({
   onDocumentUpdate,
   searchQuery = '',
   selectedDocuments = [],
-  onDocumentSelectionChange
+  onDocumentSelectionChange,
+  hasMore = false,
+  loading = false,
+  onLoadMore
 }: DocumentListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -745,6 +752,27 @@ export function DocumentList({
               </ContextMenu>
             );
           })}
+          
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="p-4 text-center border-t">
+              <Button 
+                variant="outline" 
+                onClick={onLoadMore}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                    Loading more documents...
+                  </>
+                ) : (
+                  'Load More Documents'
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </ScrollArea>
 
