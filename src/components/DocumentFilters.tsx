@@ -171,31 +171,31 @@ export function DocumentFilters({ onFiltersChange, initialFilters }: DocumentFil
   const hasActiveFilters = filters.category !== 'all' || filters.status.length > 0;
 
   return (
-    <div className="space-y-4 p-4 border-b">
+    <div className="space-y-4 p-5 bg-surface/30 rounded-xl border border-border/50 shadow-soft backdrop-blur-sm">
       {/* Category Filter */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-medium text-muted-foreground">CATEGORY</Label>
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Category</Label>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowCategoryManager(true)}
-            className="h-6 px-2"
+            className="h-7 px-2 hover:bg-primary/10 rounded-lg transition-colors"
           >
             <Settings className="h-3 w-3" />
           </Button>
         </div>
         <Select value={filters.category} onValueChange={handleCategoryChange}>
-          <SelectTrigger className="h-8">
+          <SelectTrigger className="h-9 bg-background/50 border-border/60 hover:border-border focus:border-primary/60 rounded-lg shadow-soft">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+          <SelectContent className="bg-surface/95 backdrop-blur-lg border-border/60 shadow-elevated rounded-xl">
+            <SelectItem value="all" className="rounded-lg">All Categories</SelectItem>
             {categories.map((category) => (
-              <SelectItem key={category.id} value={category.name}>
+              <SelectItem key={category.id} value={category.name} className="rounded-lg">
                 <div className="flex items-center gap-2">
                   <div 
-                    className="w-2 h-2 rounded-full" 
+                    className="w-2.5 h-2.5 rounded-full" 
                     style={{ backgroundColor: category.color }}
                   />
                   {category.name}
@@ -207,15 +207,15 @@ export function DocumentFilters({ onFiltersChange, initialFilters }: DocumentFil
       </div>
 
       {/* Status Filter */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">STATUS</Label>
+      <div className="space-y-3">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</Label>
         <div className="flex flex-wrap gap-2">
           {STATUS_OPTIONS.map((status) => (
             <Badge
               key={status.value}
               variant={filters.status.includes(status.value) ? "default" : "secondary"}
-              className={`cursor-pointer text-xs ${
-                filters.status.includes(status.value) ? status.color : ''
+              className={`cursor-pointer text-xs hover:shadow-soft transition-all duration-200 px-3 py-1.5 rounded-lg ${
+                filters.status.includes(status.value) ? 'bg-primary text-primary-foreground shadow-soft' : 'bg-muted/50 hover:bg-muted'
               }`}
               onClick={() => handleStatusToggle(status.value)}
             >
@@ -226,15 +226,15 @@ export function DocumentFilters({ onFiltersChange, initialFilters }: DocumentFil
       </div>
 
       {/* Sort Options */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">SORT BY</Label>
+      <div className="space-y-3">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sort By</Label>
         <Select value={filters.sortBy} onValueChange={handleSortChange}>
-          <SelectTrigger className="h-8">
+          <SelectTrigger className="h-9 bg-background/50 border-border/60 hover:border-border focus:border-primary/60 rounded-lg shadow-soft">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-surface/95 backdrop-blur-lg border-border/60 shadow-elevated rounded-xl">
             {SORT_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+              <SelectItem key={option.value} value={option.value} className="rounded-lg">
                 {option.label}
               </SelectItem>
             ))}
@@ -248,18 +248,18 @@ export function DocumentFilters({ onFiltersChange, initialFilters }: DocumentFil
           variant="ghost"
           size="sm"
           onClick={clearFilters}
-          className="w-full h-8 text-xs"
+          className="w-full h-9 text-xs font-medium hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors border border-border/40"
         >
-          Clear Filters
+          Clear All Filters
         </Button>
       )}
 
       {/* Category Manager Dialog */}
       <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-surface/95 backdrop-blur-lg border-border/60 shadow-elevated">
           <DialogHeader>
-            <DialogTitle>Manage Categories</DialogTitle>
-            <p className="text-sm text-muted-foreground">
+            <DialogTitle className="text-heading-sm">Manage Categories</DialogTitle>
+            <p className="text-body-sm text-muted-foreground">
               Add, edit, or remove document categories.
             </p>
           </DialogHeader>
