@@ -22,6 +22,7 @@ import { AdvancedAICommands } from "@/components/AdvancedAICommands";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
+import { FullScreenAIChat } from "@/components/chat";
 import { DocumentSearch } from "@/components/DocumentSearch";
 import { DocumentFilters } from "@/components/DocumentFilters";
 import { DocumentList } from "@/components/DocumentList";
@@ -143,6 +144,7 @@ export default function Dashboard() {
   // Mobile state
   const [mobileDocumentLibraryOpen, setMobileDocumentLibraryOpen] = useState(false);
   const [mobileAICommandsOpen, setMobileAICommandsOpen] = useState(false);
+  const [fullScreenChatOpen, setFullScreenChatOpen] = useState(false);
   
   // Import haptics hook
   const { impactLight, notificationSuccess, notificationError } = useHaptics();
@@ -1024,50 +1026,18 @@ export default function Dashboard() {
             </main>
 
             {/* Mobile Bottom Navigation - Fixed */}
-            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t bg-card/95 backdrop-blur-sm h-16 px-2 pb-safe">
-              <Button
-                variant="ghost"
-                onClick={() => setMobileDocumentLibraryOpen(true)}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-              >
-                <FileText className="h-5 w-5" />
-                <span className="text-xs mt-1">Docs</span>
-              </Button>
-              
-              <VoiceRecorder 
-                onTranscription={handleVoiceTranscription}
-                disabled={aiLoading}
-              />
-              
-              <Button
-                variant="ghost"
-                onClick={() => setMobileAICommandsOpen(true)}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-                disabled={!currentDocument}
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span className="text-xs mt-1">AI</span>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setRightSidebarOpen(true)}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span className="text-xs mt-1">Chat</span>
-              </Button>
-              
-              <Button 
-                variant="ghost"
-                onClick={saveDocument}
-                disabled={!currentDocument}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
-              >
-                <span className="text-lg">💾</span>
-                <span className="text-xs mt-1">Save</span>
-              </Button>
-            </nav>
+            <MobileBottomNav
+              onDocumentLibrary={() => setMobileDocumentLibraryOpen(true)}
+              onVoiceRecord={() => {
+                // This will be handled by VoiceRecorder component integration later
+                console.log('Voice recording from nav');
+              }}
+              onAICommands={() => setMobileAICommandsOpen(true)}
+              onAIChat={() => setFullScreenChatOpen(true)}
+              onSettings={() => setShowSettingsModal(true)}
+              aiLoading={aiLoading}
+              className="fixed bottom-6 left-6 right-6 z-40"
+            />
 
             {/* Mobile Document Library Overlay */}
             <MobileDocumentLibrary
@@ -1484,6 +1454,13 @@ export default function Dashboard() {
             </Button>
           </SheetContent>
         </Sheet>
+
+        {/* Full-Screen AI Chat */}
+        <FullScreenAIChat
+          isOpen={fullScreenChatOpen}
+          onClose={() => setFullScreenChatOpen(false)}
+          onDocumentSelect={openDocument}
+        />
       </div>
     </div>
   );

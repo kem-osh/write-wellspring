@@ -324,6 +324,31 @@ html, body {
     @apply text-primary bg-primary/15;
   }
 
+  /* Full-screen chat utilities */
+  .chat-overlay {
+    @apply fixed inset-0 bg-black/95 backdrop-blur-sm z-50;
+  }
+  
+  .chat-container {
+    @apply flex flex-col h-full max-w-4xl mx-auto;
+  }
+  
+  .message-bubble {
+    @apply rounded-2xl px-4 py-3 max-w-[85%] break-words;
+  }
+  
+  .message-bubble-user {
+    @apply bg-primary text-primary-foreground ml-auto;
+  }
+  
+  .message-bubble-ai {
+    @apply bg-muted text-foreground;
+  }
+  
+  .chat-input-glass {
+    @apply bg-background/80 backdrop-blur-md border border-border/20 shadow-xl;
+  }
+
   /* Enhanced touch targets for mobile */
   .touch-target {
     min-height: 44px;
