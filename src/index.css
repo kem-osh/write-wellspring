@@ -16,107 +16,110 @@ html, body {
 
 @layer base {
   :root {
-    /* Enhanced color palette for LogosScribe */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 18%;
+    /* Refined color palette - Softer, more neutral tones */
+    --background: 0 0% 99%;
+    --foreground: 220 13% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 18%;
+    --card-foreground: 220 13% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 18%;
+    --popover-foreground: 220 13% 15%;
 
-    /* Primary - Modern blue for writing focus */
-    --primary: 217 91% 60%;
+    /* Primary - Refined blue with better contrast */
+    --primary: 217 89% 61%;
     --primary-foreground: 0 0% 100%;
-    --primary-50: 217 100% 97%;
-    --primary-100: 217 95% 93%;
-    --primary-500: 217 91% 60%;
-    --primary-600: 217 89% 53%;
+    --primary-50: 217 100% 98%;
+    --primary-100: 217 95% 94%;
+    --primary-500: 217 89% 61%;
+    --primary-600: 217 87% 54%;
 
-    /* Secondary - Warm neutral for secondary actions */
-    --secondary: 210 17% 95%;
-    --secondary-foreground: 220 13% 18%;
-    --secondary-hover: 210 17% 90%;
+    /* Secondary - Warmer, softer neutrals */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 13% 15%;
+    --secondary-hover: 210 20% 92%;
 
-    /* Muted - Subtle backgrounds and text */
-    --muted: 210 17% 95%;
-    --muted-foreground: 220 9% 46%;
-    --muted-hover: 210 17% 92%;
+    /* Muted - Enhanced subtle backgrounds */
+    --muted: 210 20% 96%;
+    --muted-foreground: 220 9% 48%;
+    --muted-hover: 210 20% 93%;
 
-    /* Accent - Vibrant for highlights and interactions */
-    --accent: 142 71% 45%;
+    /* Accent - Softer green for highlights */
+    --accent: 142 69% 47%;
     --accent-foreground: 0 0% 100%;
-    --accent-50: 142 76% 96%;
-    --accent-100: 142 72% 91%;
+    --accent-50: 142 76% 97%;
+    --accent-100: 142 72% 92%;
 
-    /* Destructive - Clear red for warnings */
-    --destructive: 0 84% 60%;
+    /* Destructive - Refined red for warnings */
+    --destructive: 0 82% 62%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Surface colors for depth */
-    --surface: 210 20% 98%;
-    --surface-foreground: 220 13% 18%;
+    /* Surface colors with enhanced depth */
+    --surface: 210 22% 98%;
+    --surface-foreground: 220 13% 15%;
     --elevated: 0 0% 100%;
 
-    /* Border and input */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    /* Refined borders and inputs */
+    --border: 220 13% 88%;
+    --input: 220 13% 93%;
+    --ring: 217 89% 61%;
 
     /* Radius for modern rounded corners */
     --radius: 0.75rem;
 
-    /* Sidebar specific colors */
-    --sidebar-background: 220 17% 98%;
-    --sidebar-foreground: 220 13% 27%;
-    --sidebar-primary: 217 91% 60%;
+    /* Refined sidebar colors */
+    --sidebar-background: 220 22% 98%;
+    --sidebar-foreground: 220 13% 28%;
+    --sidebar-primary: 217 89% 61%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 17% 95%;
-    --sidebar-accent-foreground: 220 13% 18%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 220 13% 15%;
+    --sidebar-border: 220 13% 88%;
+    --sidebar-ring: 217 89% 61%;
 
-    /* LogosScribe specific UI colors */
-    --voice-button: 142 71% 45%;
+    /* Refined LogosScribe UI colors */
+    --voice-button: 142 69% 47%;
     --voice-button-foreground: 0 0% 100%;
-    --voice-button-hover: 142 71% 40%;
+    --voice-button-hover: 142 69% 42%;
     
-    --ai-button: 266 83% 58%;
+    --ai-button: 266 81% 60%;
     --ai-button-foreground: 0 0% 100%;
-    --ai-button-hover: 266 83% 53%;
+    --ai-button-hover: 266 81% 55%;
     
-    --save-button: 217 91% 60%;
+    --save-button: 217 89% 61%;
     --save-button-foreground: 0 0% 100%;
-    --save-button-hover: 217 89% 53%;
+    --save-button-hover: 217 87% 54%;
     
-    --command-button: 210 17% 95%;
-    --command-button-foreground: 220 13% 18%;
-    --command-button-hover: 210 17% 90%;
+    --command-button: 210 20% 96%;
+    --command-button-foreground: 220 13% 15%;
+    --command-button-hover: 210 20% 92%;
 
-    /* Status colors */
-    --status-draft: 43 96% 56%;
-    --status-polished: 217 91% 60%;
-    --status-final: 142 71% 45%;
+    /* Refined status colors */
+    --status-draft: 43 94% 58%;
+    --status-polished: 217 89% 61%;
+    --status-final: 142 69% 47%;
 
     /* Typography scale */
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
     
-    /* Spacing scale */
+    /* Enhanced spacing rhythm */
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
     --space-4: 1rem;
+    --space-5: 1.25rem;
     --space-6: 1.5rem;
     --space-8: 2rem;
+    --space-10: 2.5rem;
     --space-12: 3rem;
+    --space-16: 4rem;
 
-    /* Shadows for depth */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    /* Refined shadows - more subtle */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   }
 

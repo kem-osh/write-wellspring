@@ -156,55 +156,82 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
   if (!isOpen) return null;
 
   return (
-    <div className="w-full h-full flex flex-col bg-background">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border bg-card/50">
+    <div className="w-full h-full flex flex-col bg-sidebar">
+      {/* Enhanced Header with better contrast */}
+      <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-sidebar-border bg-sidebar shadow-sm">
         <div className="flex items-center gap-3">
-          <Bot className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">AI Assistant</h3>
+          <div className="p-2 rounded-lg bg-sidebar-primary/10 border border-sidebar-primary/20">
+            <Bot className="w-5 h-5 text-sidebar-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sidebar-foreground text-heading-sm">AI Assistant</h3>
+            <p className="text-xs text-muted-foreground">Chat with your documents</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={clearChat} disabled={messages.length === 0}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={clearChat} 
+            disabled={messages.length === 0}
+            className="text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          >
             <RotateCcw className="w-4 h-4 mr-2" />
             New Chat
           </Button>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose}
+            className="text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          >
             <X className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Scrollable Messages Area */}
-      <div className="flex-1 overflow-hidden bg-muted/30">
+      {/* Enhanced Messages Area */}
+      <div className="flex-1 overflow-hidden bg-surface/30">
         <ScrollArea className="h-full">
-          <div className="p-4">
+          <div className="p-5">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
-                <Bot className="w-12 h-12 text-muted-foreground mb-4" />
-                <h4 className="text-lg font-medium mb-2">Ask me about your documents</h4>
-                <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                <div className="p-4 rounded-2xl bg-sidebar-primary/10 border border-sidebar-primary/20 mb-6">
+                  <Bot className="w-12 h-12 text-sidebar-primary" />
+                </div>
+                <h4 className="text-heading-md mb-3 text-sidebar-foreground">Ask me about your documents</h4>
+                <p className="text-body-md text-muted-foreground mb-8 max-w-sm leading-relaxed">
                   I can help you write, edit, find information in your documents, or answer questions about your content.
                 </p>
                 
-                {/* Suggestion Chips */}
-                <div className="flex flex-col gap-2 w-full max-w-sm">
+                {/* Enhanced Suggestion Cards */}
+                <div className="flex flex-col gap-3 w-full max-w-sm">
                   <button
                     onClick={() => sendMessage("Summarize my recent blog posts")}
-                    className="px-4 py-3 text-sm bg-background hover:bg-muted border border-border rounded-lg transition-colors text-left"
+                    className="group p-4 text-sm bg-card hover:bg-sidebar-accent border border-border rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                   >
-                    📝 Summarize recent posts
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">📝</span>
+                      <span className="font-medium group-hover:text-sidebar-primary transition-colors">Summarize recent posts</span>
+                    </div>
                   </button>
                   <button
                     onClick={() => sendMessage("Help me improve this draft")}
-                    className="px-4 py-3 text-sm bg-background hover:bg-muted border border-border rounded-lg transition-colors text-left"
+                    className="group p-4 text-sm bg-card hover:bg-sidebar-accent border border-border rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                   >
-                    ✨ Improve my draft
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">✨</span>
+                      <span className="font-medium group-hover:text-sidebar-primary transition-colors">Improve my draft</span>
+                    </div>
                   </button>
                   <button
                     onClick={() => sendMessage("What topics have I written about?")}
-                    className="px-4 py-3 text-sm bg-background hover:bg-muted border border-border rounded-lg transition-colors text-left"
+                    className="group p-4 text-sm bg-card hover:bg-sidebar-accent border border-border rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                   >
-                    🔍 Analyze my topics
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🔍</span>
+                      <span className="font-medium group-hover:text-sidebar-primary transition-colors">Analyze my topics</span>
+                    </div>
                   </button>
                 </div>
               </div>
@@ -212,44 +239,49 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
               <div className="space-y-6">
                 {messages.map((message) => (
                   <div key={message.id} className="animate-fade-in">
-                    {/* Message Header */}
-                    <div className="flex items-center gap-2 mb-2">
-                      {message.role === 'user' ? (
-                        <>
-                          <User className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-medium text-primary">You</span>
-                        </>
-                      ) : (
-                        <>
+                    {/* Enhanced Message Header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`p-1.5 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-sidebar-primary/10 border border-sidebar-primary/20'
+                          : 'bg-muted/50 border border-border'
+                      }`}>
+                        {message.role === 'user' ? (
+                          <User className="w-4 h-4 text-sidebar-primary" />
+                        ) : (
                           <Bot className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm font-medium text-muted-foreground">Assistant</span>
-                        </>
-                      )}
+                        )}
+                      </div>
+                      <span className={`text-body-sm font-medium ${
+                        message.role === 'user' ? 'text-sidebar-primary' : 'text-muted-foreground'
+                      }`}>
+                        {message.role === 'user' ? 'You' : 'Assistant'}
+                      </span>
                     </div>
                     
-                    {/* Message Content */}
-                    <div className={`ml-6 p-3 rounded-lg border ${
+                    {/* Enhanced Message Content */}
+                    <div className={`ml-10 p-4 rounded-xl border transition-all duration-200 ${
                       message.role === 'user'
-                        ? 'bg-primary text-primary-foreground border-primary/20'
-                        : 'bg-background border-border'
+                        ? 'bg-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary/20 shadow-sm'
+                        : 'bg-card border-border shadow-sm hover:shadow-md'
                     }`}>
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                      <div className="text-body-md leading-relaxed whitespace-pre-wrap">
                         {message.content}
                       </div>
                       
-                      {/* Sources */}
+                      {/* Enhanced Sources */}
                       {message.sources && message.sources.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-border/20">
-                          <span className="text-xs text-muted-foreground">Referenced:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
+                        <div className="mt-4 pt-4 border-t border-border/20">
+                          <span className="text-caption text-muted-foreground font-medium">Referenced documents:</span>
+                          <div className="flex flex-wrap gap-2 mt-2">
                             {message.sources.map((source) => (
                               <button
                                 key={source.id}
                                 onClick={() => handleSourceClick(source.id)}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-primary hover:text-primary-foreground rounded transition-colors"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs bg-muted/50 hover:bg-sidebar-primary hover:text-sidebar-primary-foreground rounded-lg transition-all duration-200 border border-border hover:border-sidebar-primary/20 shadow-sm hover:shadow-md"
                               >
                                 <FileText className="w-3 h-3" />
-                                {source.title}
+                                <span className="font-medium">{source.title}</span>
                               </button>
                             ))}
                           </div>
@@ -259,18 +291,20 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
                   </div>
                 ))}
 
-                {/* Typing indicator */}
+                {/* Enhanced Typing indicator */}
                 {isLoading && (
                   <div className="animate-fade-in">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Bot className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">Assistant</span>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-1.5 rounded-lg bg-muted/50 border border-border">
+                        <Bot className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <span className="text-body-sm font-medium text-muted-foreground">Assistant</span>
                     </div>
-                    <div className="ml-6 p-3 bg-background border border-border rounded-lg">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:150ms]" />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:300ms]" />
+                    <div className="ml-10 p-4 bg-card border border-border rounded-xl shadow-sm">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 bg-sidebar-primary/60 rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-sidebar-primary/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                        <div className="w-2 h-2 bg-sidebar-primary/60 rounded-full animate-bounce [animation-delay:300ms]" />
                       </div>
                     </div>
                   </div>
@@ -282,29 +316,31 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area */}
-      <div className="flex-shrink-0 p-4 border-t border-border bg-card/50">
-        <div className="flex gap-2 items-end">
-          <Textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your documents, get writing help..."
-            className="flex-1 min-h-[60px] max-h-[120px] resize-none bg-muted/50 border-border focus:bg-background"
-            disabled={isLoading}
-          />
+      {/* Enhanced Input Area */}
+      <div className="flex-shrink-0 p-5 border-t border-sidebar-border bg-sidebar shadow-lg">
+        <div className="flex gap-3 items-end">
+          <div className="flex-1">
+            <Textarea
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your documents, get writing help..."
+              className="min-h-[56px] max-h-[120px] resize-none bg-card/50 border-border focus:bg-card focus:border-sidebar-primary/40 rounded-xl shadow-sm transition-all duration-200"
+              disabled={isLoading}
+            />
+          </div>
           <Button 
             onClick={() => sendMessage()} 
             disabled={!inputMessage.trim() || isLoading}
             size="icon"
-            className="h-[60px] w-[60px] flex-shrink-0"
+            className="h-[56px] w-[56px] flex-shrink-0 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-sidebar-primary hover:bg-sidebar-primary/90"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
           </Button>
         </div>
-        <div className="mt-2 text-center">
-          <span className="text-xs text-muted-foreground">
-            Press Enter to send, Shift+Enter for new line
+        <div className="mt-3 text-center">
+          <span className="text-caption text-muted-foreground">
+            Press Enter to send • Shift+Enter for new line
           </span>
         </div>
       </div>
