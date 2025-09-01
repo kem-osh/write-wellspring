@@ -1,6 +1,12 @@
+/**
+ * Stateless AI processor for document comparison.
+ * All logic driven by UnifiedCommand.
+ * No hardcoded config or frontend dependencies.
+ */
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mapParams } from '../_shared/modelParams.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,13 +42,23 @@ serve(async (req) => {
       throw new Error('Missing required environment variables');
     }
 
-    const { documentIds, userId } = await req.json();
+    // Extract UnifiedCommand and additional parameters
+    const { command, documentIds, userId } = await req.json();
+    
+    // Validate UnifiedCommand object
+    if (!command || typeof command !== 'object') {
+      throw new Error('Missing or invalid command object');
+    }
+    
+    if (!command.system_prompt || !command.ai_model) {
+      throw new Error('Command missing required fields: system_prompt, ai_model');
+    }
     
     if (!documentIds || !Array.isArray(documentIds) || documentIds.length < 2) {
       throw new Error('At least 2 document IDs are required for comparison');
     }
 
-    console.log(`Comparing ${documentIds.length} documents for user ${userId}`);
+    console.log(`Comparing ${documentIds.length} documents for user ${userId} using model ${command.ai_model}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
@@ -88,29 +104,38 @@ serve(async (req) => {
     
     console.log(`Calculated ${similarities.length} similarity pairs`);
     
-    const hardcodedComparePrompt = 'Analyze these document versions and identify key differences, improvements, and common themes. Be concise and specific.';
+    // Use shared utility for model parameter mapping
+    const params = mapParams(command.ai_model, command.max_tokens, command.temperature);
     
-    // Use GPT-5 Nano for analysis (sufficient for comparison tasks)
+    // Build request body using command configuration
+    const requestBody: any = {
+      model: command.ai_model,
+      messages: [
+        {
+          role: 'system',
+          content: command.system_prompt
+        },
+        {
+          role: 'user',
+          content: command.prompt || documents.map(d => `${d.title}:\n${d.content.substring(0, 1000)}`).join('\n\n---\n\n')
+        }
+      ],
+      [params.tokenKey]: params.tokens
+    };
+    
+    // Add temperature only for models that support it
+    if (params.includeTemp !== false) {
+      requestBody.temperature = params.includeTemp;
+    }
+    
+    // Call OpenAI with command-driven configuration
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: hardcodedComparePrompt
-          },
-          {
-            role: 'user',
-            content: documents.map(d => `${d.title}:\n${d.content.substring(0, 1000)}`).join('\n\n---\n\n')
-          }
-        ],
-        max_completion_tokens: 1000
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!chatResponse.ok) {
