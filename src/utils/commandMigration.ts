@@ -59,16 +59,28 @@ export async function migrateLocalStorageToDatabase(userId: string): Promise<Mig
     }
 
     // Convert commands to database format
-    const dbCommands = commandsToMigrate.map((cmd, index) => ({
-      user_id: userId,
-      name: cmd.name || 'Untitled Command',
-      prompt: cmd.prompt || '',
-      ai_model: cmd.model || cmd.ai_model || 'gpt-5-mini-2025-08-07',
-      max_tokens: cmd.maxTokens || cmd.max_tokens || 1000,
-      system_prompt: cmd.system_prompt || cmd.prompt || '',
-      temperature: cmd.temperature || 0.3,
-      sort_order: cmd.sortOrder || cmd.sort_order || index + 1
-    }));
+    const dbCommands = commandsToMigrate.map((cmd, index) => {
+      // Find matching default command for metadata
+      const defaultMatch = DEFAULT_COMMANDS_TEMPLATE.find(
+        def => def.name === cmd.name || 
+               def.function_name === cmd.function_name ||
+               def.function_name === getFunctionNameFromCommand(cmd)
+      );
+
+      return {
+        user_id: userId,
+        name: cmd.name || 'Untitled Command',
+        prompt: cmd.prompt || '',
+        ai_model: cmd.model || cmd.ai_model || 'gpt-5-mini-2025-08-07',
+        max_tokens: cmd.maxTokens || cmd.max_tokens || 1000,
+        system_prompt: cmd.system_prompt || cmd.prompt || '',
+        temperature: cmd.temperature || 0.3,
+        sort_order: cmd.sortOrder || cmd.sort_order || index + 1,
+        function_name: cmd.function_name || defaultMatch?.function_name || 'ai-light-edit',
+        icon: cmd.icon || defaultMatch?.icon || 'sparkles',
+        category: cmd.category || defaultMatch?.category || 'edit'
+      };
+    });
 
     // Insert commands into database
     const { data: insertedCommands, error: insertError } = await (supabase as any)
@@ -181,7 +193,10 @@ export async function restoreDefaultCommands(userId: string): Promise<{ success:
       max_tokens: cmd.max_tokens,
       system_prompt: cmd.system_prompt,
       temperature: cmd.temperature,
-      sort_order: cmd.sort_order
+      sort_order: cmd.sort_order,
+      function_name: cmd.function_name,
+      icon: cmd.icon,
+      category: cmd.category
     }));
 
     const { data: insertedCommands, error: insertError } = await (supabase as any)
