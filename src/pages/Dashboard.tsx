@@ -33,6 +33,7 @@ import { ContextualAIToolbar } from "@/components/ContextualAIToolbar";
 import { SettingsModal } from "@/components/SettingsModal";
 import { useHaptics } from "@/hooks/useHaptics";
 import { AnalysisModal } from "@/components/AnalysisModal";
+import { FactCheckModal } from "@/components/FactCheckModal";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 interface Document {
@@ -106,6 +107,12 @@ export default function Dashboard() {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveIndicator, setSaveIndicator] = useState<'saved' | 'saving' | 'error' | null>(null);
+  
+  // Analysis/Fact-check results
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [factCheckResult, setFactCheckResult] = useState<any>(null);
+  const [showFactCheckModal, setShowFactCheckModal] = useState(false);
   
   // Auto-title generation constants
   const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
@@ -450,7 +457,7 @@ export default function Dashboard() {
       } else if (functionName === 'ai-continue') {
         payload = {
           context: textToProcess,
-          currentDocumentId: currentDocument.id,
+          currentDocumentId: currentDocument.id.startsWith('temp-') ? null : currentDocument.id, // Handle temp docs
           userId: user.id
         };
       } else if (functionName === 'ai-fact-check') {
@@ -487,8 +494,11 @@ export default function Dashboard() {
       } else if (functionName === 'ai-continue') {
         // ai-continue returns continuation field
         result = data?.continuation;
-      } else if (functionName === 'ai-fact-check' || functionName === 'ai-analyze') {
-        // These commands return analysis, don't replace content
+      } else if (functionName === 'ai-fact-check') {
+        // ai-fact-check returns analysis, don't replace content but we need full data
+        result = data?.analysis || data?.result;
+      } else if (functionName === 'ai-analyze') {
+        // ai-analyze returns analysis object, don't replace content but we need full data
         result = data?.analysis || data?.result;
       } else {
         // Other functions should return result field consistently, with fallbacks
@@ -525,12 +535,21 @@ export default function Dashboard() {
       // Handle analysis/fact-check results differently (don't replace content)
       if (functionName === 'ai-fact-check' || functionName === 'ai-analyze') {
         // Show analysis in a modal or sidebar instead of replacing content
-        toast({
-          title: `${commandType === 'fact-check' ? 'Fact-Check' : 'Analysis'} Complete`,
-          description: "Results are ready for review.",
-        });
-        // TODO: Show analysis results in modal or sidebar
-        console.log('Analysis result:', result);
+        if (functionName === 'ai-analyze') {
+          setAnalysisResult(result);
+          setShowAnalysisModal(true);
+          toast({
+            title: "Analysis Complete",
+            description: "Your document analysis is ready for review.",
+          });
+        } else if (functionName === 'ai-fact-check') {
+          setFactCheckResult(data); // Store full response for fact-check (includes analysis, extractedClaims, etc.)
+          setShowFactCheckModal(true);
+          toast({
+            title: "Fact-Check Complete", 
+            description: "Fact-check analysis is ready for review.",
+          });
+        }
         return;
       }
 
@@ -1557,6 +1576,20 @@ export default function Dashboard() {
           showSettings={showCommandSettings}
           onClose={() => setShowCommandSettings(false)}
           onCommandsUpdated={() => setCommandSettingsKey(prev => prev + 1)}
+        />
+
+        {/* Analysis Modal */}
+        <AnalysisModal
+          open={showAnalysisModal}
+          onOpenChange={setShowAnalysisModal}
+          analysis={analysisResult}
+        />
+
+        {/* Fact-Check Modal */}
+        <FactCheckModal
+          open={showFactCheckModal}
+          onOpenChange={setShowFactCheckModal}
+          factCheckData={factCheckResult}
         />
       </div>
     </div>
