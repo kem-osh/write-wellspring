@@ -35,7 +35,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -46,7 +46,7 @@ serve(async (req) => {
             content: `Please generate a title for this content:\n\n${truncatedContent}`
           }
         ],
-        max_completion_tokens: 30
+        max_tokens: 30
       }),
     });
 

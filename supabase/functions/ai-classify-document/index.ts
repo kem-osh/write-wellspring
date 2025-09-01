@@ -34,7 +34,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -62,7 +62,7 @@ Respond with ONLY a JSON object: {"category": "category_name", "status": "status
             content: `Classify this content:\n\n${classificationContent}`
           }
         ],
-        max_completion_tokens: 50
+        max_tokens: 50
       }),
     });
 
