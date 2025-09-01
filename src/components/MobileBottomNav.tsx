@@ -82,7 +82,7 @@ export function MobileBottomNav({
         fixed bottom-6 left-1/2 -translate-x-1/2 z-50
         nav-pill
         px-2 py-2
-        max-w-fit mx-auto
+        w-fit
         ${className}
       `}>
         {/* Navigation Items */}
