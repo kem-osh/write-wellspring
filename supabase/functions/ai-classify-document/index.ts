@@ -31,23 +31,7 @@ serve(async (req) => {
 
     // 3) The 'command' object from the frontend is the single source of truth
     const commandConfig = command;
-
-    // Extract first few paragraphs for classification
-    const paragraphs = textToProcess.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-    const classificationContent = paragraphs.slice(0, 3).join('\n\n').slice(0, 1000);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: commandConfig.ai_model || 'gpt-5-nano-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: `Classify this document content and determine its category and status.
+    const systemPrompt = commandConfig.system_prompt || `Classify this document content and determine its category and status.
 
 Categories (choose the best fit):
 - Personal: personal thoughts, diary entries, reflections
@@ -64,15 +48,42 @@ Status (choose based on content quality and completeness):
 - polished: well-structured, needs minor edits
 - final: complete, publication-ready
 
-Respond with ONLY a JSON object: {"category": "category_name", "status": "status_name"}`
-          },
-          {
-            role: 'user',
-            content: `Classify this content:\n\n${classificationContent}`
-          }
-        ],
-        max_completion_tokens: commandConfig.max_tokens || 50
-      }),
+Respond with ONLY a JSON object: {"category": "category_name", "status": "status_name"}`;
+    const userPrompt = commandConfig.prompt || 'Classify this content';
+
+    // Extract first few paragraphs for classification
+    const paragraphs = textToProcess.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    const classificationContent = paragraphs.slice(0, 3).join('\n\n').slice(0, 1000);
+    
+    // Determine token parameter based on model
+    const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    const isNewerModel = aiModel.includes('gpt-5') || aiModel.includes('gpt-4.1') || aiModel.includes('o3') || aiModel.includes('o4');
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    const requestBody = {
+      model: aiModel,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: `${userPrompt}:\n\n${classificationContent}`
+        }
+      ]
+    };
+
+    // Add appropriate token parameter
+    requestBody[tokenParam] = commandConfig.max_tokens || 50;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

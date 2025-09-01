@@ -45,7 +45,8 @@ serve(async (req) => {
     const commandConfig = command;
     const model = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
     const maxTokens = commandConfig.max_tokens || 500;
-    const systemPrompt = commandConfig.system_prompt || 'Continue writing in the exact same style and voice as the provided text.';
+    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
+    const userPrompt = commandConfig.prompt || 'Continue writing in the exact same style and voice as the provided text.';
     
     // Determine token parameter based on model
     const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
@@ -97,12 +98,12 @@ serve(async (req) => {
       messages: [
         {
           role: 'system',
-          content: `${commandConfig.system_prompt || systemPrompt} 
+          content: `${systemPrompt} 
                    ${styleExamples ? `Here are examples of the author's writing style:\n${styleExamples}` : ''}`
         },
         {
           role: 'user',
-          content: `Continue this text naturally:\n\n${textToProcess}`
+          content: `${userPrompt}\n\n---\n\nContinue this text naturally:\n\n${textToProcess}`
         }
       ]
     };

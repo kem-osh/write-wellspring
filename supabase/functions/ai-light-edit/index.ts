@@ -31,10 +31,32 @@ serve(async (req) => {
 
     // 4) Configure model strictly from commandConfig
     const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
-    const systemPrompt = commandConfig.system_prompt || 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
+    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
+    const userPrompt = commandConfig.prompt || 'Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
     const maxCompletionTokens = commandConfig.max_tokens || 2000;
 
     console.log('Processing light edit for text length:', textToProcess.length, 'with maxCompletionTokens:', maxCompletionTokens);
+    
+    // Determine token parameter based on model
+    const isNewerModel = aiModel.includes('gpt-5') || aiModel.includes('gpt-4.1') || aiModel.includes('o3') || aiModel.includes('o4');
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    const requestBody = {
+      model: aiModel,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: `${userPrompt}\n\n---\n\n${textToProcess}`
+        }
+      ]
+    };
+
+    // Add appropriate token parameter
+    requestBody[tokenParam] = maxCompletionTokens;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -42,20 +64,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: aiModel,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: textToProcess
-          }
-        ],
-        max_completion_tokens: maxCompletionTokens
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

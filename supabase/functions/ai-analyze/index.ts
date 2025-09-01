@@ -66,44 +66,33 @@ serve(async (req) => {
     // 3) The 'command' object from the frontend is the single source of truth
     const commandConfig = command;
     const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
-
-    const wordCount = textToProcess.trim().split(/\s+/).length;
-    const maxTokens = Math.min(commandConfig.max_tokens || 1500, Math.max(600, wordCount * 2));
-
-    // Construct the analysis prompt
-    const prompt = `You are an expert writing analyst. Analyze the following text and provide a comprehensive JSON response with detailed feedback.
-
-Text to analyze:
-"${textToProcess}"
-
-Provide analysis in this exact JSON format:
-{
-  "readability": {
-    "score": (1-10, where 10 is most readable),
-    "level": "beginner/intermediate/advanced",
-    "suggestions": ["specific readability improvements"]
-  },
-  "tone": {
-    "current": "description of current tone",
-    "consistency": (1-10, where 10 is most consistent),
-    "suggestions": ["tone improvement suggestions"]
-  },
-  "structure": {
-    "score": (1-10, where 10 is best structured),
-    "flow": "assessment of logical flow",
-    "suggestions": ["structure improvements"]
-  },
-  "strengths": ["list of specific strengths"],
-  "weaknesses": ["list of specific weaknesses"],
-  "suggestions": ["actionable improvement recommendations"],
-  "wordCount": ${wordCount},
-  "readingTime": "X min Y sec",
-  "overallScore": (1-10 overall quality score)
-}
-
-Be specific, actionable, and constructive in your feedback.`;
+    const maxTokens = commandConfig.max_tokens || 1500;
+    const systemPrompt = commandConfig.system_prompt || 'You are an expert writing analyst. Always respond with valid JSON only, no additional text.';
+    const userPrompt = commandConfig.prompt || 'Analyze the following text and provide comprehensive feedback in JSON format.';
 
     console.log(`Making OpenAI API call for analysis with model: ${model}`);
+    
+    // Determine token parameter based on model
+    const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    const requestBody = {
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: `${userPrompt}\n\n---\n\n${textToProcess}`
+        }
+      ],
+      response_format: { type: 'json_object' }
+    };
+
+    // Add appropriate token parameter
+    requestBody[tokenParam] = maxTokens;
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -112,18 +101,7 @@ Be specific, actionable, and constructive in your feedback.`;
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are an expert writing analyst. Always respond with valid JSON only, no additional text.' 
-          },
-          { role: 'user', content: prompt }
-        ],
-        max_completion_tokens: maxTokens,
-        response_format: { type: 'json_object' }
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

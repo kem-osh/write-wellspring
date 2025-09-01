@@ -45,7 +45,8 @@ serve(async (req) => {
     const commandConfig = command;
     const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
     const maxTokens = commandConfig.max_tokens || 1000;
-    const systemPrompt = commandConfig.system_prompt || 'You are a fact-checking assistant. Analyze the following text for factual accuracy and consistency.';
+    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
+    const userPrompt = commandConfig.prompt || 'You are a fact-checking assistant. Analyze the following text for factual accuracy and consistency.';
     
     // Determine token parameter based on model
     const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
@@ -63,7 +64,7 @@ serve(async (req) => {
         },
         {
           role: 'user',
-          content: textToProcess
+          content: `${userPrompt}\n\n---\n\n${textToProcess}`
         }
       ]
     };
@@ -138,11 +139,11 @@ serve(async (req) => {
       messages: [
         {
           role: 'system',
-          content: `${commandConfig.system_prompt || systemPrompt} Check if the claims in the text are consistent with the reference documents. Identify any contradictions or confirmations. If no reference documents are available, note that fact-checking is limited to internal consistency.`
+          content: `${systemPrompt} Check if the claims in the text are consistent with the reference documents. Identify any contradictions or confirmations. If no reference documents are available, note that fact-checking is limited to internal consistency.`
         },
         {
           role: 'user',
-          content: `Text to check:\n${textToProcess}\n\nReference documents:\n${referenceContext}`
+          content: `${userPrompt}\n\n---\n\nText to check:\n${textToProcess}\n\nReference documents:\n${referenceContext}`
         }
       ]
     };

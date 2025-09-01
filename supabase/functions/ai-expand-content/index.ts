@@ -31,9 +31,31 @@ serve(async (req) => {
 
     // 3) The 'command' object from the frontend is the single source of truth
     const commandConfig = command;
-    const systemPrompt = commandConfig.system_prompt || 'Expand this content by 20-40% while maintaining the original tone. Add depth, examples, and supporting details.';
+    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
+    const userPrompt = commandConfig.prompt || 'Expand this content by 20-40% while maintaining the original tone. Add depth, examples, and supporting details.';
     const aiModel = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
     const maxCompletionTokens = commandConfig.max_tokens || 1500;
+    
+    // Determine token parameter based on model
+    const isNewerModel = aiModel.includes('gpt-5') || aiModel.includes('gpt-4.1') || aiModel.includes('o3') || aiModel.includes('o4');
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    const requestBody = {
+      model: aiModel,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: `${userPrompt}\n\n---\n\n${textToProcess}`
+        }
+      ]
+    };
+
+    // Add appropriate token parameter
+    requestBody[tokenParam] = maxCompletionTokens;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -41,20 +63,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: aiModel,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: textToProcess
-          }
-        ],
-        max_completion_tokens: maxCompletionTokens,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

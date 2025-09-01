@@ -31,11 +31,35 @@ serve(async (req) => {
 
     // 3) The 'command' object from the frontend is the single source of truth  
     const commandConfig = command;
+    const systemPrompt = commandConfig.system_prompt || 'You are a helpful AI writing assistant.';
+    const userPrompt = commandConfig.prompt || 'Generate a concise, descriptive title (2-8 words) for the given content. The title should capture the main topic or theme. Do not use generic words like "document", "text", or "content". Be specific and engaging. Only return the title, nothing else.';
 
     // Extract first two paragraphs for better title generation
     const paragraphs = textToProcess.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     const firstTwoParagraphs = paragraphs.slice(0, 2).join('\n\n');
     const truncatedContent = firstTwoParagraphs.slice(0, 800); // Increased limit for better context
+    
+    // Determine token parameter based on model
+    const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    const isNewerModel = aiModel.includes('gpt-5') || aiModel.includes('gpt-4.1') || aiModel.includes('o3') || aiModel.includes('o4');
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    const requestBody = {
+      model: aiModel,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: `${userPrompt}\n\n---\n\nPlease generate a title for this content:\n\n${truncatedContent}`
+        }
+      ]
+    };
+
+    // Add appropriate token parameter
+    requestBody[tokenParam] = commandConfig.max_tokens || 30;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -43,20 +67,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: commandConfig.ai_model || 'gpt-5-nano-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: commandConfig.system_prompt || 'Generate a concise, descriptive title (2-8 words) for the given content. The title should capture the main topic or theme. Do not use generic words like "document", "text", or "content". Be specific and engaging. Only return the title, nothing else.'
-          },
-          {
-            role: 'user',
-            content: `Please generate a title for this content:\n\n${truncatedContent}`
-          }
-        ],
-        max_completion_tokens: commandConfig.max_tokens || 30
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

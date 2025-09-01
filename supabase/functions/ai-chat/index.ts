@@ -28,13 +28,26 @@ serve(async (req) => {
       },
     });
 
-    const { message, userId } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId, message } = await req.json();
 
-    if (!message || !userId) {
-      throw new Error('Missing message or userId');
+    // 2) Validate the payload - for chat, we need either message or content/selectedText
+    if (!userId || !command) {
+      throw new Error('User ID and the full command object are required.');
+    }
+    const userMessage = message || selectedText || content;
+    if (!userMessage) {
+      throw new Error('No message was provided to process.');
     }
 
-    console.log(`Processing chat message for user ${userId}: ${message}`);
+    // 3) The 'command' object from the frontend is the single source of truth
+    const commandConfig = command;
+    const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
+    const maxTokens = commandConfig.max_tokens || 1000;
+    const systemPrompt = commandConfig.system_prompt || 'You are an AI writing assistant with access to the user\'s document library.';
+    const temperature = commandConfig.temperature || 0.7;
+
+    console.log(`Processing chat message for user ${userId}: ${userMessage}`);
 
     // Generate embedding for the user's message to find relevant documents
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
@@ -45,7 +58,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'text-embedding-3-small',
-        input: message,
+        input: userMessage,
       }),
     });
 
@@ -90,7 +103,7 @@ serve(async (req) => {
     
     // Try text search as additional fallback for better recall
     let textSearchDocs = null;
-    const searchTerms = message.toLowerCase().split(' ').filter(word => word.length > 2);
+    const searchTerms = userMessage.toLowerCase().split(' ').filter(word => word.length > 2);
     if (searchTerms.length > 0) {
       console.log('Attempting text search with terms:', searchTerms);
       const searchPattern = searchTerms.join('|');
@@ -178,16 +191,41 @@ serve(async (req) => {
 
     // Prepare the system message with context
     const systemMessage = hasDocuments 
-      ? `You are an AI writing assistant with access to the user's document library. 
+      ? `${systemPrompt}
 Use the provided context to give accurate, helpful responses about their writing.
 Always reference specific documents by title when answering questions about their content.
 Be conversational and helpful.
 
 Context from user's documents:
 ${context}`
-      : `You are an AI writing assistant. The user doesn't seem to have any documents in their library yet, or their query doesn't match their existing content.
+      : `${systemPrompt}
+The user doesn't seem to have any documents in their library yet, or their query doesn't match their existing content.
 Encourage them to create some documents first, or ask more specific questions about their writing needs.
 Be helpful and suggest how they can get started with their writing projects.`;
+    
+    // Determine token parameter based on model
+    const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    const requestBody = {
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: systemMessage
+        },
+        {
+          role: 'user',
+          content: userMessage
+        }
+      ]
+    };
+
+    // Add appropriate token parameter and temperature
+    requestBody[tokenParam] = maxTokens;
+    if (!isNewerModel) {
+      requestBody.temperature = temperature;
+    }
 
     // Call OpenAI for the chat response
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -196,20 +234,7 @@ Be helpful and suggest how they can get started with their writing projects.`;
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: systemMessage
-          },
-          {
-            role: 'user',
-            content: message
-          }
-        ],
-        max_completion_tokens: 1000,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!chatResponse.ok) {
@@ -228,7 +253,7 @@ Be helpful and suggest how they can get started with their writing projects.`;
         await supabase.from('ai_usage').insert({
           user_id: userId,
           function_name: 'ai-chat',
-          model: 'gpt-5-mini-2025-08-07',
+          model: model,
           tokens_input: usage.prompt_tokens,
           tokens_output: usage.completion_tokens,
           cost_estimate: (usage.prompt_tokens * 0.00000025) + (usage.completion_tokens * 0.000001) // GPT-5 Mini pricing
