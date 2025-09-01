@@ -3,7 +3,7 @@ import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { Badge } from '@/components/ui/badge';
 import { X, Sparkles, Zap, Loader2, Clock } from 'lucide-react';
-import { CustomShortcuts } from '@/components/CustomShortcuts';
+import { AICommandCarousel } from '@/components/AICommandCarousel';
 import { UnifiedCommand } from '@/types/commands';
 
 interface MobileAICommandsProps {
@@ -105,11 +105,11 @@ export function MobileAICommands({
             </div>
             
             <div className="mobile-commands">
-              <CustomShortcuts 
-                onShortcut={handleCommand}
+              <AICommandCarousel 
+                onCommand={handleCommand}
                 isLoading={aiLoading}
                 selectedText={selectedText}
-                isMobile={true}
+                className="w-full"
               />
             </div>
           </div>

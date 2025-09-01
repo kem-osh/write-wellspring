@@ -1419,13 +1419,12 @@ export default function Dashboard() {
                     💾 <span className="hidden sm:inline ml-1">Save</span>
                   </Button>
                 </div>
-              </div>
-            </footer>
-          </>
-        )}
+              </footer>
+            </>
+          )}
 
-        {/* AI Suggestion Panel */}
-        <AISuggestionPanel
+          {/* AI Suggestion Panel */}
+          <AISuggestionPanel
           suggestion={aiSuggestion}
           isLoading={aiLoading}
           onAccept={handleAcceptSuggestion}
@@ -1497,5 +1496,6 @@ export default function Dashboard() {
           </SheetContent>
         </Sheet>
       </div>
-    );
-  }
+    </div>
+  );
+}

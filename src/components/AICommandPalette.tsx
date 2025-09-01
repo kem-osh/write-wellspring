@@ -99,10 +99,10 @@ export function AICommandPalette({
       }
 
       // Process commands with context-aware sorting
-      const processedCommands = (dbCommands || []).map(cmd => ({
+      const processedCommands = (dbCommands || []).map((cmd: any) => ({
         ...cmd,
         description: cmd.description || cmd.prompt?.substring(0, 50) + '...' || 'Custom command',
-        estimated_time: cmd.estimated_time || '3-5s'
+        estimated_time: '3-5s' // Default value since this field may not exist in DB yet
       }));
 
       setCommands(processedCommands);
