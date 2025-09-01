@@ -349,7 +349,8 @@ export default function Dashboard() {
   const executeAICommand = useCallback(async (
     commandType: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
                  'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
-                 'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
+                 'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check' |
+                 'continue' | 'rewrite',
     customPrompt?: string,
     model?: string,
     maxTokens?: number
@@ -408,6 +409,7 @@ export default function Dashboard() {
         case 'simplify':
         case 'formalize':
         case 'casualize':
+        case 'rewrite':
           functionName = 'ai-rewrite';
           break;
         case 'summarize':
@@ -418,6 +420,15 @@ export default function Dashboard() {
         case 'add-headers':
           functionName = 'ai-outline';
           break;
+        case 'continue':
+          functionName = 'ai-continue';
+          break;
+        case 'analyze':
+          functionName = 'ai-analyze';
+          break;
+        case 'fact-check':
+          functionName = 'ai-fact-check';
+          break;
         default:
           console.warn(`Unknown command type: ${commandType}, using light-edit`);
           functionName = 'ai-light-edit';
@@ -425,23 +436,38 @@ export default function Dashboard() {
 
       console.log(`Calling ${functionName}...`);
       
-      const payload = functionName === 'ai-rewrite' 
-        ? {
-            text: textToProcess,
-            style: commandType === 'heavy-polish' ? 'auto' : 
-                   commandType === 'simplify' ? 'casual' :
-                   commandType === 'formalize' ? 'formal' :
-                   commandType === 'casualize' ? 'casual' : 'auto',
-            userId: user.id
-          }
-        : {
-            content: currentSelectedText ? undefined : documentContent,
-            selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt,
-            model: model || 'gpt-5-nano-2025-08-07',
-            maxTokens: maxTokens || (commandType === 'light-edit' ? 2000 : 500),
-            userId: user.id
-          };
+      let payload;
+      if (functionName === 'ai-rewrite') {
+        payload = {
+          text: textToProcess,
+          style: commandType === 'heavy-polish' ? 'auto' : 
+                 commandType === 'simplify' ? 'casual' :
+                 commandType === 'formalize' ? 'formal' :
+                 commandType === 'casualize' ? 'casual' : 
+                 commandType === 'rewrite' ? 'auto' : 'auto',
+          userId: user.id
+        };
+      } else if (functionName === 'ai-continue') {
+        payload = {
+          context: textToProcess,
+          currentDocumentId: currentDocument.id,
+          userId: user.id
+        };
+      } else if (functionName === 'ai-fact-check') {
+        payload = {
+          text: textToProcess,
+          userId: user.id
+        };
+      } else {
+        payload = {
+          content: currentSelectedText ? undefined : documentContent,
+          selectedText: currentSelectedText || undefined,
+          customPrompt: customPrompt,
+          model: model || 'gpt-5-nano-2025-08-07',
+          maxTokens: maxTokens || (commandType === 'light-edit' ? 2000 : 500),
+          userId: user.id
+        };
+      }
 
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: payload
@@ -458,6 +484,12 @@ export default function Dashboard() {
       if (functionName === 'ai-rewrite') {
         // ai-rewrite returns alternatives array, take the first one or fallback to result
         result = data?.alternatives?.[0]?.content || data?.result;
+      } else if (functionName === 'ai-continue') {
+        // ai-continue returns continuation field
+        result = data?.continuation;
+      } else if (functionName === 'ai-fact-check' || functionName === 'ai-analyze') {
+        // These commands return analysis, don't replace content
+        result = data?.analysis || data?.result;
       } else {
         // Other functions should return result field consistently, with fallbacks
         result = data?.result || 
@@ -490,7 +522,19 @@ export default function Dashboard() {
 
       console.log(`AI command ${commandType} completed successfully`);
 
-      // Replace text in editor
+      // Handle analysis/fact-check results differently (don't replace content)
+      if (functionName === 'ai-fact-check' || functionName === 'ai-analyze') {
+        // Show analysis in a modal or sidebar instead of replacing content
+        toast({
+          title: `${commandType === 'fact-check' ? 'Fact-Check' : 'Analysis'} Complete`,
+          description: "Results are ready for review.",
+        });
+        // TODO: Show analysis results in modal or sidebar
+        console.log('Analysis result:', result);
+        return;
+      }
+
+      // Replace text in editor for other commands
       if (currentSelectedText && editorRef.current) {
         // Replace selected text using Monaco editor API
         replaceSelectedText(result);

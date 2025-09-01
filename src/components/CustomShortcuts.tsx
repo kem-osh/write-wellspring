@@ -14,7 +14,8 @@ interface CustomShortcutsProps {
   onShortcut: (
     type: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
          'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
-         'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
+         'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check' |
+         'continue' | 'rewrite',
     prompt: string, 
     model?: string, 
     maxTokens?: number
@@ -172,6 +173,44 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     sortOrder: 11,
     category: 'style',
     estimatedTime: '3-5s'
+  },
+
+  // NEW COMMANDS
+  {
+    id: 'continue',
+    name: 'Continue',
+    prompt: 'Continue writing from the provided text, seamlessly matching the existing tone and style.',
+    description: 'AI continues writing where you left off',
+    icon: 'zap',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 1000,
+    sortOrder: 12,
+    category: 'edit',
+    estimatedTime: '3-5s'
+  },
+  {
+    id: 'rewrite',
+    name: 'Rewrite',
+    prompt: 'Rewrite the following text to improve its clarity, engagement, and impact. Preserve the core meaning.',
+    description: 'A complete rewrite of the selected text or document',
+    icon: 'pen-tool',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 2000,
+    sortOrder: 13,
+    category: 'edit',
+    estimatedTime: '4-7s'
+  },
+  {
+    id: 'fact-check',
+    name: 'Fact-Check',
+    prompt: 'Analyze the following text for factual accuracy. Identify any claims and verify them. Return a summary of your findings.',
+    description: 'Verify factual claims within the text',
+    icon: 'shield',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 1500,
+    sortOrder: 14,
+    category: 'analyze',
+    estimatedTime: '6-10s'
   }
 ];
 
@@ -258,7 +297,9 @@ export function CustomShortcuts({
       'change-tone': 'change-tone',
       'strengthen-args': 'strengthen-args',
       'add-examples': 'add-examples',
-      'fact-check': 'fact-check'
+      'fact-check': 'fact-check',
+      'continue': 'continue',
+      'rewrite': 'rewrite'
     };
     return typeMap[commandId] || 'light-edit';
   };
