@@ -13,17 +13,13 @@ export interface UnifiedCommand {
   created_at?: string;
   updated_at?: string;
   
-  // Usage tracking fields (new in database)
-  usage_count?: number;
-  last_used_at?: string;
-  description?: string;
-  
   // Now persisted in database (no more UI-only metadata)
   function_name: string; // Maps to edge function name
   icon: string; // Lucide icon name (e.g., "Sparkles", "Languages", "PenTool")
   category: string; // e.g., "edit", "structure", "analyze", "utility"
   
   // Optional UI fields (can be derived)
+  description?: string;
   estimated_time?: string;
 }
 
