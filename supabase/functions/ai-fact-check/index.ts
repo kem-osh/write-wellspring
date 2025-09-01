@@ -34,28 +34,58 @@ serve(async (req) => {
         headers: { Authorization: req.headers.get('Authorization')! },
       },
     });
+
+    // Fetch user command configuration
+    const { data: userCommandConfig } = await supabase
+      .from('user_commands')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('name', 'Fact-Check')
+      .maybeSingle();
+
+    // Define default configuration
+    const defaultConfig = {
+      ai_model: 'gpt-5-mini-2025-08-07',
+      max_tokens: 1000,
+      system_prompt: 'You are a fact-checking assistant. Analyze the following text for factual accuracy and consistency.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
+    const model = commandConfig.ai_model || defaultConfig.ai_model;
     
-    // Extract potential facts/claims using GPT-5 Nano
+    // Determine token parameter based on model
+    const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
+    const maxTokens = commandConfig.max_tokens || defaultConfig.max_tokens;
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    console.log(`Using model: ${model}, ${tokenParam}: ${maxTokens}`);
+    
+    // Extract potential facts/claims using configured model
+    const claimsRequestBody = {
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: 'Extract specific claims, facts, or statements that could be verified. List them clearly.'
+        },
+        {
+          role: 'user',
+          content: text
+        }
+      ]
+    };
+
+    // Add appropriate token parameter for claims extraction
+    claimsRequestBody[tokenParam] = Math.min(500, maxTokens);
+
     const claimsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: 'Extract specific claims, facts, or statements that could be verified. List them clearly.'
-          },
-          {
-            role: 'user',
-            content: text
-          }
-        ],
-        max_completion_tokens: 500
-      }),
+      body: JSON.stringify(claimsRequestBody),
     });
 
     if (!claimsResponse.ok) {
@@ -104,33 +134,37 @@ serve(async (req) => {
       console.error('Embedding generation failed, proceeding without document search');
     }
     
-    // Check consistency using GPT-5 Mini for better analysis
+    // Check consistency using configured model
     const referenceContext = relevantDocs.length > 0 
       ? relevantDocs.map(d => `${d.title}:\n${d.content.substring(0, 500)}`).join('\n\n')
       : 'No reference documents found in user library.';
     
     console.log('Performing consistency check...');
     
+    const consistencyRequestBody = {
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: `${commandConfig.system_prompt || defaultConfig.system_prompt} Check if the claims in the text are consistent with the reference documents. Identify any contradictions or confirmations. If no reference documents are available, note that fact-checking is limited to internal consistency.`
+        },
+        {
+          role: 'user',
+          content: `Text to check:\n${text}\n\nReference documents:\n${referenceContext}`
+        }
+      ]
+    };
+
+    // Add appropriate token parameter for consistency check
+    consistencyRequestBody[tokenParam] = maxTokens;
+
     const consistencyResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: 'Check if the claims in the text are consistent with the reference documents. Identify any contradictions or confirmations. If no reference documents are available, note that fact-checking is limited to internal consistency.'
-          },
-          {
-            role: 'user',
-            content: `Text to check:\n${text}\n\nReference documents:\n${referenceContext}`
-          }
-        ],
-        max_completion_tokens: 1000
-      }),
+      body: JSON.stringify(consistencyRequestBody),
     });
 
     if (!consistencyResponse.ok) {

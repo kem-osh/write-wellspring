@@ -34,6 +34,32 @@ serve(async (req) => {
         headers: { Authorization: req.headers.get('Authorization')! },
       },
     });
+
+    // Fetch user command configuration
+    const { data: userCommandConfig } = await supabase
+      .from('user_commands')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('name', 'Continue')
+      .maybeSingle();
+
+    // Define default configuration
+    const defaultConfig = {
+      ai_model: 'gpt-5-nano-2025-08-07',
+      max_tokens: 500,
+      system_prompt: 'Continue writing in the exact same style and voice as the provided text.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
+    const model = commandConfig.ai_model || defaultConfig.ai_model;
+    
+    // Determine token parameter based on model
+    const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
+    const maxTokens = commandConfig.max_tokens || defaultConfig.max_tokens;
+    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+
+    console.log(`Using model: ${model}, ${tokenParam}: ${maxTokens}`);
     
     // Generate embedding for context to find similar writing style
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
@@ -73,28 +99,32 @@ serve(async (req) => {
       console.error('Embedding generation failed, proceeding without style matching');
     }
     
-    // Use GPT-5 Nano for continuation (fast and cheap)
+    // Use configured model for continuation
+    const requestBody = {
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: `${commandConfig.system_prompt || defaultConfig.system_prompt} 
+                   ${styleExamples ? `Here are examples of the author's writing style:\n${styleExamples}` : ''}`
+        },
+        {
+          role: 'user',
+          content: `Continue this text naturally:\n\n${context}`
+        }
+      ]
+    };
+
+    // Add appropriate token parameter
+    requestBody[tokenParam] = maxTokens;
+
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: `Continue writing in the exact same style and voice as the provided text. 
-                     ${styleExamples ? `Here are examples of the author's writing style:\n${styleExamples}` : ''}`
-          },
-          {
-            role: 'user',
-            content: `Continue this text naturally:\n\n${context}`
-          }
-        ],
-        max_completion_tokens: 500
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!chatResponse.ok) {
