@@ -11,11 +11,14 @@ const cardVariants = cva(
         elevated: "bg-card border border-border shadow-md hover:shadow-lg",
         interactive: "bg-card border border-border shadow-md hover:shadow-lg cursor-pointer hover:border-primary/20 transform hover:translate-y-[-1px] active:translate-y-0 active:shadow-md",
         surface: "bg-surface border border-border",
-        ghost: "bg-transparent border-0"
+        ghost: "bg-transparent border-0",
+        compact: "bg-card border border-border/50 shadow-sm hover:shadow-md rounded-lg",
+        mobile: "bg-card border border-border/30 shadow-sm hover:shadow-md rounded-lg"
       },
       padding: {
         none: "",
-        sm: "p-3",
+        xs: "p-2",      // Extra small for mobile cards
+        sm: "p-3", 
         default: "p-4",
         lg: "p-6",
         xl: "p-8"
@@ -34,6 +37,7 @@ const cardHeaderVariants = cva(
     variants: {
       padding: {
         none: "",
+        xs: "p-2",      // Extra small for mobile
         sm: "p-3",
         default: "p-4", 
         lg: "p-6"
@@ -51,6 +55,7 @@ const cardContentVariants = cva(
     variants: {
       padding: {
         none: "",
+        xs: "p-2 pt-0",  // Extra small for mobile
         sm: "p-3 pt-0",
         default: "p-4 pt-0",
         lg: "p-6 pt-0"
@@ -68,6 +73,7 @@ const cardFooterVariants = cva(
     variants: {
       padding: {
         none: "",
+        xs: "p-2 pt-0",  // Extra small for mobile
         sm: "p-3 pt-0",
         default: "p-4 pt-0",
         lg: "p-6 pt-0"

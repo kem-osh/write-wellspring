@@ -97,8 +97,8 @@ export function MobileDocumentLibrary({
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
-        side="left" 
-        className="w-[80vw] max-w-sm p-0 mobile-sheet data-[state=open]:slide-in-from-left-0" 
+        side="bottom" 
+        className="h-[95vh] p-0 gap-0 bg-background" 
         {...swipeHandlers}
       >
         <div className="flex flex-col h-full bg-background">
@@ -112,45 +112,50 @@ export function MobileDocumentLibrary({
               onSynthesizeSelected={onSynthesizeSelected}
               onCompareSelected={onCompareSelected}
               onDeleteSelected={handleDeleteSelected}
+              className="border-b border-border/20 px-4 py-3 bg-card/50 backdrop-blur-sm"
             />
           )}
-          {/* Enhanced Header */}
-          <div className="flex items-center justify-between p-5 border-b bg-surface/60 backdrop-blur-sm">
+
+          {/* Compact Header */}
+          <div className="flex items-center justify-between p-4 border-b bg-muted/20 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-primary/10 rounded-lg">
-                  <FileText className="h-5 w-5 text-primary" />
+                  <FileText className="h-4 w-4 text-primary" />
                 </div>
-                <h2 className="text-heading-lg font-semibold">Documents</h2>
+                <h2 className="text-base font-semibold">Documents</h2>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
               <EnhancedButton
                 variant="outline"
-                size="icon"
+                size="sm"
                 onClick={onCreateNew}
-                className="h-9 w-9 border-border/60 hover:border-primary/60 hover:bg-primary/10 rounded-lg shadow-soft transition-all duration-200"
+                className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 border-0"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3 w-3 mr-1" />
+                New
+              </EnhancedButton>
+              <EnhancedButton
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-8 w-8 p-0 hover:bg-muted/60 rounded-lg"
+              >
+                <X className="h-4 w-4" />
               </EnhancedButton>
             </div>
-            <EnhancedButton
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-9 w-9 hover:bg-muted/60 rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </EnhancedButton>
           </div>
           
-          {/* Enhanced Search and Filters */}
-          <div className="p-5 bg-surface/40 border-b space-y-4">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+          {/* Compact Search and Filters */}
+          <div className="p-4 pb-3 bg-muted/10 border-b border-border/20 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search documents..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-9 bg-background/60 border-border/60 focus:border-primary/60 focus:bg-background/80 focus:shadow-soft transition-all duration-200 rounded-lg"
+                className="pl-9 h-9 bg-background/80 backdrop-blur-sm border-border/30 focus:border-primary/50 text-sm"
               />
             </div>
             
@@ -159,9 +164,9 @@ export function MobileDocumentLibrary({
                 variant={showFilters ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 h-9 px-4 rounded-lg transition-all duration-200"
+                className="flex items-center gap-2 h-8 px-3 rounded-lg text-xs"
               >
-                <Filter className="h-4 w-4" />
+                <Filter className="h-3 w-3" />
                 Filters
               </EnhancedButton>
               
@@ -170,7 +175,7 @@ export function MobileDocumentLibrary({
                   variant="ghost"
                   size="sm"
                   onClick={() => onFiltersChange({ category: 'all', status: [], sortBy: 'recent' })}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9 px-3 rounded-lg transition-colors"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-3 rounded-lg text-xs"
                 >
                   Clear
                 </EnhancedButton>
@@ -187,40 +192,41 @@ export function MobileDocumentLibrary({
             )}
           </div>
           
-          {/* Enhanced Document List */}
+          {/* Optimized Document List with smaller cards */}
           <ScrollArea className="flex-1 mobile-scroll">
-            <div className="p-5 space-y-4 pb-safe">
+            <div className="p-3 space-y-2 pb-safe">
               {loading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="h-28 bg-surface/40 animate-pulse rounded-xl border border-border/30" />
+                <div className="space-y-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-20 bg-surface/30 animate-pulse rounded-lg border border-border/20" />
                   ))}
                 </div>
               ) : documents.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="p-4 bg-muted/30 rounded-2xl w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                    <FileText className="h-10 w-10 text-muted-foreground/60" />
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-muted/30 rounded-full flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-heading-sm mb-3 font-semibold">
+                  <h3 className="text-sm font-medium mb-2">
                     {searchQuery ? 'No documents found' : 'No documents yet'}
                   </h3>
-                  <p className="text-body-sm text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
+                  <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
                     {searchQuery 
-                      ? `No documents match "${searchQuery}". Try different keywords or check your filters.`
-                      : "Create your first document to get started with LogosScribe."
+                      ? `No documents match "${searchQuery}". Try different keywords.`
+                      : "Create your first document to get started."
                     }
                   </p>
                   <EnhancedButton
-                    variant="default"
+                    variant="outline"
+                    size="sm"
                     onClick={onCreateNew}
-                    className="gap-2 h-11 px-6 rounded-lg shadow-soft"
+                    className="h-9 px-4 gap-2"
                   >
                     <Plus className="h-4 w-4" />
                     Create Document
                   </EnhancedButton>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {documents.map(doc => (
                     <DocumentCard
                       key={doc.id}

@@ -88,21 +88,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" className="space-y-6 px-1 py-4 pb-8">
-            <div className="space-y-3">
-              <Label htmlFor="autosave" className={isMobile ? 'text-base' : ''}>Auto-Save Interval</Label>
+            <div className="space-y-4">
+              <Label htmlFor="autosave" className={isMobile ? 'text-sm' : 'text-sm'}>Auto-Save Interval</Label>
               <Select
                 value={settings.autoSaveInterval.toString()}
                 onValueChange={(value) => updateSetting('autoSaveInterval', parseInt(value))}
               >
-                <SelectTrigger className={`bg-background border ${isMobile ? 'h-12 text-base' : ''}`}>
+                <SelectTrigger className={`bg-background border ${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'}`}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-background border shadow-lg z-50">
+                <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
                   {autoSaveOptions.map((option) => (
                     <SelectItem 
                       key={option.value} 
                       value={option.value.toString()}
-                      className={`${isMobile ? 'h-12 text-base' : ''} hover:bg-muted`}
+                      className={`${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'} hover:bg-muted`}
                     >
                       {option.label}
                     </SelectItem>
@@ -111,57 +111,57 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </Select>
             </div>
 
-            <div className="space-y-3">
-              <Label htmlFor="category" className={isMobile ? 'text-base' : ''}>Default Document Category</Label>
+            <div className="space-y-4">
+              <Label htmlFor="category" className={isMobile ? 'text-sm' : 'text-sm'}>Default Document Category</Label>
               <Select
                 value={settings.defaultCategory}
                 onValueChange={(value) => updateSetting('defaultCategory', value)}
               >
-                <SelectTrigger className={`bg-background border ${isMobile ? 'h-12 text-base' : ''}`}>
+                <SelectTrigger className={`bg-background border ${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'}`}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-background border shadow-lg z-50">
-                  <SelectItem value="general" className={`${isMobile ? 'h-12 text-base' : ''} hover:bg-muted`}>General</SelectItem>
-                  <SelectItem value="blog" className={`${isMobile ? 'h-12 text-base' : ''} hover:bg-muted`}>Blog</SelectItem>
-                  <SelectItem value="book" className={`${isMobile ? 'h-12 text-base' : ''} hover:bg-muted`}>Book</SelectItem>
-                  <SelectItem value="essay" className={`${isMobile ? 'h-12 text-base' : ''} hover:bg-muted`}>Essay</SelectItem>
-                  <SelectItem value="notes" className={`${isMobile ? 'h-12 text-base' : ''} hover:bg-muted`}>Notes</SelectItem>
+                <SelectContent className="bg-background border shadow-lg z-50 max-h-60">
+                  <SelectItem value="general" className={`${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'} hover:bg-muted`}>General</SelectItem>
+                  <SelectItem value="blog" className={`${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'} hover:bg-muted`}>Blog</SelectItem>
+                  <SelectItem value="book" className={`${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'} hover:bg-muted`}>Book</SelectItem>
+                  <SelectItem value="essay" className={`${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'} hover:bg-muted`}>Essay</SelectItem>
+                  <SelectItem value="notes" className={`${isMobile ? 'h-11 text-sm' : 'h-10 text-sm'} hover:bg-muted`}>Notes</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className={`flex items-center justify-between ${isMobile ? 'py-2' : ''}`}>
-              <Label htmlFor="autotitle" className={isMobile ? 'text-base' : ''}>Auto-Generate Titles</Label>
+            <div className={`flex items-center justify-between ${isMobile ? 'py-3' : 'py-2'}`}>
+              <Label htmlFor="autotitle" className={isMobile ? 'text-sm' : 'text-sm'}>Auto-Generate Titles</Label>
               <Switch
                 id="autotitle"
                 checked={settings.autoGenerateTitles}
                 onCheckedChange={(checked) => updateSetting('autoGenerateTitles', checked)}
-                className={isMobile ? 'scale-125' : ''}
+                className={isMobile ? 'scale-110' : ''}
               />
             </div>
 
             <div className="space-y-4">
-              <Label className={isMobile ? 'text-base' : ''}>Export Format</Label>
+              <Label className={isMobile ? 'text-sm' : 'text-sm'}>Export Format</Label>
               <RadioGroup
                 value={settings.exportFormat}
                 onValueChange={(value) => updateSetting('exportFormat', value as Settings['exportFormat'])}
-                className={`grid grid-cols-2 gap-4 ${isMobile ? 'gap-6' : ''}`}
+                className={`grid grid-cols-2 gap-4 ${isMobile ? 'gap-4' : ''}`}
               >
                 <div className={`flex items-center space-x-3 ${isMobile ? 'py-1' : ''}`}>
-                  <RadioGroupItem value="txt" id="txt" className={isMobile ? 'scale-125' : ''} />
-                  <Label htmlFor="txt" className={isMobile ? 'text-base' : ''}>Plain Text</Label>
+                  <RadioGroupItem value="txt" id="txt" className={isMobile ? 'scale-110' : ''} />
+                  <Label htmlFor="txt" className={isMobile ? 'text-sm' : 'text-sm'}>Plain Text</Label>
                 </div>
                 <div className={`flex items-center space-x-3 ${isMobile ? 'py-1' : ''}`}>
-                  <RadioGroupItem value="md" id="md" className={isMobile ? 'scale-125' : ''} />
-                  <Label htmlFor="md" className={isMobile ? 'text-base' : ''}>Markdown</Label>
+                  <RadioGroupItem value="md" id="md" className={isMobile ? 'scale-110' : ''} />
+                  <Label htmlFor="md" className={isMobile ? 'text-sm' : 'text-sm'}>Markdown</Label>
                 </div>
                 <div className={`flex items-center space-x-3 ${isMobile ? 'py-1' : ''}`}>
-                  <RadioGroupItem value="docx" id="docx" className={isMobile ? 'scale-125' : ''} />
-                  <Label htmlFor="docx" className={isMobile ? 'text-base' : ''}>Word Document</Label>
+                  <RadioGroupItem value="docx" id="docx" className={isMobile ? 'scale-110' : ''} />
+                  <Label htmlFor="docx" className={isMobile ? 'text-sm' : 'text-sm'}>Word Document</Label>
                 </div>
                 <div className={`flex items-center space-x-3 ${isMobile ? 'py-1' : ''}`}>
-                  <RadioGroupItem value="pdf" id="pdf" className={isMobile ? 'scale-125' : ''} />
-                  <Label htmlFor="pdf" className={isMobile ? 'text-base' : ''}>PDF</Label>
+                  <RadioGroupItem value="pdf" id="pdf" className={isMobile ? 'scale-110' : ''} />
+                  <Label htmlFor="pdf" className={isMobile ? 'text-sm' : 'text-sm'}>PDF</Label>
                 </div>
               </RadioGroup>
             </div>

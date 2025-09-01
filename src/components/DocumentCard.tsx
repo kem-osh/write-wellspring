@@ -116,14 +116,14 @@ export function DocumentCard({
 
   return (
     <Card 
-      variant="elevated"
+      variant={compact ? "mobile" : "elevated"}
       className={`group transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer ${
         isSelected ? 'ring-2 ring-primary/50 bg-primary/5 shadow-md' : 'hover:shadow-md'
       }`}
       onClick={handleCardClick}
     >
-      <CardContent padding={compact ? "sm" : "lg"}>
-        <div className="space-y-4">
+      <CardContent padding={compact ? "xs" : "sm"}>
+        <div className={`space-y-${compact ? '3' : '4'}`}>
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -132,20 +132,20 @@ export function DocumentCard({
                 <button
                   onClick={handleCheckboxToggle}
                   data-checkbox
-                  className="touch-target p-2 -m-2 rounded-md hover:bg-secondary/50 transition-colors"
+                  className={`touch-target ${compact ? 'p-1 -m-1' : 'p-2 -m-2'} rounded-md hover:bg-secondary/50 transition-colors`}
                 >
                   {isSelected ? (
-                    <CheckSquare className="h-5 w-5 text-primary" />
+                    <CheckSquare className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-primary`} />
                   ) : (
-                    <Square className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+                    <Square className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-muted-foreground hover:text-foreground`} />
                   )}
                 </button>
               )}
               
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <FileText className="h-5 w-5 text-primary/70 flex-shrink-0" />
-                  <h3 className="text-heading-md font-semibold truncate">
+                <div className={`flex items-center gap-3 ${compact ? 'mb-1' : 'mb-2'}`}>
+                  <FileText className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-primary/70 flex-shrink-0`} />
+                  <h3 className={`${compact ? 'text-sm font-medium' : 'text-heading-md font-semibold'} truncate line-clamp-1`}>
                     {highlightSearchTerm(document.title, searchQuery)}
                   </h3>
                 </div>
@@ -156,11 +156,11 @@ export function DocumentCard({
                 <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  size="icon"
+                  size={compact ? "sm" : "icon"}
                   className="opacity-0 group-hover:opacity-100 transition-opacity touch-target"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  <MoreVertical className={compact ? "h-3 w-3" : "h-4 w-4"} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -191,40 +191,40 @@ export function DocumentCard({
           </div>
 
           {/* Metadata */}
-          <div className="flex items-center gap-3 text-body-sm text-muted-foreground">
+          <div className={`flex items-center gap-3 ${compact ? 'text-xs' : 'text-body-sm'} text-muted-foreground`}>
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+              <Calendar className={compact ? "h-3 w-3" : "h-4 w-4"} />
               <span>{format(new Date(document.updated_at), 'MMM d, yyyy')}</span>
             </div>
             <span className="text-border">•</span>
             <div className="flex items-center gap-2">
-              <Hash className="h-4 w-4" />
+              <Hash className={compact ? "h-3 w-3" : "h-4 w-4"} />
               <span>{formatWordCount(document.word_count)} words</span>
             </div>
           </div>
 
-          {/* Content Preview */}
+          {/* Content Preview - Hide in compact mode */}
           {!compact && document.content && (
             <div className="bg-surface/30 rounded-lg p-4 border border-border/30">
-              <p className="text-body-md text-foreground/80 leading-relaxed line-clamp-3">
+              <p className="text-body-md text-foreground/80 leading-relaxed line-clamp-2">
                 {highlightSearchTerm(getPreviewText(document.content, 140), searchQuery)}
               </p>
             </div>
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-border/30">
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className={`text-xs font-medium px-3 py-1 ${getStatusColor(document.status)}`}>
+          <div className={`flex items-center justify-between ${compact ? 'pt-2' : 'pt-4'} border-t border-border/30`}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className={`${compact ? 'text-[10px] px-2 py-0.5' : 'text-xs px-3 py-1'} font-medium ${getStatusColor(document.status)}`}>
                 {document.status}
               </Badge>
-              <Badge variant="outline" className="text-xs font-medium px-3 py-1 bg-secondary/50 text-secondary-foreground border-secondary/50">
+              <Badge variant="outline" className={`${compact ? 'text-[10px] px-2 py-0.5' : 'text-xs px-3 py-1'} font-medium bg-secondary/50 text-secondary-foreground border-secondary/50`}>
                 {document.category}
               </Badge>
             </div>
             
-            <div className="flex items-center gap-2 text-body-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
+            <div className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-body-sm'} text-muted-foreground`}>
+              <Clock className={compact ? "h-3 w-3" : "h-4 w-4"} />
               <span>{format(new Date(document.updated_at), 'HH:mm')}</span>
             </div>
           </div>
