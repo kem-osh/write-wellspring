@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MobileEditor } from './MobileEditor';
 import { MarkdownPreview } from './MarkdownPreview';
 import { MarkdownToolbar } from './MarkdownToolbar';
-import { Eye, Edit, PanelLeftRight } from 'lucide-react';
+import { Eye, Edit, PanelsLeftRight } from 'lucide-react';
 import type { Settings } from '@/stores/settingsStore';
 
 interface MobileMarkdownEditorProps {
@@ -30,27 +30,27 @@ export function MobileMarkdownEditor({
     onChange(newValue);
   };
 
-  if (mode === 'split') {
+  if (mode === 'edit') {
     return (
       <div className="h-full w-full flex flex-col">
         <div className="flex items-center justify-between p-2 border-b">
           <div className="flex gap-1">
             <Button
-              variant={mode === 'edit' ? 'default' : 'ghost'}
+              variant="default"
               size="sm"
               onClick={() => setMode('edit')}
             >
               <Edit className="w-4 h-4" />
             </Button>
             <Button
-              variant={mode === 'split' ? 'default' : 'ghost'}
+              variant="ghost"
               size="sm"
               onClick={() => setMode('split')}
             >
-              <PanelLeftRight className="w-4 h-4" />
+              <PanelsLeftRight className="w-4 h-4" />
             </Button>
             <Button
-              variant={mode === 'preview' ? 'default' : 'ghost'}
+              variant="ghost"
               size="sm"
               onClick={() => setMode('preview')}
             >
@@ -61,92 +61,106 @@ export function MobileMarkdownEditor({
 
         <MarkdownToolbar onInsert={insertMarkdown} />
         
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-0">
-          <div className="border-r">
-            <MobileEditor
-              value={value}
-              onChange={onChange}
-              isDarkMode={isDarkMode}
-              settings={settings}
-              placeholder={placeholder}
-            />
-          </div>
-          <div className="bg-muted/20">
-            <MarkdownPreview
-              content={value}
-              settings={settings}
-            />
-          </div>
+        <div className="flex-1">
+          <MobileEditor
+            value={value}
+            onChange={onChange}
+            isDarkMode={isDarkMode}
+            settings={settings}
+            placeholder={placeholder}
+          />
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="h-full w-full flex flex-col">
-      <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="h-full flex flex-col">
+  if (mode === 'preview') {
+    return (
+      <div className="h-full w-full flex flex-col">
         <div className="flex items-center justify-between p-2 border-b">
-          <TabsList className="grid w-full grid-cols-3 max-w-xs">
-            <TabsTrigger value="edit" className="flex items-center gap-2">
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode('edit')}
+            >
               <Edit className="w-4 h-4" />
-              Edit
-            </TabsTrigger>
-            <TabsTrigger value="split" className="flex items-center gap-2">
-              <PanelLeftRight className="w-4 h-4" />
-              Split
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-2">
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode('split')}
+            >
+              <PanelsLeftRight className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setMode('preview')}
+            >
               <Eye className="w-4 h-4" />
-              Preview
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="edit" className="flex-1 mt-0">
-          <div className="h-full flex flex-col">
-            <MarkdownToolbar onInsert={insertMarkdown} />
-            <div className="flex-1">
-              <MobileEditor
-                value={value}
-                onChange={onChange}
-                isDarkMode={isDarkMode}
-                settings={settings}
-                placeholder={placeholder}
-              />
-            </div>
+            </Button>
           </div>
-        </TabsContent>
-
-        <TabsContent value="preview" className="flex-1 mt-0">
+        </div>
+        
+        <div className="flex-1">
           <MarkdownPreview
             content={value}
             settings={settings}
           />
-        </TabsContent>
+        </div>
+      </div>
+    );
+  }
 
-        <TabsContent value="split" className="flex-1 mt-0">
-          <div className="h-full flex flex-col">
-            <MarkdownToolbar onInsert={insertMarkdown} />
-            <div className="flex-1 grid grid-rows-2 gap-1">
-              <div className="border-b">
-                <MobileEditor
-                  value={value}
-                  onChange={onChange}
-                  isDarkMode={isDarkMode}
-                  settings={settings}
-                  placeholder={placeholder}
-                />
-              </div>
-              <div className="bg-muted/20">
-                <MarkdownPreview
-                  content={value}
-                  settings={settings}
-                />
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+  // Split mode
+  return (
+    <div className="h-full w-full flex flex-col">
+      <div className="flex items-center justify-between p-2 border-b">
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMode('edit')}
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setMode('split')}
+          >
+            <PanelsLeftRight className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMode('preview')}
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      <MarkdownToolbar onInsert={insertMarkdown} />
+      
+      <div className="flex-1 grid grid-rows-2 gap-1">
+        <div className="border-b">
+          <MobileEditor
+            value={value}
+            onChange={onChange}
+            isDarkMode={isDarkMode}
+            settings={settings}
+            placeholder={placeholder}
+          />
+        </div>
+        <div className="bg-muted/20">
+          <MarkdownPreview
+            content={value}
+            settings={settings}
+          />
+        </div>
+      </div>
     </div>
   );
 }
