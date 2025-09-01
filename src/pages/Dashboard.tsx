@@ -561,7 +561,7 @@ export default function Dashboard() {
         });
 
         if (error) throw error;
-        result = data?.editedText || data?.result;
+        result = data?.result;
       } else if (commandType === 'condense') {
         const { data, error } = await supabase.functions.invoke('ai-condense-content', {
           body: {
@@ -575,7 +575,7 @@ export default function Dashboard() {
         });
         
         if (error) throw error;
-        result = data?.condensedText || data?.result;
+        result = data?.result;
       } else if (commandType === 'expand') {
         const { data, error } = await supabase.functions.invoke('ai-expand-content', {
           body: {
@@ -589,7 +589,7 @@ export default function Dashboard() {
         });
         
         if (error) throw error;
-        result = data?.expandedText || data?.result;
+        result = data?.result;
       } else if (commandType === 'outline') {
         const { data, error } = await supabase.functions.invoke('ai-outline', {
           body: {
@@ -603,7 +603,7 @@ export default function Dashboard() {
         });
         
         if (error) throw error;
-        result = data?.outlineText || data?.result;
+        result = data?.result;
       } else if (commandType === 'continue') {
         const { data, error } = await supabase.functions.invoke('ai-continue', {
           body: {
@@ -680,7 +680,7 @@ export default function Dashboard() {
         });
 
         if (error) throw error;
-        result = data?.editedText || data?.result;
+        result = data?.result;
       } else if (commandType === 'review-analyze') {
         // Use analyze function for comprehensive review
         const { data, error } = await supabase.functions.invoke('ai-analyze', {
@@ -706,7 +706,16 @@ export default function Dashboard() {
       }
       
       // Handle result replacement for commands that return content
-      if (result && commandType !== 'continue' && commandType !== 'rewrite' && commandType !== 'voice-match') {
+      if (commandType !== 'continue' && commandType !== 'rewrite' && commandType !== 'voice-match') {
+        if (!result || typeof result !== 'string' || !result.trim()) {
+          toast({ 
+            title: "Empty AI Response", 
+            description: "AI didn't generate content. Try different text or command.",
+            variant: "destructive" 
+          });
+          return;
+        }
+
         if (currentSelectedText) {
           // Replace selected text
           replaceSelectedText(result);
