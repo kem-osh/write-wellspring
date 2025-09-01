@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme transition for smooth theme switching */
+html, body {
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+/* Ensure all components respect theme transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
 @layer base {
   :root {
     /* Enhanced color palette for LogosScribe */

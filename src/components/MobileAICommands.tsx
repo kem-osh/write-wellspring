@@ -2,13 +2,20 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { Badge } from '@/components/ui/badge';
-import { X, Sparkles, Zap, Loader2 } from 'lucide-react';
+import { X, Sparkles, Zap, Loader2, Clock } from 'lucide-react';
 import { CustomShortcuts } from '@/components/CustomShortcuts';
 
 interface MobileAICommandsProps {
   isOpen: boolean;
   onClose: () => void;
-  onCommand: (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string, model?: string, maxTokens?: number) => void;
+  onCommand: (
+    type: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
+         'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
+         'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
+    prompt: string, 
+    model?: string, 
+    maxTokens?: number
+  ) => void;
   aiLoading: boolean;
   selectedText: string;
 }
@@ -21,17 +28,24 @@ export function MobileAICommands({
   selectedText
 }: MobileAICommandsProps) {
 
-  const handleCommand = (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string, model?: string, maxTokens?: number) => {
+  const handleCommand = (
+    type: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
+         'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
+         'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
+    prompt: string, 
+    model?: string, 
+    maxTokens?: number
+  ) => {
     onCommand(type, prompt, model, maxTokens);
     onClose();
   };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-auto max-h-[80vh] rounded-t-2xl border-t-0 bg-background">
-        <div className="space-y-6 pb-safe">
+      <SheetContent side="bottom" className="h-auto max-h-[85vh] rounded-t-2xl border-t-0 bg-background overflow-y-auto overscroll-contain">
+        <div className="space-y-6 pb-safe pt-2">
           {/* Enhanced Header */}
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-ai-button/10 rounded-lg">
                 <Sparkles className="h-5 w-5 text-ai-button" />
@@ -64,7 +78,10 @@ export function MobileAICommands({
                   <div className="flex-1 min-w-0">
                     <p className="text-body-sm text-muted-foreground mb-1">Selected text:</p>
                     <p className="text-body-sm line-clamp-3 bg-muted/50 p-2 rounded text-foreground">
-                      "{selectedText}"
+                      "{selectedText.length > 150 ? selectedText.substring(0, 150) + '...' : selectedText}"
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedText.split(' ').length} words selected
                     </p>
                   </div>
                 </div>
@@ -78,19 +95,23 @@ export function MobileAICommands({
               <CardContent padding="sm">
                 <div className="flex items-center gap-3">
                   <Loader2 className="h-4 w-4 animate-spin text-ai-button" />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-body-sm font-medium">Processing...</p>
                     <p className="text-body-sm text-muted-foreground">AI is analyzing your content</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>2-5s</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
           
-          {/* Enhanced Custom Shortcuts */}
-          <div className="space-y-3">
+          {/* Enhanced Custom Shortcuts with Categories */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-heading-sm">Quick Commands</h4>
+              <h4 className="text-heading-sm">AI Commands</h4>
               <Badge variant="outline" className="text-xs">
                 {selectedText ? 'Selection' : 'Full Document'}
               </Badge>
@@ -100,11 +121,13 @@ export function MobileAICommands({
               <CustomShortcuts 
                 onShortcut={handleCommand}
                 isLoading={aiLoading}
+                selectedText={selectedText}
+                isMobile={true}
               />
             </div>
           </div>
 
-          {/* Tips */}
+          {/* Enhanced Tips */}
           <Card variant="ghost" className="bg-accent/5 border-accent/20">
             <CardContent padding="sm">
               <div className="flex items-start gap-3">
@@ -112,10 +135,12 @@ export function MobileAICommands({
                   <Sparkles className="h-3 w-3 text-accent" />
                 </div>
                 <div>
-                  <p className="text-body-sm font-medium text-accent-foreground">Pro Tip</p>
-                  <p className="text-body-sm text-muted-foreground">
-                    Select text before using AI commands for more precise edits
-                  </p>
+                  <p className="text-body-sm font-medium text-accent-foreground">Pro Tips</p>
+                  <div className="text-body-sm text-muted-foreground space-y-1 mt-1">
+                    <p>• Select text for precise edits</p>
+                    <p>• Use keyboard shortcuts (Ctrl+L for Light Polish)</p>
+                    <p>• Analyze gives detailed feedback</p>
+                  </div>
                 </div>
               </div>
             </CardContent>

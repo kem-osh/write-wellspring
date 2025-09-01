@@ -31,6 +31,8 @@ import { CommandSettings } from "@/components/CommandSettings";
 import { useDocumentSelection } from "@/hooks/useDocumentSelection";
 import { ContextualAIToolbar } from "@/components/ContextualAIToolbar";
 import { SettingsModal } from "@/components/SettingsModal";
+import { useHaptics } from "@/hooks/useHaptics";
+import { AnalysisModal } from "@/components/AnalysisModal";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 interface Document {
@@ -113,6 +115,8 @@ export default function Dashboard() {
   const [mobileDocumentLibraryOpen, setMobileDocumentLibraryOpen] = useState(false);
   const [mobileAICommandsOpen, setMobileAICommandsOpen] = useState(false);
   
+  // Import haptics hook
+  const { impactLight, notificationSuccess, notificationError } = useHaptics();
   const { isMobile, isTablet, isDesktop } = useDevice();
   
   // Document selection hook

@@ -86,8 +86,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <TabsTrigger value="ai" className={isMobile ? 'h-10 text-base' : ''}>AI</TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 overflow-y-auto">
-          <TabsContent value="general" className="space-y-6 px-1 py-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          <TabsContent value="general" className="space-y-6 px-1 py-4 pb-8">
             <div className="space-y-3">
               <Label htmlFor="autosave" className={isMobile ? 'text-base' : ''}>Auto-Save Interval</Label>
               <Select
@@ -167,7 +167,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="editor" className="space-y-6 px-1 py-4">
+          <TabsContent value="editor" className="space-y-6 px-1 py-4 pb-8">
             <div className="space-y-4">
               <Label className={isMobile ? 'text-base' : ''}>Theme</Label>
               <RadioGroup
@@ -264,7 +264,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="ai" className="space-y-6 px-1 py-4">
+          <TabsContent value="ai" className="space-y-6 px-1 py-4 pb-8">
             <div className="space-y-4">
               <Label className={isMobile ? 'text-base' : ''}>Default AI Model</Label>
               <RadioGroup
@@ -365,8 +365,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     <>
       {isMobile ? (
         <Sheet open={open} onOpenChange={onOpenChange}>
-          <SheetContent side="bottom" className="h-[95vh] p-0">
-            <div className="flex flex-col h-full p-6">
+          <SheetContent side="bottom" className="max-h-[85vh] p-0 pt-safe">
+            <div className="flex flex-col h-full max-h-[85vh] p-4 pb-safe px-6 overflow-hidden overscroll-contain">
               <SheetHeader className="pb-4">
                 <SheetTitle className="text-left text-xl">Settings</SheetTitle>
               </SheetHeader>
