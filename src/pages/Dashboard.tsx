@@ -1033,7 +1033,7 @@ export default function Dashboard() {
                 console.log('Voice recording from nav');
               }}
               onAICommands={() => setMobileAICommandsOpen(true)}
-              onAIChat={() => setFullScreenChatOpen(true)}
+        onAIChat={() => setFullScreenChatOpen(true)}
               onSettings={() => setShowSettingsModal(true)}
               aiLoading={aiLoading}
               className="fixed bottom-6 left-6 right-6 z-40"
@@ -1459,7 +1459,13 @@ export default function Dashboard() {
         <FullScreenAIChat
           isOpen={fullScreenChatOpen}
           onClose={() => setFullScreenChatOpen(false)}
-          onDocumentSelect={openDocument}
+          onDocumentSelect={(documentId) => {
+            // Find the document and open it
+            const doc = documents.find(d => d.id === documentId);
+            if (doc) {
+              openDocument(doc);
+            }
+          }}
         />
       </div>
     </div>

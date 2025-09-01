@@ -587,3 +587,95 @@ html, body {
     -webkit-line-clamp: 4;
   }
 }
+
+/* Chat overlay tokens */
+:root {
+  --chat-backdrop: hsl(var(--slate-950) / 0.7);
+  --glass-bg: hsl(var(--slate-900) / 0.6);
+  --glass-border: hsl(var(--slate-400) / 0.12);
+  --pill-shadow: 0 8px 24px hsl(var(--slate-950) / 0.35), 0 2px 8px hsl(var(--slate-950) / 0.2);
+  --chat-max-width: 44rem;
+  --chat-vertical-padding: 24px;
+  --backdrop-blur-lg: blur(16px);
+}
+
+.dark {
+  --chat-backdrop: hsl(var(--slate-950) / 0.8);
+  --glass-bg: hsl(var(--slate-800) / 0.7);
+  --glass-border: hsl(var(--slate-600) / 0.15);
+}
+
+/* Chat utilities */
+.chat-overlay {
+  @apply fixed inset-0 z-[60];
+  background: var(--chat-backdrop);
+  backdrop-filter: var(--backdrop-blur-lg);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--backdrop-blur-lg);
+  box-shadow: var(--pill-shadow);
+}
+
+.chat-container {
+  max-width: var(--chat-max-width);
+  @apply mx-auto px-4 md:px-6;
+}
+
+.chat-input-glass {
+  @apply glass-panel rounded-2xl border-border/10;
+  box-shadow: 0 10px 40px hsl(var(--slate-950) / 0.3), 0 2px 12px hsl(var(--slate-950) / 0.15);
+}
+
+.message-bubble {
+  @apply rounded-2xl px-4 py-3 max-w-[85%] shadow-sm;
+}
+
+.message-bubble-user {
+  @apply bg-primary text-primary-foreground ml-auto;
+}
+
+.message-bubble-ai {
+  @apply bg-muted/50 text-foreground border border-border/50;
+}
+
+/* Additional animation keyframes for chat */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes messageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes caretBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}

@@ -205,7 +205,11 @@ export default {
 				'slideInLeft': 'slideInLeft 0.3s ease-out',
 				'slideOutLeft': 'slideOutLeft 0.3s ease-out',
 				'slideInRight': 'slideInRight 0.3s ease-out',
-				'slideOutRight': 'slideOutRight 0.3s ease-out'
+				'slideOutRight': 'slideOutRight 0.3s ease-out',
+				'slide-in-up': 'slideInUp 0.3s ease-out',
+				'slide-out-down': 'slideOutDown 0.3s ease-out',
+				'message-enter': 'messageEnter 0.2s ease-out',
+				'caret-blink': 'caretBlink 1s infinite'
 			}
 		}
 	},

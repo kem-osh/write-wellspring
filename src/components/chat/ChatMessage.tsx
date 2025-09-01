@@ -11,11 +11,18 @@ interface ChatMessageProps {
   }>;
   timestamp: Date;
   onSourceClick?: (sourceId: string) => void;
+  isStreaming?: boolean;
 }
 
-export function ChatMessage({ role, content, sources, onSourceClick }: ChatMessageProps) {
+export function ChatMessage({ 
+  role, 
+  content, 
+  sources, 
+  onSourceClick, 
+  isStreaming = false 
+}: ChatMessageProps) {
   return (
-    <div className="flex gap-3 mb-6 animate-fade-in">
+    <div className="flex gap-4 mb-6 animate-message-enter">
       <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
         role === 'user' 
           ? 'bg-primary text-primary-foreground' 
@@ -28,12 +35,15 @@ export function ChatMessage({ role, content, sources, onSourceClick }: ChatMessa
         )}
       </div>
       
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-3">
         <div className={`message-bubble ${
           role === 'user' ? 'message-bubble-user' : 'message-bubble-ai'
         }`}>
           <div className="text-sm leading-relaxed whitespace-pre-wrap">
             {content}
+            {isStreaming && (
+              <span className="inline-block w-2 h-5 bg-current ml-1 animate-caret-blink" />
+            )}
           </div>
         </div>
         
