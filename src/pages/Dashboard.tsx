@@ -743,9 +743,15 @@ export default function Dashboard() {
   };
 
   const handleVoiceTranscription = async (text: string) => {
-    if (!text) return;
+    if (!text) {
+      console.warn('handleVoiceTranscription called with empty text');
+      return;
+    }
+
+    console.log('Voice transcription received:', text.length, 'characters');
 
     if (currentDocument) {
+      console.log('Appending to existing document:', currentDocument.id);
       const newContent = documentContent ? `${documentContent}\n\n${text}` : text;
       setDocumentContent(newContent);
       toast({
@@ -753,6 +759,7 @@ export default function Dashboard() {
         description: 'Transcription has been added to your document.',
       });
     } else {
+      console.log('No current document - creating new voice document');
       await createNewDocumentFromVoice(text);
     }
   };
@@ -766,20 +773,49 @@ export default function Dashboard() {
       
       if (content.trim().split(/\s+/).filter(word => word.length > 0).length >= 10) {
         try {
-          const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
-            body: { content: content.substring(0, 200) }
+          // Create a minimal command object for title generation
+          const titleCommand: UnifiedCommand = {
+            id: 'temp-title-gen',
+            user_id: user.id,
+            name: 'Generate Title',
+            ai_model: 'gpt-5-nano-2025-08-07',
+            system_prompt: 'Generate a concise, descriptive title for this document.',
+            prompt: 'Generate a short, clear title that captures the main topic:',
+            max_tokens: 30,
+            temperature: 0.3,
+            function_name: 'ai-generate-title',
+            category: 'utility',
+            icon: 'heading',
+            sort_order: 0
+          };
+
+          // Use universal payload structure
+          const { data: titleData, error: titleError } = await supabase.functions.invoke('ai-generate-title', {
+            body: {
+              command: titleCommand,
+              content: content.substring(0, 500), // More context for better titles
+              userId: user.id
+            }
           });
 
-          if (titleData?.title) {
+          if (titleError) {
+            console.error('Title generation error:', titleError);
+          } else if (titleData?.result) {
             const currentDate = new Date().toLocaleDateString('en-US', { 
               month: '2-digit', 
               day: '2-digit', 
               year: 'numeric' 
             });
-            title = `${titleData.title} - ${currentDate}`;
+            title = `${titleData.result} - ${currentDate}`;
           }
         } catch (error) {
           console.error('Failed to generate title:', error);
+          // Fallback to time-based title if AI fails
+          const currentTime = new Date().toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+          title = `Voice Note - ${currentTime}`;
         }
       }
 
@@ -805,15 +841,27 @@ export default function Dashboard() {
       setDocumentTitle(data.title);
       setDocumentContent(data.content);
       
+      // Trigger auto-save to ensure document is properly synced
+      setTimeout(() => {
+        if (typeof handleAutoSave === 'function') {
+          handleAutoSave();
+        }
+      }, 1000);
+      
+      // Generate embeddings silently for better search
+      generateEmbeddingsSilently(data.id, data.content);
+      
       toast({
         title: "Voice note created",
         description: `Created "${title}" from your voice input.`,
       });
+      
+      console.log('Successfully created voice document:', data.id);
     } catch (error) {
       console.error('Error creating voice document:', error);
       toast({
         title: "Error creating document",
-        description: "Failed to create document from voice input.",
+        description: "Failed to create document from voice input. Please try again.",
         variant: "destructive",
       });
     }
