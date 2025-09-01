@@ -25,26 +25,26 @@ export function MonacoEditor({ value, onChange, isDarkMode, settings, onSelectio
       base: 'vs',
       inherit: true,
       rules: [],
-      colors: {
-        'editor.background': '#fefefe',
-        'editor.foreground': '#1f2937',
-        'editor.lineHighlightBackground': '#f8fafc',
-        'editorCursor.foreground': '#3b82f6',
-        'editor.selectionBackground': '#dbeafe',
-      }
+        colors: {
+          'editor.background': 'hsl(var(--surface))',
+          'editor.foreground': 'hsl(var(--foreground))',
+          'editor.lineHighlightBackground': 'hsl(var(--muted)/0.3)',
+          'editorCursor.foreground': 'hsl(var(--primary))',
+          'editor.selectionBackground': 'hsl(var(--primary)/0.15)',
+        }
     });
 
     monaco.editor.defineTheme('writing-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [],
-      colors: {
-        'editor.background': '#1e293b',
-        'editor.foreground': '#f1f5f9',
-        'editor.lineHighlightBackground': '#334155',
-        'editorCursor.foreground': '#60a5fa',
-        'editor.selectionBackground': '#1e3a8a',
-      }
+        colors: {
+          'editor.background': 'hsl(var(--surface))',
+          'editor.foreground': 'hsl(var(--foreground))',
+          'editor.lineHighlightBackground': 'hsl(var(--muted)/0.3)',
+          'editorCursor.foreground': 'hsl(var(--primary))',
+          'editor.selectionBackground': 'hsl(var(--primary)/0.15)',
+        }
     });
 
     // Track selection changes and report selected text
@@ -69,7 +69,7 @@ export function MonacoEditor({ value, onChange, isDarkMode, settings, onSelectio
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full bg-surface/50 rounded-xl border border-border/50 shadow-soft overflow-hidden backdrop-blur-sm">
       <Editor
         height="100%"
         defaultLanguage="markdown"
@@ -81,7 +81,7 @@ export function MonacoEditor({ value, onChange, isDarkMode, settings, onSelectio
           minimap: { enabled: false },
           lineNumbers: 'off',
           wordWrap: 'on',
-          padding: { top: 20, bottom: 20 },
+          padding: { top: 32, bottom: 32, left: 24, right: 24 },
           fontSize: settings.fontSize,
           fontFamily: settings.fontFamily === 'serif' ? 'Georgia, Times, serif' : 
                       settings.fontFamily === 'mono' ? "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace" : 

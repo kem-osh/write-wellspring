@@ -27,11 +27,11 @@ export function MobileEditor({ value, onChange, isDarkMode, settings, placeholde
   };
 
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col bg-surface/50 rounded-xl border border-border/50 shadow-soft backdrop-blur-sm overflow-hidden">
       <textarea
         ref={textareaRef}
         className={cn(
-          "w-full flex-1 p-4 resize-none border-none outline-none bg-background text-foreground",
+          "w-full flex-1 p-6 resize-none border-none outline-none bg-transparent text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset",
           settings.fontFamily === 'serif' ? "font-serif" : 
           settings.fontFamily === 'mono' ? "font-mono" : "font-sans",
           // Prevent iOS zoom on focus

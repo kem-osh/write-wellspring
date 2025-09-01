@@ -114,9 +114,9 @@ export function ContextualAIToolbar({
   return (
     <div className="
       fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50
-      bg-background border border-border rounded-xl shadow-xl
-      p-3 animate-in slide-in-from-bottom-5 fade-in-0 duration-200
-      max-w-sm mx-auto backdrop-blur-sm
+      bg-surface/95 border border-border/60 rounded-2xl shadow-elevated
+      p-4 animate-in slide-in-from-bottom-5 fade-in-0 duration-300
+      max-w-sm mx-auto backdrop-blur-lg
     ">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -151,7 +151,7 @@ export function ContextualAIToolbar({
                 size="sm"
                 onClick={() => onCommand(command, selectedText)}
                 disabled={aiLoading || loading}
-                className="flex flex-col items-center gap-1 p-2 h-auto text-xs hover:bg-primary/10"
+                className="flex flex-col items-center gap-2 p-3 h-auto text-xs hover:bg-primary/10 rounded-lg transition-all duration-200 hover:shadow-soft"
               >
                 {aiLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -167,7 +167,7 @@ export function ContextualAIToolbar({
 
       {/* Visual indicator */}
       <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-        <div className="w-4 h-4 bg-background border-l border-t border-border rotate-45" />
+        <div className="w-4 h-4 bg-surface border-l border-t border-border/60 rotate-45 shadow-soft" />
       </div>
     </div>
   );
