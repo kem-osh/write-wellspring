@@ -34,15 +34,6 @@ serve(async (req) => {
       throw new Error('Missing documentId or content');
     }
 
-    // Skip embedding generation for temporary document IDs
-    if (typeof documentId === 'string' && documentId.startsWith('temp-')) {
-      console.log(`Skipping embedding generation for temporary document: ${documentId}`);
-      return new Response(
-        JSON.stringify({ success: true, message: 'Skipped for temporary document' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     console.log(`Generating embedding for document ${documentId}`);
 
     // Truncate content to fit within token limits (approximately 30,000 characters)

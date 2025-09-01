@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { DocumentCard } from '@/components/DocumentCard';
 import { Input } from '@/components/ui/input';
-import { X, FileText, Search, Plus, Filter, Expand } from 'lucide-react';
+import { X, FileText, Search, Plus, Filter } from 'lucide-react';
 import { DocumentSearch } from '@/components/DocumentSearch';
 import { DocumentFilters } from '@/components/DocumentFilters';
 
@@ -38,8 +38,6 @@ interface MobileDocumentLibraryProps {
   onSelectionChange: (selected: string[]) => void;
   onSynthesizeSelected: () => void;
   onCompareSelected: () => void;
-  expanded?: boolean;
-  onExpandToggle?: () => void;
 }
 
 export function MobileDocumentLibrary({
@@ -58,9 +56,7 @@ export function MobileDocumentLibrary({
   selectedDocuments,
   onSelectionChange,
   onSynthesizeSelected,
-  onCompareSelected,
-  expanded,
-  onExpandToggle
+  onCompareSelected
 }: MobileDocumentLibraryProps) {
   const [showFilters, setShowFilters] = useState(false);
 
@@ -134,27 +130,14 @@ export function MobileDocumentLibrary({
                 <Plus className="h-4 w-4" />
               </EnhancedButton>
             </div>
-            <div className="flex items-center gap-1">
-              {onExpandToggle && (
-                <EnhancedButton
-                  variant="ghost"
-                  size="icon"
-                  onClick={onExpandToggle}
-                  className="h-8 w-8"
-                  title="Expand to Full Screen"
-                >
-                  <Expand className="h-4 w-4" />
-                </EnhancedButton>
-              )}
-              <EnhancedButton
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="h-8 w-8"
-              >
-                <X className="h-5 w-5" />
-              </EnhancedButton>
-            </div>
+            <EnhancedButton
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8"
+            >
+              <X className="h-5 w-5" />
+            </EnhancedButton>
           </div>
           
           {/* Enhanced Search and Filters */}

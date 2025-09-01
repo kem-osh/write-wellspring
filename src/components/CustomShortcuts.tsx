@@ -41,7 +41,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Fix spelling, grammar, and basic punctuation. Preserve the author\'s voice and style completely. Make minimal changes.',
     description: 'Fix grammar, spelling, punctuation while preserving voice',
     icon: 'sparkles',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano-2025-08-07',
     maxTokens: 500,
     sortOrder: 1,
     category: 'edit',
@@ -53,7 +53,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Improve clarity, flow, and readability. Make style adjustments while preserving the author\'s voice. Enhance sentence structure and transitions.',
     description: 'Improve clarity, flow, and readability with style adjustments',
     icon: 'pen-tool',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 1000,
     sortOrder: 2,
     category: 'edit',
@@ -65,7 +65,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Expand this content by 30-50% while maintaining the original tone. Add depth, examples, and supporting details.',
     description: 'Add 30-50% more content with examples and details',
     icon: 'expand',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 1500,
     sortOrder: 3,
     category: 'edit',
@@ -77,7 +77,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Reduce this content by 60% while preserving all key points and the author\'s voice.',
     description: 'Reduce by 60% while keeping all key points',
     icon: 'shrink',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 800,
     sortOrder: 4,
     category: 'edit',
@@ -89,7 +89,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Rewrite for easier reading. Use shorter sentences, simpler words, and clearer structure. Target a general audience.',
     description: 'Make easier to read with simpler language',
     icon: 'type',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 1000,
     sortOrder: 5,
     category: 'style',
@@ -103,7 +103,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Create a structured outline with headers and bullet points based on this content.',
     description: 'Create structured outline with headers and bullets',
     icon: 'list',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano-2025-08-07',
     maxTokens: 500,
     sortOrder: 6,
     category: 'structure',
@@ -115,7 +115,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Extract the key points into a concise summary that is about 25% of the original length.',
     description: 'Extract key points into 25% length summary',
     icon: 'file-text',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 600,
     sortOrder: 7,
     category: 'structure',
@@ -127,7 +127,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Convert this content into clear, scannable bullet points that capture all main ideas.',
     description: 'Convert to clear, scannable bullet points',
     icon: 'check-square',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano-2025-08-07',
     maxTokens: 600,
     sortOrder: 8,
     category: 'structure',
@@ -141,7 +141,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Comprehensive analysis with improvement recommendations',
     description: 'Get detailed analysis with actionable improvements',
     icon: 'bar-chart-3',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 1200,
     sortOrder: 9,
     category: 'analyze',
@@ -155,7 +155,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Make this more professional and academic while keeping the core meaning intact.',
     description: 'Make more professional and academic',
     icon: 'book-open',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 1000,
     sortOrder: 10,
     category: 'style',
@@ -167,7 +167,7 @@ const DEFAULT_COMMANDS: EnhancedCommand[] = [
     prompt: 'Make this more conversational and approachable while maintaining professionalism.',
     description: 'Make more conversational and approachable',
     icon: 'message-circle',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini-2025-08-07',
     maxTokens: 1000,
     sortOrder: 11,
     category: 'style',
@@ -266,14 +266,7 @@ export function CustomShortcuts({
   const handleCommandClick = (command: EnhancedCommand) => {
     selectionChanged(); // Haptic feedback
     impactLight(); // Secondary haptic
-    
-    // Map command IDs to action types for proper handling in Dashboard
-    let actionType = command.id;
-    if (['continue', 'rewrite', 'fact-check', 'synthesize', 'compare'].includes(command.id)) {
-      actionType = command.id;
-    }
-    
-    onShortcut(actionType as any, command.prompt, command.model, command.maxTokens);
+    onShortcut(getActionType(command.id), command.prompt, command.model, command.maxTokens);
   };
 
   const filteredCommands = commands.filter(cmd => cmd.category === activeCategory);

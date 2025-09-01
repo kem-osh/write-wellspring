@@ -97,7 +97,7 @@ serve(async (req) => {
             content: finalPrompt
           }
         ],
-        max_completion_tokens: 3500
+        max_completion_tokens: 4000
       }),
     });
 

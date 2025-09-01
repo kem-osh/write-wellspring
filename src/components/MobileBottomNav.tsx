@@ -14,6 +14,7 @@ import {
 interface MobileBottomNavProps {
   onDocumentLibrary: () => void;
   onVoiceRecord: () => void;
+  onAICommands: () => void;
   onAIChat: () => void;
   onSettings: () => void;
   aiLoading?: boolean;
@@ -24,6 +25,7 @@ interface MobileBottomNavProps {
 export function MobileBottomNav({
   onDocumentLibrary,
   onVoiceRecord,
+  onAICommands,
   onAIChat,
   onSettings,
   aiLoading = false,
@@ -54,6 +56,15 @@ export function MobileBottomNav({
       action: onVoiceRecord,
       badge: null,
       special: 'voice'
+    },
+    {
+      id: 'ai',
+      icon: Sparkles,
+      label: 'AI',
+      action: onAICommands,
+      badge: null,
+      loading: aiLoading,
+      special: 'ai'
     },
     {
       id: 'chat',
@@ -89,92 +100,65 @@ export function MobileBottomNav({
       </EnhancedButton>
 
       {/* Navigation Items */}
-      <div className="flex items-center justify-between px-4 py-3 pt-4">
-        <div className="flex items-center gap-4">
-          {navItems.slice(0, 2).map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            
-            if (item.id === 'voice') {
-              // Skip the voice button as it's the FAB
-              return <div key={item.id} className="w-14" />;
-            }
+      <div className="flex items-center justify-around px-4 py-3 pt-4">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          const isSpecial = item.special === 'voice' || item.special === 'ai';
+          
+          if (item.id === 'voice') {
+            // Skip the voice button as it's the FAB
+            return <div key={item.id} className="w-14" />;
+          }
 
-            return (
-              <EnhancedButton
-                key={item.id}
-                variant="ghost"
-                size="icon"
-                interactive={true}
-                className={`
-                  flex flex-col items-center justify-center gap-1 h-auto py-2 px-3 min-w-[56px]
-                  transition-all duration-200 rounded-xl
-                  ${isActive ? 'bg-primary/10 text-primary scale-110' : 'text-muted-foreground'}
-                  hover:text-foreground touch-target focus-ring relative
-                `}
-                onClick={() => handleTabPress(item.id, item.action)}
-              >
+          return (
+            <EnhancedButton
+              key={item.id}
+              variant="ghost"
+              size="icon"
+              interactive={true}
+              className={`
+                flex flex-col items-center justify-center gap-1 h-auto py-2 px-3 min-w-[56px]
+                transition-all duration-200 rounded-xl
+                ${isActive ? 'bg-primary/10 text-primary scale-110' : 'text-muted-foreground'}
+                ${isSpecial ? 'hover:text-primary' : 'hover:text-foreground'}
+                touch-target focus-ring relative
+              `}
+              onClick={() => handleTabPress(item.id, item.action)}
+            >
+              {/* Badge */}
+              {item.badge && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
+                >
+                  {item.badge > 9 ? '9+' : item.badge}
+                </Badge>
+              )}
+
+              {/* Loading state for AI */}
+              {item.loading ? (
+                <div className="animate-spin">
+                  <Icon className="h-5 w-5" />
+                </div>
+              ) : (
                 <Icon className="h-5 w-5" />
-                <span className={`
-                  text-xs font-medium transition-all duration-200
-                  ${isActive ? 'text-primary' : 'text-current'}
-                `}>
-                  {item.label}
-                </span>
-                {isActive && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-                )}
-              </EnhancedButton>
-            );
-          })}
-        </div>
-        
-        <div className="flex items-center gap-4">
-          {navItems.slice(2).map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
+              )}
+              
+              <span className={`
+                text-xs font-medium transition-all duration-200
+                ${isActive ? 'text-primary' : 'text-current'}
+              `}>
+                {item.label}
+              </span>
 
-            return (
-              <EnhancedButton
-                key={item.id}
-                variant="ghost"
-                size="icon"
-                interactive={true}
-                className={`
-                  flex flex-col items-center justify-center gap-1 h-auto py-2 px-3 min-w-[56px]
-                  transition-all duration-200 rounded-xl
-                  ${isActive ? 'bg-primary/10 text-primary scale-110' : 'text-muted-foreground'}
-                  hover:text-foreground touch-target focus-ring relative
-                `}
-                onClick={() => handleTabPress(item.id, item.action)}
-              >
-                {/* Badge */}
-                {item.badge && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
-                  >
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </Badge>
-                )}
-
-                <Icon className="h-5 w-5" />
-                
-                <span className={`
-                  text-xs font-medium transition-all duration-200
-                  ${isActive ? 'text-primary' : 'text-current'}
-                `}>
-                  {item.label}
-                </span>
-
-                {/* Active indicator */}
-                {isActive && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-                )}
-              </EnhancedButton>
-            );
-          })}
-        </div>
+              {/* Active indicator */}
+              {isActive && (
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+              )}
+            </EnhancedButton>
+          );
+        })}
       </div>
     </nav>
   );

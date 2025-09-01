@@ -7,15 +7,15 @@ import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare, Home, Save, Expand } from "lucide-react";
+import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDevice } from "@/hooks/useDevice";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { MobileEditor } from "@/components/MobileEditor";
 import { MobileDocumentLibrary } from "@/components/MobileDocumentLibrary";
-// Removed MobileAICommands - using AISmartCarousel instead
+import { MobileAICommands } from "@/components/MobileAICommands";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { UserMenu } from "@/components/UserMenu";
-import { AISmartCarousel } from "@/components/AISmartCarousel";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
 import { AdvancedAICommands } from "@/components/AdvancedAICommands";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
@@ -32,7 +32,7 @@ import { useDocumentSelection } from "@/hooks/useDocumentSelection";
 import { ContextualAIToolbar } from "@/components/ContextualAIToolbar";
 import { SettingsModal } from "@/components/SettingsModal";
 import { useHaptics } from "@/hooks/useHaptics";
-import { CategorySelection } from "@/components/CategorySelection";
+import { AnalysisModal } from "@/components/AnalysisModal";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 interface Document {
@@ -95,8 +95,6 @@ export default function Dashboard() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
-  const [libraryExpanded, setLibraryExpanded] = useState(false);
-  const [chatExpanded, setChatExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
@@ -108,77 +106,10 @@ export default function Dashboard() {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveIndicator, setSaveIndicator] = useState<'saved' | 'saving' | 'error' | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   
   // Auto-title generation constants
   const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
   const AUTO_TITLE_THRESHOLD = 200; // Characters needed for title generation
-  
-  // Function to trigger auto-classification after AI commands
-  const triggerAutoClassification = useCallback(async () => {
-    if (!user || !currentDocument || isGeneratingTitle) return;
-    
-    const needsTitle = 
-      documentTitle === 'New Document' || 
-      documentTitle === '' || 
-      !documentTitle;
-
-    if (needsTitle && settings.autoGenerateTitles) {
-      setIsGeneratingTitle(true);
-      
-      try {
-        // Generate title
-        const paragraphs = documentContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-        const titleContent = paragraphs.slice(0, 2).join('\n\n');
-        
-        const { data: titleData, error: titleError } = await supabase.functions.invoke(
-          'ai-generate-title',
-          {
-            body: {
-              content: titleContent,
-              userId: user.id
-            }
-          }
-        );
-
-        if (titleData?.title && !titleError) {
-          setDocumentTitle(titleData.title);
-          toast({
-            title: "Title Generated",
-            description: `AI created: "${titleData.title}"`,
-          });
-        }
-        
-        // Also classify the document for category
-        const { data: classification } = await supabase.functions.invoke('ai-classify-document', {
-          body: { content: documentContent }
-        });
-        
-        if (classification?.category) {
-          console.log('Auto-classified category:', classification.category);
-          // Update document category in the database if it's a temp document or needs updating
-          if (currentDocument.id && !currentDocument.id.startsWith('temp-')) {
-            await supabase.from('documents').update({ 
-              category: classification.category,
-              status: classification.status || 'draft'
-            }).eq('id', currentDocument.id);
-            
-            // Update local state
-            setCurrentDocument(prev => prev ? { 
-              ...prev, 
-              category: classification.category,
-              status: classification.status || 'draft' 
-            } : null);
-          }
-        }
-        
-      } catch (error) {
-        console.error('Error in auto-classification:', error);
-      } finally {
-        setIsGeneratingTitle(false);
-      }
-    }
-  }, [user, currentDocument, documentContent, documentTitle, isGeneratingTitle, settings.autoGenerateTitles, toast]);
   
   // Editor reference for text selection
   const editorRef = useRef<any>(null);
@@ -186,129 +117,21 @@ export default function Dashboard() {
   
   // Mobile state
   const [mobileDocumentLibraryOpen, setMobileDocumentLibraryOpen] = useState(false);
-  // Removed mobileAICommandsOpen - now using AISmartCarousel instead
+  const [mobileAICommandsOpen, setMobileAICommandsOpen] = useState(false);
   
   // Import haptics hook
   const { impactLight, notificationSuccess, notificationError } = useHaptics();
   const { isMobile, isTablet, isDesktop } = useDevice();
   
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
-  
-  // Document selection functions
-  const toggleDocumentSelection = (docId: string) => {
-    setSelectedDocuments(prev => 
-      prev.includes(docId) 
-        ? prev.filter(id => id !== docId)
-        : [...prev, docId]
-    );
-  };
-  
-  const clearSelection = () => {
-    setSelectedDocuments([]);
-  };
-
-  // Helper functions for editor text selection
-  const getSelectedText = useCallback(() => {
-    if (editorRef.current && monacoRef.current) {
-      const selection = editorRef.current.getSelection();
-      const model = editorRef.current.getModel();
-      if (selection && model && !selection.isEmpty()) {
-        return model.getValueInRange(selection);
-      }
-    }
-    return '';
-  }, []);
-
-  const updateDocumentContent = async (documentId: string, content: string) => {
-    // Update document content logic
-    setDocumentContent(content);
-  };
-
-  const getCursorContext = () => {
-    // Get context around cursor for AI continue
-    return documentContent.slice(-500);
-  };
-
-  const insertTextAtCursor = (text: string) => {
-    // Insert text at cursor position
-    setDocumentContent(prev => prev + text);
-  };
-
-  // Handle advanced AI commands
-  const handleAdvancedCommand = async (commandType: string, customPrompt?: string, model?: string, maxTokens?: number) => {
-    if (!user || !currentDocument) return;
-    
-    try {
-      if (commandType === 'continue') {
-        const { data, error } = await supabase.functions.invoke('ai-continue', {
-          body: {
-            content: documentContent,
-            customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 1000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const continuedText = data?.result || data?.continuedText;
-        if (continuedText) {
-          insertTextAtCursor(continuedText);
-          toast({ title: "Success", description: "Content continued successfully" });
-        }
-      } else if (commandType === 'rewrite') {
-        const selectedText = getSelectedText();
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            content: selectedText || documentContent,
-            customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 2000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const rewrittenText = data?.result || data?.rewrittenText;
-        if (rewrittenText) {
-          if (selectedText) {
-            replaceSelectedText(rewrittenText);
-          } else {
-            setDocumentContent(rewrittenText);
-          }
-          toast({ title: "Success", description: "Content rewritten successfully" });
-        }
-      } else if (commandType === 'fact-check') {
-        const { data, error } = await supabase.functions.invoke('ai-fact-check', {
-          body: {
-            content: documentContent,
-            customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 1500,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const factCheckResult = data?.result || data?.factCheckResult;
-        if (factCheckResult) {
-          // Show fact-check results in a dialog or notification
-          toast({ 
-            title: "Fact Check Complete", 
-            description: "Review the fact-check results",
-            duration: 5000
-          });
-        }
-      }
-    } catch (error: any) {
-      console.error('Advanced AI command error:', error);
-      toast({ 
-        title: "AI Command Failed", 
-        description: error.message || "The AI command failed to complete", 
-        variant: "destructive" 
-      });
-    }
-  };
+  // Document selection hook
+  const {
+    selectedDocuments,
+    toggleDocumentSelection,
+    selectAllDocuments,
+    clearSelection,
+    isDocumentSelected,
+    selectionCount
+  } = useDocumentSelection();
 
   // Helper functions for editor text selection
   const getSelectedTextFromEditor = useCallback(() => {
@@ -476,12 +299,7 @@ export default function Dashboard() {
     }, searchQuery.trim() ? 100 : 0);
   };
 
-  // Handle category selection to create new document
-  const handleCategorySelection = async (category: string) => {
-    await createNewDocument(category);
-  };
-
-  const createNewDocument = async (category: string = 'general') => {
+  const createNewDocument = async () => {
     if (!user) return;
 
     console.log('Creating new document...'); // Debug log
@@ -529,473 +347,181 @@ export default function Dashboard() {
 
   // Enhanced AI command execution with proper error handling and text replacement
   const executeAICommand = useCallback(async (
-    commandType: string, 
-    customPrompt?: string, 
-    model?: string, 
+    commandType: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
+                 'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
+                 'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
+    customPrompt?: string,
+    model?: string,
     maxTokens?: number
   ) => {
-    if (!user || isProcessing) return;
-
-    // Check authentication first
-    if (!user?.id) {
+    if (!currentDocument) {
       toast({
-        title: "Authentication Required",
-        description: "Please refresh the page and try again.",
-        variant: "destructive"
+        title: "No document selected",
+        description: "Please create or select a document first.",
+        variant: "destructive",
       });
       return;
     }
 
-    if (!currentDocument) {
-      toast({ title: "Error", description: "No active document", variant: "destructive" });
+    // Get text to process (selected or full content)
+    const currentSelectedText = getSelectedTextFromEditor();
+    const textToProcess = currentSelectedText || documentContent;
+    
+    if (!textToProcess?.trim() || textToProcess.length < 10) {
+      toast({
+        title: "No content to process",
+        description: "Please write or select text first.",
+        variant: "destructive",
+      });
       return;
     }
 
-    setIsProcessing(true);
+    console.log(`Executing AI command: ${commandType}`, {
+      selectedText: !!currentSelectedText,
+      textLength: textToProcess.length,
+      model: model || 'gpt-5-nano-2025-08-07'
+    });
+
     setAiLoading(true);
-    
+
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Map command types to edge function names
+      let functionName = 'ai-light-edit'; // default
+      
+      switch (commandType) {
+        case 'light-edit':
+          functionName = 'ai-light-edit';
+          break;
+        case 'expand':
+          functionName = 'ai-expand-content';
+          break;
+        case 'condense':
+          functionName = 'ai-condense-content';
+          break;
+        case 'outline':
+          functionName = 'ai-outline';
+          break;
+        case 'heavy-polish':
+        case 'simplify':
+        case 'formalize':
+        case 'casualize':
+          functionName = 'ai-rewrite';
+          break;
+        case 'summarize':
+          functionName = 'ai-condense-content';
+          break;
+        case 'bullet-points':
+        case 'paragraph-breaks':
+        case 'add-headers':
+          functionName = 'ai-outline';
+          break;
+        default:
+          console.warn(`Unknown command type: ${commandType}, using light-edit`);
+          functionName = 'ai-light-edit';
+      }
+
+      console.log(`Calling ${functionName}...`);
+      
+      const payload = functionName === 'ai-rewrite' 
+        ? {
+            text: textToProcess,
+            style: commandType === 'heavy-polish' ? 'auto' : 
+                   commandType === 'simplify' ? 'casual' :
+                   commandType === 'formalize' ? 'formal' :
+                   commandType === 'casualize' ? 'casual' : 'auto',
+            userId: user.id
+          }
+        : {
+            content: currentSelectedText ? undefined : documentContent,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt,
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || (commandType === 'light-edit' ? 2000 : 500),
+            userId: user.id
+          };
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: payload
+      });
+
+      console.log('AI Command Result:', JSON.stringify(data, null, 2));
+      console.log('Available keys in response:', Object.keys(data || {}));
+      
+      if (error) throw error;
+
+      // Extract result from response based on command type
       let result;
-      const currentSelectedText = getSelectedText();
       
-      if (commandType === 'light-edit') {
-        const { data, error } = await supabase.functions.invoke('ai-light-edit', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 2000,
-            userId: user.id
-          }
-        });
-
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'condense') {
-        const { data, error } = await supabase.functions.invoke('ai-condense-content', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 1000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'expand') {
-        const { data, error } = await supabase.functions.invoke('ai-expand-content', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 2000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'outline') {
-        const { data, error } = await supabase.functions.invoke('ai-outline', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 1000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'continue') {
-        const { data, error } = await supabase.functions.invoke('ai-continue', {
-          body: {
-            context: documentContent,
-            customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 1000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const continuedText = data?.result || data?.continuedText;
-        if (continuedText) {
-          insertTextAtCursor(continuedText);
-          toast({ title: "Success", description: "Content continued successfully" });
-        }
-      } else if (commandType === 'rewrite') {
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'auto',
-            customPrompt,
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 2000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const rewrittenText = data?.alternatives?.[0] || data?.result;
-        if (rewrittenText) {
-          if (currentSelectedText) {
-            replaceSelectedText(rewrittenText);
-          } else {
-            setDocumentContent(rewrittenText);
-          }
-          toast({ title: "Success", description: "Content rewritten successfully" });
-        }
-      } else if (commandType === 'voice-match') {
-        // Use rewrite with voice matching style
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'voice-match',
-            customPrompt: customPrompt || 'Match the user\'s natural writing voice and style',
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 2000,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const rewrittenText = data?.alternatives?.[0] || data?.result;
-        if (rewrittenText) {
-          if (currentSelectedText) {
-            replaceSelectedText(rewrittenText);
-          } else {
-            setDocumentContent(rewrittenText);
-          }
-          toast({ title: "Success", description: "Content matched to your voice" });
-        }
-      } else if (commandType === 'focus-improve') {
-        // Use light-edit with focus improvement prompt
-        const { data, error } = await supabase.functions.invoke('ai-light-edit', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt || 'Improve clarity and focus. Remove redundancy and strengthen the main points.',
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 2000,
-            userId: user.id
-          }
-        });
-
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'review-analyze') {
-        // Use analyze function for comprehensive review
-        const { data, error } = await supabase.functions.invoke('ai-analyze', {
-          body: {
-            content: currentDocument.content,
-            customPrompt: customPrompt || 'Provide a comprehensive review with suggestions for improvement',
-            model: model || 'gpt-4o-mini',
-            maxTokens: maxTokens || 1500,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        toast({ 
-          title: "Analysis Complete", 
-          description: "Review the analysis results",
-          duration: 5000
-        });
-        // Don't replace content for analysis, just show results
-        return;
-      } else if (commandType === 'heavy-polish') {
-        console.log('Executing heavy-polish command via ai-rewrite');
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'polish',
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const polishedText = data?.alternatives?.[0]?.content || data?.result;
-        if (polishedText) {
-          if (currentSelectedText) {
-            replaceSelectedText(polishedText);
-          } else {
-            setDocumentContent(polishedText);
-          }
-          toast({ title: "Success", description: "Content polished successfully" });
-        }
-      } else if (commandType === 'simplify') {
-        console.log('Executing simplify command via ai-rewrite');
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'simplify',
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const simplifiedText = data?.alternatives?.[0]?.content || data?.result;
-        if (simplifiedText) {
-          if (currentSelectedText) {
-            replaceSelectedText(simplifiedText);
-          } else {
-            setDocumentContent(simplifiedText);
-          }
-          toast({ title: "Success", description: "Content simplified successfully" });
-        }
-      } else if (commandType === 'formalize') {
-        console.log('Executing formalize command via ai-rewrite');
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'formal',
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const formalizedText = data?.alternatives?.[0]?.content || data?.result;
-        if (formalizedText) {
-          if (currentSelectedText) {
-            replaceSelectedText(formalizedText);
-          } else {
-            setDocumentContent(formalizedText);
-          }
-          toast({ title: "Success", description: "Content formalized successfully" });
-        }
-      } else if (commandType === 'casualize') {
-        console.log('Executing casualize command via ai-rewrite');
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'casual',
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const casualizedText = data?.alternatives?.[0]?.content || data?.result;
-        if (casualizedText) {
-          if (currentSelectedText) {
-            replaceSelectedText(casualizedText);
-          } else {
-            setDocumentContent(casualizedText);
-          }
-          toast({ title: "Success", description: "Content casualized successfully" });
-        }
-      } else if (commandType === 'summarize') {
-        console.log('Executing summarize command via ai-condense-content');
-        const { data, error } = await supabase.functions.invoke('ai-condense-content', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'bullet-points') {
-        console.log('Executing bullet-points command via ai-outline');
-        const { data, error } = await supabase.functions.invoke('ai-outline', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'paragraph-breaks') {
-        console.log('Executing paragraph-breaks command via ai-outline');
-        const { data, error } = await supabase.functions.invoke('ai-outline', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'add-headers') {
-        console.log('Executing add-headers command via ai-outline');
-        const { data, error } = await supabase.functions.invoke('ai-outline', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'analyze') {
-        console.log('Executing analyze command via ai-analyze');
-        const { data, error } = await supabase.functions.invoke('ai-analyze', {
-          body: {
-            text: currentSelectedText || documentContent,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        toast({ 
-          title: "Analysis Complete", 
-          description: "Review the analysis results",
-          duration: 5000
-        });
-        // Don't replace content for analysis, just show results
-        return;
-      } else if (commandType === 'match-voice') {
-        console.log('Executing match-voice command via ai-rewrite');
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'voice-match',
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const matchedText = data?.alternatives?.[0]?.content || data?.result;
-        if (matchedText) {
-          if (currentSelectedText) {
-            replaceSelectedText(matchedText);
-          } else {
-            setDocumentContent(matchedText);
-          }
-          toast({ title: "Success", description: "Content matched to your voice" });
-        }
-      } else if (commandType === 'change-tone') {
-        console.log('Executing change-tone command via ai-rewrite');
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'tone-change',
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const tonedText = data?.alternatives?.[0]?.content || data?.result;
-        if (tonedText) {
-          if (currentSelectedText) {
-            replaceSelectedText(tonedText);
-          } else {
-            setDocumentContent(tonedText);
-          }
-          toast({ title: "Success", description: "Tone changed successfully" });
-        }
-      } else if (commandType === 'strengthen-args') {
-        console.log('Executing strengthen-args command via ai-rewrite');
-        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-          body: {
-            text: currentSelectedText || documentContent,
-            style: 'strengthen',
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        const strengthenedText = data?.alternatives?.[0]?.content || data?.result;
-        if (strengthenedText) {
-          if (currentSelectedText) {
-            replaceSelectedText(strengthenedText);
-          } else {
-            setDocumentContent(strengthenedText);
-          }
-          toast({ title: "Success", description: "Arguments strengthened successfully" });
-        }
-      } else if (commandType === 'add-examples') {
-        console.log('Executing add-examples command via ai-expand-content');
-        const { data, error } = await supabase.functions.invoke('ai-expand-content', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        result = data?.result;
-      } else if (commandType === 'fact-check') {
-        console.log('Executing fact-check command via ai-fact-check');
-        const { data, error } = await supabase.functions.invoke('ai-fact-check', {
-          body: {
-            content: currentDocument.content,
-            selectedText: currentSelectedText || undefined,
-            userId: user.id
-          }
-        });
-        
-        if (error) throw error;
-        toast({ 
-          title: "Fact Check Complete", 
-          description: "Review the fact-check results",
-          duration: 5000
-        });
-        // Don't replace content for fact-check, just show results
-        return;
+      if (functionName === 'ai-rewrite') {
+        // ai-rewrite returns alternatives array, take the first one or fallback to result
+        result = data?.alternatives?.[0]?.content || data?.result;
       } else {
-        console.log(`Unknown command type attempted: ${commandType}`);
-        toast({ 
-          title: "Command Not Supported", 
-          description: `The "${commandType}" command is not yet implemented. Available commands: light-edit, heavy-polish, expand, condense, simplify, formalize, casualize, outline, summarize, bullet-points, paragraph-breaks, add-headers, analyze, and others.`,
-          variant: "destructive" 
+        // Other functions should return result field consistently, with fallbacks
+        result = data?.result || 
+                 data?.editedText || 
+                 data?.expandedText || 
+                 data?.condensedText || 
+                 data?.outlineText ||
+                 data?.content;
+      }
+      
+      console.log('Extracted result length:', result?.length || 0);
+      console.log('Result preview:', result?.slice(0, 100) + '...');
+      
+      // Handle empty results gracefully - distinguish between empty string and no result
+      if (result === undefined || result === null) {
+        console.error('No valid result field found in response:', data);
+        throw new Error(`No result returned from AI command '${commandType}'. Response keys: ${Object.keys(data || {}).join(', ')}`);
+      }
+      
+      // Handle empty string results with user-friendly message
+      if (typeof result === 'string' && result.trim() === '') {
+        console.warn('AI returned empty result for command:', commandType);
+        toast({
+          title: "AI returned empty result",
+          description: `The AI didn't generate any content for the '${commandType}' command. Please try again or use a different command.`,
+          variant: "destructive",
         });
         return;
       }
-      
-      // Handle result replacement for commands that return content
-      if (!['continue', 'rewrite', 'voice-match', 'heavy-polish', 'simplify', 'formalize', 'casualize', 'match-voice', 'change-tone', 'strengthen-args', 'analyze', 'fact-check'].includes(commandType)) {
-        if (!result || typeof result !== 'string' || !result.trim()) {
-          toast({ 
-            title: "Empty AI Response", 
-            description: "AI didn't generate content. Try different text or command.",
-            variant: "destructive" 
-          });
-          return;
-        }
 
-        if (currentSelectedText) {
-          // Replace selected text
-          replaceSelectedText(result);
-          toast({ title: "Success", description: "Text updated successfully" });
-        } else {
-          // Replace entire content
-          setDocumentContent(result);
-          toast({ title: "Success", description: "Document updated successfully" });
+      console.log(`AI command ${commandType} completed successfully`);
+
+      // Replace text in editor
+      if (currentSelectedText && editorRef.current) {
+        // Replace selected text using Monaco editor API
+        replaceSelectedText(result);
+      } else {
+        // Replace entire document content
+        setDocumentContent(result);
+      }
+      
+      toast({
+        title: `${commandType.charAt(0).toUpperCase() + commandType.slice(1)} completed`,
+        description: currentSelectedText ? 'Selected text updated' : 'Document updated',
+      });
+
+      // Trigger auto-save after successful AI edit (will be available after handleAutoSave is defined)
+      setTimeout(() => {
+        if (typeof handleAutoSave === 'function') {
+          handleAutoSave();
         }
-      }
-      
-      // Trigger auto-title generation and category classification after AI commands
-      if (documentContent.trim().length >= AUTO_TITLE_THRESHOLD) {
-        await triggerAutoClassification();
-      }
-      
-    } catch (error: any) {
-      console.error('AI command error:', error);
-      toast({ 
-        title: "AI Command Failed", 
-        description: error.message || "The AI command failed to complete", 
-        variant: "destructive" 
+      }, 1000);
+
+    } catch (error) {
+      console.error(`AI command ${commandType} error:`, error);
+      toast({
+        title: `Failed to execute ${commandType}`,
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
       setAiLoading(false);
     }
-  }, [user, isProcessing, currentDocument, documentContent, getSelectedText, replaceSelectedText, insertTextAtCursor, setDocumentContent, toast]);
-
+  }, [currentDocument, documentContent, getSelectedTextFromEditor, replaceSelectedText, toast]);
 
   // Update handleCustomShortcut to use the new executeAICommand
   const handleCustomShortcutUpdated = useCallback(async (
@@ -1282,7 +808,7 @@ export default function Dashboard() {
           content: selectedText ? undefined : documentContent,
           selectedText: selectedText || undefined,
           customPrompt: prompt,
-          model: model || 'gpt-4o-mini',
+          model: model || 'gpt-5-nano-2025-08-07',
           maxTokens: maxTokens || 500
         }
       });
@@ -1524,6 +1050,11 @@ export default function Dashboard() {
   };
 
   const getCurrentText = () => documentContent;
+  const getSelectedText = () => selectedText;
+  const getCursorContext = () => {
+    // Return last 500 characters as cursor context
+    return documentContent.slice(-500);
+  };
 
   if (loading) {
     return (
@@ -1541,26 +1072,14 @@ export default function Dashboard() {
           <>
             {/* Mobile Header - Sticky */}
             <header className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-card/95 backdrop-blur-sm h-14">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setMobileDocumentLibraryOpen(true)}
-                  className="touch-target"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setCurrentDocument(null)}
-                  className="touch-target"
-                  title="Home"
-                >
-                  <Home className="h-4 w-4" />
-                </Button>
-              </div>
-              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileDocumentLibraryOpen(true)}
+                className="touch-target"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
               <div className="flex-1 mx-3 min-w-0">
                 <input
                   value={documentTitle || 'New Document'}
@@ -1569,26 +1088,23 @@ export default function Dashboard() {
                   placeholder="Document title..."
                 />
               </div>
-              
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={saveDocument}
-                  disabled={!currentDocument}
-                  className="touch-target"
-                  title="Save"
+                  onClick={() => setShowSettingsModal(true)}
+                  className="touch-target md:hidden"
+                  aria-label="Open settings"
                 >
-                  <Save className="h-4 w-4" />
+                  <Settings className="h-5 w-5" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setShowSettingsModal(true)}
+                  onClick={() => setIsDarkMode(!isDarkMode)}
                   className="touch-target"
-                  aria-label="Open settings"
                 >
-                  <Settings className="h-5 w-5" />
+                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
               </div>
             </header>
@@ -1603,40 +1119,67 @@ export default function Dashboard() {
                   settings={settings}
                 />
               ) : (
-                <CategorySelection onCategorySelect={handleCategorySelection} />
+                <div className="flex-1 flex items-center justify-center text-center p-8">
+                  <div>
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
+                    <p className="text-muted-foreground mb-4">
+                      Your AI-powered writing studio
+                    </p>
+                    <Button onClick={createNewDocument} className="touch-target">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Document
+                    </Button>
+                  </div>
+                </div>
               )}
             </main>
 
-            {/* AI Smart Carousel - Fixed Bottom */}
-            {currentDocument && (
-              <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur-sm pb-safe">
-                <AISmartCarousel
-                  onCommand={executeAICommand}
-                  aiLoading={aiLoading}
-                  selectedText={selectedText}
-                  onOpenSettings={() => setShowCommandSettings(true)}
-                  className="py-2"
-                />
-              </div>
-            )}
-
-            {/* Mobile Bottom Navigation - Fixed (when no document) */}
-            {!currentDocument && (
-              <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-center border-t bg-card/95 backdrop-blur-sm h-16 px-2 pb-safe">
-                <VoiceRecorder 
-                  onTranscription={handleVoiceTranscription}
-                  disabled={aiLoading}
-                />
-                <Button
-                  variant="ghost"
-                  onClick={() => setRightSidebarOpen(true)}
-                  className="flex flex-col items-center justify-center p-2 min-w-0 touch-target ml-4"
-                >
-                  <MessageSquare className="h-5 w-5" />
-                  <span className="text-xs mt-1">Chat</span>
-                </Button>
-              </nav>
-            )}
+            {/* Mobile Bottom Navigation - Fixed */}
+            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t bg-card/95 backdrop-blur-sm h-16 px-2 pb-safe">
+              <Button
+                variant="ghost"
+                onClick={() => setMobileDocumentLibraryOpen(true)}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+              >
+                <FileText className="h-5 w-5" />
+                <span className="text-xs mt-1">Docs</span>
+              </Button>
+              
+              <VoiceRecorder 
+                onTranscription={handleVoiceTranscription}
+                disabled={aiLoading}
+              />
+              
+              <Button
+                variant="ghost"
+                onClick={() => setMobileAICommandsOpen(true)}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+                disabled={!currentDocument}
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-xs mt-1">AI</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => setRightSidebarOpen(true)}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-xs mt-1">Chat</span>
+              </Button>
+              
+              <Button 
+                variant="ghost"
+                onClick={saveDocument}
+                disabled={!currentDocument}
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+              >
+                <span className="text-lg">💾</span>
+                <span className="text-xs mt-1">Save</span>
+              </Button>
+            </nav>
 
             {/* Mobile Document Library Overlay */}
             <MobileDocumentLibrary
@@ -1647,7 +1190,7 @@ export default function Dashboard() {
                 openDocument(doc);
                 setMobileDocumentLibraryOpen(false);
               }}
-              onCreateNew={() => createNewDocument()}
+              onCreateNew={createNewDocument}
               onDeleteDocument={deleteDocument}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -1657,23 +1200,28 @@ export default function Dashboard() {
               loading={searchLoading}
               selectedDocuments={selectedDocuments}
               onSelectionChange={(selected) => {
+                // Update selected documents directly
                 selected.forEach(id => !selectedDocuments.includes(id) && toggleDocumentSelection(id));
                 selectedDocuments.forEach(id => !selected.includes(id) && toggleDocumentSelection(id));
               }}
               onSynthesizeSelected={() => {
+                // Handle synthesis
                 console.log('Synthesizing documents:', selectedDocuments);
               }}
               onCompareSelected={() => {
+                // Handle comparison
                 console.log('Comparing documents:', selectedDocuments);
-              }}
-              onExpandToggle={() => {
-                setMobileDocumentLibraryOpen(false);
-                setLibraryExpanded(true);
               }}
             />
 
-            {/* Mobile AI Commands Overlay - Remove since AI Smart Carousel handles this */}
-            {/* Legacy MobileAICommands component removed in favor of AISmartCarousel */}
+            {/* Mobile AI Commands Overlay */}
+            <MobileAICommands
+              isOpen={mobileAICommandsOpen}
+              onClose={() => setMobileAICommandsOpen(false)}
+              onCommand={handleCustomShortcutUpdated}
+              aiLoading={aiLoading}
+              selectedText={selectedText}
+            />
 
             {/* Contextual AI Toolbar */}
             <ContextualAIToolbar
@@ -1685,56 +1233,14 @@ export default function Dashboard() {
 
             {/* Mobile AI Chat Overlay */}
             <Sheet open={rightSidebarOpen} onOpenChange={setRightSidebarOpen}>
-              <SheetContent 
-                side="right" 
-                className={`p-0 mobile-sheet ${chatExpanded ? 'w-full' : 'w-[90vw] max-w-md'}`}
-              >
+              <SheetContent side="right" className="w-full p-0 mobile-sheet">
                 <AIChatSidebar
                   isOpen={rightSidebarOpen}
                   onClose={() => setRightSidebarOpen(false)}
                   onDocumentSelect={openDocument}
-                  expanded={chatExpanded}
-                  onExpandToggle={() => setChatExpanded(!chatExpanded)}
                 />
               </SheetContent>
             </Sheet>
-
-            {/* Full-Screen Library Overlay */}
-            {libraryExpanded && (
-              <Sheet open={libraryExpanded} onOpenChange={() => setLibraryExpanded(false)}>
-                <SheetContent side="left" className="w-full p-0">
-                  <MobileDocumentLibrary
-                    isOpen={libraryExpanded}
-                    onClose={() => setLibraryExpanded(false)}
-                    documents={filteredDocuments}
-                    onDocumentSelect={(doc) => {
-                      openDocument(doc);
-                      setLibraryExpanded(false);
-                    }}
-                    onCreateNew={() => createNewDocument()}
-                    onDeleteDocument={deleteDocument}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    categories={categories}
-                    loading={searchLoading}
-                    selectedDocuments={selectedDocuments}
-                    onSelectionChange={(selected) => {
-                      selected.forEach(id => !selectedDocuments.includes(id) && toggleDocumentSelection(id));
-                      selectedDocuments.forEach(id => !selected.includes(id) && toggleDocumentSelection(id));
-                    }}
-                    onSynthesizeSelected={() => {
-                      console.log('Synthesizing documents:', selectedDocuments);
-                    }}
-                    onCompareSelected={() => {
-                      console.log('Comparing documents:', selectedDocuments);
-                    }}
-                    expanded={libraryExpanded}
-                  />
-                </SheetContent>
-              </Sheet>
-            )}
           </>
         ) : (
           /* Desktop Layout */
@@ -1749,14 +1255,6 @@ export default function Dashboard() {
                 >
                   <FileText className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentDocument(null)}
-                  title="Home"
-                >
-                  <Home className="h-4 w-4" />
-                </Button>
                 <Input
                   value={documentTitle}
                   onChange={(e) => setDocumentTitle(e.target.value)}
@@ -1766,15 +1264,6 @@ export default function Dashboard() {
               </div>
               
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={saveDocument}
-                  disabled={!currentDocument}
-                  title="Save Document"
-                >
-                  <Save className="h-4 w-4" />
-                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1809,31 +1298,24 @@ export default function Dashboard() {
                   <>
                      <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
                        <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft overflow-hidden">
+                         {/* ... existing sidebar content ... */}
+                         {/* Fixed Header Section */}
                          <div className="flex-shrink-0 border-b bg-card">
+                           {/* Title and Close Button */}
                            <div className="p-4 border-b flex items-center justify-between">
                              <h3 className="font-medium">Documents</h3>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setLibraryExpanded(true)}
-                                  title="Expand to Full Screen"
-                                >
-                                  <Expand className="h-4 w-4" />
-                                </Button>
-                               <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 onClick={() => setLeftSidebarOpen(false)}
-                               >
-                                 <X className="h-4 w-4" />
-                               </Button>
-                             </div>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => setLeftSidebarOpen(false)}
+                             >
+                               <X className="h-4 w-4" />
+                             </Button>
                            </div>
                            
                            {/* New Document & Search */}
                            <div className="p-4 space-y-3">
-                             <Button onClick={() => createNewDocument()} className="w-full">
+                             <Button onClick={createNewDocument} className="w-full">
                                <Plus className="h-4 w-4 mr-2" />
                                New Document
                              </Button>
@@ -1900,9 +1382,21 @@ export default function Dashboard() {
                            onProvideEditor={handleEditorMount}
                          />
                        </div>
-                     ) : (
-                       <CategorySelection onCategorySelect={handleCategorySelection} />
-                     )}
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center text-center">
+                        <div>
+                          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                          <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
+                          <p className="text-muted-foreground mb-4">
+                            Your AI-powered writing studio for professional content creation
+                          </p>
+                          <Button onClick={createNewDocument}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Your First Document
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ResizablePanel>
 
@@ -1915,117 +1409,51 @@ export default function Dashboard() {
                         isOpen={rightSidebarOpen}
                         onClose={() => setRightSidebarOpen(false)}
                         onDocumentSelect={openDocument}
-                        expanded={chatExpanded}
-                        onExpandToggle={() => setChatExpanded(!chatExpanded)}
                       />
                     </ResizablePanel>
                   </>
                 )}
-
-            {/* Full-Screen Chat Overlay (Desktop) */}
-            {chatExpanded && (
-              <Sheet open={chatExpanded} onOpenChange={() => setChatExpanded(false)}>
-                <SheetContent side="right" className="w-full p-0">
-                  <AIChatSidebar
-                    isOpen={chatExpanded}
-                    onClose={() => setChatExpanded(false)}
-                    onDocumentSelect={openDocument}
-                    expanded={chatExpanded}
-                  />
-                </SheetContent>
-              </Sheet>
-            )}
-
-            {/* Full-Screen Library Overlay (Desktop) */}
-            {libraryExpanded && (
-              <Sheet open={libraryExpanded} onOpenChange={() => setLibraryExpanded(false)}>
-                <SheetContent side="left" className="w-full p-0">
-                  <div className="h-full flex flex-col bg-background">
-                    <div className="flex-shrink-0 border-b bg-card">
-                      <div className="p-4 border-b flex items-center justify-between">
-                        <h3 className="font-medium">Documents</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLibraryExpanded(false)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="p-4 space-y-3">
-                        <Button onClick={() => createNewDocument()} className="w-full">
-                          <Plus className="h-4 w-4 mr-2" />
-                          New Document
-                        </Button>
-                       <DocumentSearch 
-                         onSearch={handleDocumentSearch}
-                         onClear={clearDocumentSearch}
-                         isLoading={searchLoading}
-                       />
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                      <ScrollArea className="flex-1">
-                        <div className="p-4 pb-20 space-y-4">
-                          <DocumentFilters 
-                            onFiltersChange={handleFiltersChange}
-                            initialFilters={filters}
-                          />
-                          
-                          <div className="min-h-0">
-                             <DocumentList
-                               documents={filteredDocuments}
-                               categories={categories}
-                               currentDocument={currentDocument}
-                               onDocumentSelect={(doc) => {
-                                 openDocument(doc);
-                                 setLibraryExpanded(false);
-                               }}
-                               onDocumentUpdate={loadDocuments}
-                               searchQuery={searchQuery}
-                               selectedDocuments={selectedDocuments}
-                                onDocumentSelectionChange={(newSelection: string[]) => {
-                                  clearSelection();
-                                  newSelection.forEach(id => toggleDocumentSelection(id));
-                                }}
-                             />
-                          </div>
-                          
-                          <div className="mt-auto pt-4 border-t">
-                            <DocumentStats documents={documents} />
-                          </div>
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            )}
               </ResizablePanelGroup>
             </div>
 
             {/* Desktop Bottom Toolbar */}
             <footer className="border-t bg-card">
               <div className="flex items-center gap-3 p-3 min-h-[68px]">
-                {/* Left Section - Voice Only */}
+                {/* Left Section - Voice & AI Chat */}
                 <div className="flex items-center gap-2 shrink-0">
                   <VoiceRecorder 
                     onTranscription={handleVoiceTranscription}
                     disabled={aiLoading}
                   />
+                  {!rightSidebarOpen && (
+                    <Button
+                      size="sm"
+                      className="h-11 bg-muted hover:bg-muted/80 text-muted-foreground border-0 hidden sm:flex items-center gap-1.5"
+                      onClick={() => setRightSidebarOpen(true)}
+                    >
+                      💬 <span className="hidden md:inline">AI Chat</span>
+                    </Button>
+                  )}
                 </div>
                 
-                {/* Center Section - AI Smart Carousel */}
+                {/* Center Section - Command Shortcuts */}
                 <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
-                   <AISmartCarousel
-                     onCommand={executeAICommand}
-                     aiLoading={aiLoading}
+                   <CustomShortcuts 
+                     onShortcut={handleCustomShortcutUpdated} 
+                     isLoading={aiLoading}
                      selectedText={selectedText}
-                     onOpenSettings={() => setShowCommandSettings(true)}
-                     className="flex-1"
+                     onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
                    />
+                  <div className="w-px h-6 bg-border mx-2" />
+                  <AdvancedAICommands
+                    selectedDocuments={selectedDocuments}
+                    onDocumentCreated={handleDocumentCreated}
+                    onTextInsert={handleTextInsert}
+                    onTextReplace={handleTextReplace}
+                    getCurrentText={getCurrentText}
+                    getSelectedText={getSelectedText}
+                    getCursorContext={getCursorContext}
+                  />
                 </div>
                 
                 {/* Right Section - Word Count & Save */}
@@ -2051,14 +1479,13 @@ export default function Dashboard() {
                       )}
                     </div>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-                    className="h-11 hover:bg-muted/50 transition-colors relative"
-                    title={rightSidebarOpen ? "Close AI Chat" : "Open AI Chat"}
+                  <Button 
+                    size="sm" 
+                    className="h-11 bg-save-button hover:bg-save-button/90 text-save-button-foreground border-0 min-w-fit"
+                    onClick={saveDocument}
+                    disabled={!currentDocument}
                   >
-                    💬 <span className="hidden md:inline">{rightSidebarOpen ? "Close Chat" : "AI Chat"}</span>
+                    💾 <span className="hidden sm:inline ml-1">Save</span>
                   </Button>
                 </div>
               </div>

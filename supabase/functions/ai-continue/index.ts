@@ -73,25 +73,7 @@ serve(async (req) => {
       console.error('Embedding generation failed, proceeding without style matching');
     }
     
-    // Fetch user's Continue command configuration
-    const { data: userCommandConfig } = await supabase
-      .from('user_commands')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('name', 'Continue')
-      .single();
-
-    // Define a default configuration for users who haven't customized
-    const defaultConfig = {
-      ai_model: 'gpt-4o-mini',
-      max_tokens: 2000,
-      system_prompt: 'Continue this text naturally in the author\'s style and voice. Maintain consistency in tone, perspective, and writing quality.'
-    };
-
-    // Use user's config if it exists, otherwise use the default
-    const commandConfig = userCommandConfig || defaultConfig;
-
-    // Use user's configured model and settings
+    // Use GPT-5 Nano for continuation (fast and cheap)
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -99,11 +81,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: commandConfig.ai_model,
+        model: 'gpt-5-nano-2025-08-07',
         messages: [
           {
             role: 'system',
-            content: `${commandConfig.system_prompt}
+            content: `Continue writing in the exact same style and voice as the provided text. 
                      ${styleExamples ? `Here are examples of the author's writing style:\n${styleExamples}` : ''}`
           },
           {
@@ -111,7 +93,7 @@ serve(async (req) => {
             content: `Continue this text naturally:\n\n${context}`
           }
         ],
-        ...(commandConfig.ai_model.includes('gpt-4') ? { max_tokens: commandConfig.max_tokens } : { max_completion_tokens: commandConfig.max_tokens })
+        max_completion_tokens: 500
       }),
     });
 

@@ -27,33 +27,15 @@ serve(async (req) => {
       throw new Error('Text and userId are required');
     }
 
+    console.log(`Fact-checking text for user ${userId}, text length: ${text.length}`);
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
         headers: { Authorization: req.headers.get('Authorization')! },
       },
     });
-
-    // Fetch user's Fact Check command configuration
-    const { data: userCommandConfig } = await supabase
-      .from('user_commands')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('name', 'Fact Check')
-      .single();
-
-    // Define a default configuration for users who haven't customized
-    const defaultConfig = {
-      ai_model: 'gpt-4o-mini',
-      max_tokens: 1500,
-      system_prompt: 'Extract specific factual claims, statements, and assertions from the provided text. Focus on verifiable information such as dates, statistics, quotes, historical events, and specific details that can be fact-checked.'
-    };
-
-    // Use user's config if it exists, otherwise use the default
-    const commandConfig = userCommandConfig || defaultConfig;
-
-    console.log(`Fact-checking text for user ${userId}, text length: ${text.length}`);
-
-    // Extract potential facts/claims using user's configured model
+    
+    // Extract potential facts/claims using GPT-5 Nano
     const claimsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -61,20 +43,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: commandConfig.ai_model,
+        model: 'gpt-5-nano-2025-08-07',
         messages: [
           {
             role: 'system',
-            content: commandConfig.system_prompt
+            content: 'Extract specific claims, facts, or statements that could be verified. List them clearly.'
           },
           {
             role: 'user',
-            content: `Extract specific claims from this text:\n\n${text}`
+            content: text
           }
         ],
-        ...(commandConfig.ai_model.includes('gpt-4') ? 
-          { max_tokens: Math.min(commandConfig.max_tokens / 2, 800) } : 
-          { max_completion_tokens: Math.min(commandConfig.max_tokens / 2, 800) })
+        max_completion_tokens: 500
       }),
     });
 
@@ -138,7 +118,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -149,7 +129,7 @@ serve(async (req) => {
             content: `Text to check:\n${text}\n\nReference documents:\n${referenceContext}`
           }
         ],
-        max_tokens: 1000
+        max_completion_tokens: 1000
       }),
     });
 

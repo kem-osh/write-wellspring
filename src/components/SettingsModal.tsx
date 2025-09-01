@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -275,9 +274,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 <div className={`flex items-center justify-between p-4 border rounded ${isMobile ? 'p-6' : ''}`}>
                   <div className="flex items-center space-x-3">
-                     <RadioGroupItem value="gpt-4o-mini" id="nano" className={isMobile ? 'scale-125' : ''} />
+                    <RadioGroupItem value="gpt-5-nano" id="nano" className={isMobile ? 'scale-125' : ''} />
                     <div>
-                      <Label htmlFor="nano" className={`font-medium ${isMobile ? 'text-base' : ''}`}>GPT-4o Mini</Label>
+                      <Label htmlFor="nano" className={`font-medium ${isMobile ? 'text-base' : ''}`}>GPT-5 Nano</Label>
                       <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-xs'}`}>~$0.0001/request</p>
                     </div>
                   </div>
@@ -287,9 +286,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div className={`flex items-center justify-between p-4 border rounded ${isMobile ? 'p-6' : ''}`}>
                   <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="gpt-4o" id="mini" className={isMobile ? 'scale-125' : ''} />
+                    <RadioGroupItem value="gpt-5-mini" id="mini" className={isMobile ? 'scale-125' : ''} />
                     <div>
-                      <Label htmlFor="mini" className={`font-medium ${isMobile ? 'text-base' : ''}`}>GPT-4o</Label>
+                      <Label htmlFor="mini" className={`font-medium ${isMobile ? 'text-base' : ''}`}>GPT-5 Mini</Label>
                       <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-xs'}`}>~$0.001/request</p>
                     </div>
                   </div>
@@ -381,9 +380,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex flex-col h-full p-6">
               <DialogHeader className="pb-4">
                 <DialogTitle className="text-xl">Settings</DialogTitle>
-                <DialogDescription>
-                  Customize your writing experience, AI preferences, and application behavior.
-                </DialogDescription>
               </DialogHeader>
               <SettingsContent />
             </div>

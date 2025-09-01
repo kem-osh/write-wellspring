@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -15,51 +14,17 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText, userId } = await req.json();
+    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
     
-    if (!userId) {
-      throw new Error('User ID is required');
-    }
-
     const textToEdit = selectedText || content;
+
     if (!textToEdit) {
       throw new Error('No content provided');
     }
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
-    
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      throw new Error('Missing Supabase configuration');
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! },
-      },
-    });
-
-    // Fetch user's Light Edit command configuration
-    const { data: userCommandConfig } = await supabase
-      .from('user_commands')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('name', 'Light Edit')
-      .single();
-
-    // Define a default configuration for users who haven't customized
-    const defaultConfig = {
-      ai_model: 'gpt-4o-mini',
-      max_tokens: 2000,
-      system_prompt: 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.'
-    };
-
-    // Use user's config if it exists, otherwise use the default
-    const commandConfig = userCommandConfig || defaultConfig;
-
-    const aiModel = commandConfig.ai_model;
-    const maxCompletionTokens = commandConfig.max_tokens;
-    const systemPrompt = commandConfig.system_prompt;
+    const systemPrompt = customPrompt || 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
+    const aiModel = model || 'gpt-5-nano-2025-08-07';
+    const maxCompletionTokens = maxTokens || 2000;
 
     console.log('Processing light edit for text length:', textToEdit.length, 'with maxCompletionTokens:', maxCompletionTokens);
 
@@ -81,7 +46,7 @@ serve(async (req) => {
             content: textToEdit
           }
         ],
-        ...(aiModel.includes('gpt-4') ? { max_tokens: maxCompletionTokens } : { max_completion_tokens: maxCompletionTokens })
+        max_completion_tokens: maxCompletionTokens
       }),
     });
 

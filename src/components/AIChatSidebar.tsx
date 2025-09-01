@@ -10,8 +10,7 @@ import {
   Bot, 
   User, 
   RotateCcw,
-  FileText,
-  Expand
+  FileText
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -41,11 +40,9 @@ interface AIChatSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onDocumentSelect: (doc: Document) => void;
-  expanded?: boolean;
-  onExpandToggle?: () => void;
 }
 
-export function AIChatSidebar({ isOpen, onClose, onDocumentSelect, expanded, onExpandToggle }: AIChatSidebarProps) {
+export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSidebarProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -171,11 +168,6 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect, expanded, onE
             <RotateCcw className="w-4 h-4 mr-2" />
             New Chat
           </Button>
-          {onExpandToggle && (
-            <Button variant="ghost" size="icon" onClick={onExpandToggle} title="Expand to Full Screen">
-              <Expand className="w-4 h-4" />
-            </Button>
-          )}
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>

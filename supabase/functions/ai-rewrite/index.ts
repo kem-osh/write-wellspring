@@ -27,33 +27,15 @@ serve(async (req) => {
       throw new Error('Text and userId are required');
     }
 
+    console.log(`Rewriting text for user ${userId}, style: ${style}, text length: ${text.length}`);
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
         headers: { Authorization: req.headers.get('Authorization')! },
       },
     });
-
-    // Fetch user's Rewrite command configuration
-    const { data: userCommandConfig } = await supabase
-      .from('user_commands')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('name', 'Rewrite')
-      .single();
-
-    // Define a default configuration for users who haven't customized
-    const defaultConfig = {
-      ai_model: 'gpt-4o-mini',
-      max_tokens: 2000,
-      system_prompt: 'Rewrite this text with improved clarity and style while preserving the core meaning and author\'s voice.'
-    };
-
-    // Use user's config if it exists, otherwise use the default
-    const commandConfig = userCommandConfig || defaultConfig;
-
-    console.log(`Rewriting text for user ${userId}, style: ${style}, text length: ${text.length}`);
-
-    // Build style examples from user documents if style is 'auto'
+    
+    // If style is 'auto', detect from user's documents
     let stylePrompt = '';
     if (style === 'auto') {
       console.log('Auto-detecting writing style from user documents...');
@@ -82,12 +64,12 @@ serve(async (req) => {
           stylePrompt = `Match this writing style:\n${recentDocs[0].content.substring(0, 500)}`;
           console.log('Using recent documents for style matching');
         } else {
-          stylePrompt = commandConfig.system_prompt;
-          console.log('No documents found, using configured system prompt');
+          stylePrompt = 'Rewrite in a clear, engaging style.';
+          console.log('No documents found, using default style prompt');
         }
       }
     } else {
-      stylePrompt = `${commandConfig.system_prompt} Rewrite in a ${style} style.`;
+      stylePrompt = `Rewrite in a ${style} style.`;
     }
     
     console.log('Generating rewrite alternatives...');
@@ -107,7 +89,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: commandConfig.ai_model,
+          model: 'gpt-5-nano-2025-08-07',
           messages: [
             {
               role: 'system',
@@ -118,7 +100,7 @@ serve(async (req) => {
               content: `Rewrite this text (version ${i + 1}, ${variationPrompt}):\n\n${text}`
             }
           ],
-          ...(commandConfig.ai_model.includes('gpt-4') ? { max_tokens: commandConfig.max_tokens } : { max_completion_tokens: commandConfig.max_tokens })
+          max_completion_tokens: maxTokens
         }),
       });
 
