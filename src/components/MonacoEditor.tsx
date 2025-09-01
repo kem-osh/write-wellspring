@@ -63,6 +63,8 @@ export function MonacoEditor({ value, onChange, isDarkMode, settings, onSelectio
       });
     }
   }
+
+  function handleEditorChange(newValue: string | undefined) {
     onChange(newValue || '');
   }
 

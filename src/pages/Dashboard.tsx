@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense, useCallback } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -108,8 +108,12 @@ export default function Dashboard() {
   const [saveIndicator, setSaveIndicator] = useState<'saved' | 'saving' | 'error' | null>(null);
   
   // Auto-title generation constants
-  const MIN_CONTENT_LENGTH = 100; // Minimum characters before saving/titling
+  const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
   const AUTO_TITLE_THRESHOLD = 200; // Characters needed for title generation
+  
+  // Editor reference for text selection
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
   
   // Mobile state
   const [mobileDocumentLibraryOpen, setMobileDocumentLibraryOpen] = useState(false);
@@ -129,10 +133,37 @@ export default function Dashboard() {
     selectionCount
   } = useDocumentSelection();
 
-  // Load documents and categories on mount
-  useEffect(() => {
-    loadDocuments();
-    loadCategories();
+  // Helper functions for editor text selection
+  const getSelectedTextFromEditor = useCallback(() => {
+    if (editorRef.current && monacoRef.current) {
+      const selection = editorRef.current.getSelection();
+      const model = editorRef.current.getModel();
+      if (selection && model && !selection.isEmpty()) {
+        return model.getValueInRange(selection);
+      }
+    }
+    return '';
+  }, []);
+
+  const replaceSelectedText = useCallback((newText: string) => {
+    if (editorRef.current && selectedText) {
+      const selection = editorRef.current.getSelection();
+      if (selection) {
+        editorRef.current.executeEdits('ai-command', [{
+          range: selection,
+          text: newText,
+          forceMoveMarkers: true
+        }]);
+        setSelectedText(''); // Clear selection after replacement
+      }
+    }
+  }, [selectedText]);
+
+  // Function to handle editor mount and expose editor reference
+  const handleEditorMount = useCallback((editor: any, monaco: any) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    console.log('Monaco editor mounted and references set');
   }, []);
 
   // Update filtered documents when documents, search, or filters change
@@ -313,6 +344,138 @@ export default function Dashboard() {
     setDocumentTitle(doc.title);
     setDocumentContent(doc.content);
   };
+
+  // Enhanced AI command execution with proper error handling and text replacement
+  const executeAICommand = useCallback(async (
+    commandType: 'light-edit' | 'expand' | 'condense' | 'outline',
+    customPrompt?: string,
+    model?: string,
+    maxTokens?: number
+  ) => {
+    if (!currentDocument) {
+      toast({
+        title: "No document selected",
+        description: "Please create or select a document first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get text to process (selected or full content)
+    const currentSelectedText = getSelectedTextFromEditor();
+    const textToProcess = currentSelectedText || documentContent;
+    
+    if (!textToProcess?.trim() || textToProcess.length < 10) {
+      toast({
+        title: "No content to process",
+        description: "Please write or select text first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log(`Executing AI command: ${commandType}`, {
+      selectedText: !!currentSelectedText,
+      textLength: textToProcess.length,
+      model: model || 'gpt-5-nano-2025-08-07'
+    });
+
+    setAiLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Map command types to edge function names
+      const functionName = commandType === 'light-edit' ? 'ai-light-edit' : 
+                          commandType === 'expand' ? 'ai-expand-content' : 
+                          commandType === 'condense' ? 'ai-condense-content' :
+                          'ai-outline';
+
+      console.log(`Calling ${functionName}...`);
+      
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: {
+          content: currentSelectedText ? undefined : documentContent,
+          selectedText: currentSelectedText || undefined,
+          customPrompt: customPrompt,
+          model: model || 'gpt-5-nano-2025-08-07',
+          maxTokens: maxTokens || 500,
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      // Extract result from response based on command type
+      const result = data?.result || 
+                    data?.editedText || 
+                    data?.expandedText || 
+                    data?.condensedText || 
+                    data?.outlineText ||
+                    data?.content;
+      
+      if (!result) {
+        throw new Error('No result from AI - check edge function response format');
+      }
+
+      console.log(`AI command ${commandType} completed successfully`);
+
+      // Replace text in editor
+      if (currentSelectedText && editorRef.current) {
+        // Replace selected text using Monaco editor API
+        replaceSelectedText(result);
+      } else {
+        // Replace entire document content
+        setDocumentContent(result);
+      }
+      
+      toast({
+        title: `${commandType.charAt(0).toUpperCase() + commandType.slice(1)} completed`,
+        description: currentSelectedText ? 'Selected text updated' : 'Document updated',
+      });
+
+      // Trigger auto-save after successful AI edit (will be available after handleAutoSave is defined)
+      setTimeout(() => {
+        if (typeof handleAutoSave === 'function') {
+          handleAutoSave();
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error(`AI command ${commandType} error:`, error);
+      toast({
+        title: `Failed to execute ${commandType}`,
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  }, [currentDocument, documentContent, getSelectedTextFromEditor, replaceSelectedText, toast]);
+
+  // Update handleCustomShortcut to use the new executeAICommand
+  const handleCustomShortcutUpdated = useCallback(async (
+    type: 'light-edit' | 'expand' | 'condense' | 'outline',
+    prompt: string,
+    model?: string,
+    maxTokens?: number
+  ) => {
+    await executeAICommand(type, prompt, model, maxTokens);
+  }, [executeAICommand]);
+
+  // Load documents and categories on mount
+  useEffect(() => {
+    loadDocuments();
+    loadCategories();
+  }, []);
+    if (!user) return;
+
+    // Don't save empty documents
+    if (!documentContent || documentContent.trim().length < MIN_CONTENT_LENGTH) {
+      console.log('Content too short, skipping save');
+      return;
+    }
 
   const handleAutoSave = useCallback(async () => {
     if (!user) return;
@@ -951,7 +1114,7 @@ export default function Dashboard() {
             <MobileAICommands
               isOpen={mobileAICommandsOpen}
               onClose={() => setMobileAICommandsOpen(false)}
-              onCommand={handleCustomShortcut}
+              onCommand={handleCustomShortcutUpdated}
               aiLoading={aiLoading}
               selectedText={selectedText}
             />
@@ -959,7 +1122,7 @@ export default function Dashboard() {
             {/* Contextual AI Toolbar */}
             <ContextualAIToolbar
               selectedText={selectedText}
-              onCommand={handleCustomShortcut}
+              onCommand={handleCustomShortcutUpdated}
               aiLoading={aiLoading}
               onClose={() => setSelectedText('')}
             />
@@ -1105,14 +1268,16 @@ export default function Dashboard() {
                 <ResizablePanel>
                   <div className="h-full flex flex-col">
                     {currentDocument ? (
-                      <div className="flex-1">
-                        <MonacoEditor
-                          value={documentContent}
-                          onChange={setDocumentContent}
-                          isDarkMode={isDarkMode}
-                          settings={settings}
-                        />
-                      </div>
+                       <div className="flex-1">
+                         <MonacoEditor
+                           value={documentContent}
+                           onChange={setDocumentContent}
+                           isDarkMode={isDarkMode}
+                           settings={settings}
+                           onSelectionChange={setSelectedText}
+                           onProvideEditor={handleEditorMount}
+                         />
+                       </div>
                     ) : (
                       <div className="flex-1 flex items-center justify-center text-center">
                         <div>
@@ -1169,11 +1334,12 @@ export default function Dashboard() {
                 
                 {/* Center Section - Command Shortcuts */}
                 <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
-                  <CustomShortcuts 
-                    onShortcut={handleCustomShortcut} 
-                    isLoading={aiLoading}
-                    onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
-                  />
+                   <CustomShortcuts 
+                     onShortcut={handleCustomShortcutUpdated} 
+                     isLoading={aiLoading}
+                     selectedText={selectedText}
+                     onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
+                   />
                   <div className="w-px h-6 bg-border mx-2" />
                   <AdvancedAICommands
                     selectedDocuments={selectedDocuments}
