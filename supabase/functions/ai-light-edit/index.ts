@@ -24,9 +24,9 @@ serve(async (req) => {
 
     const systemPrompt = customPrompt || 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
     const aiModel = model || 'gpt-5-nano-2025-08-07';
-    const maxCompletionTokens = maxTokens || Math.max(500, Math.ceil(textToEdit.length * 1.2));
+    const maxCompletionTokens = maxTokens || 2000;
 
-    console.log('Processing light edit for text length:', textToEdit.length);
+    console.log('Processing light edit for text length:', textToEdit.length, 'with maxCompletionTokens:', maxCompletionTokens);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

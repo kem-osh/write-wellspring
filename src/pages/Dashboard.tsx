@@ -439,7 +439,7 @@ export default function Dashboard() {
             selectedText: currentSelectedText || undefined,
             customPrompt: customPrompt,
             model: model || 'gpt-5-nano-2025-08-07',
-            maxTokens: maxTokens || 500,
+            maxTokens: maxTokens || (commandType === 'light-edit' ? 2000 : 500),
             userId: user.id
           };
 
