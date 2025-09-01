@@ -7,7 +7,7 @@ export function makeNewCommand(userId: string, sortOrder: number): UnifiedComman
     name: 'New Command',
     prompt: '',
     system_prompt: '',
-    function_name: `custom-${Date.now()}`,
+    function_name: 'ai-light-edit',
     ai_model: 'gpt-5-mini-2025-08-07',
     max_tokens: 2000,
     temperature: 0.3,
@@ -15,8 +15,8 @@ export function makeNewCommand(userId: string, sortOrder: number): UnifiedComman
     user_id: userId,
     created_at: now,
     updated_at: now,
-    icon: 'sparkles',
-    category: 'custom',
+    icon: 'Sparkles',
+    category: 'edit',
     description: '',
     estimated_time: '30s'
   };

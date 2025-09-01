@@ -13,12 +13,14 @@ export interface UnifiedCommand {
   created_at?: string;
   updated_at?: string;
   
-  // UI metadata fields (calculated/derived)
+  // Now persisted in database (no more UI-only metadata)
   function_name: string; // Maps to edge function name
-  icon: string;
-  category: 'edit' | 'structure' | 'analyze' | 'style' | 'custom';
-  description: string;
-  estimated_time: string;
+  icon: string; // Lucide icon name (e.g., "Sparkles", "Languages", "PenTool")
+  category: string; // e.g., "edit", "structure", "analyze", "utility"
+  
+  // Optional UI fields (can be derived)
+  description?: string;
+  estimated_time?: string;
 }
 
 // Default commands that will be inserted into database on "Restore Defaults"

@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { 
-  Wand2, 
-  Expand, 
-  Minimize2, 
-  List, 
   X,
-  Loader2,
-  ArrowRight
+  Loader2
 } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { UnifiedCommand } from '@/types/commands';
 import { useAuth } from '@/hooks/useAuth';
-import { loadUserCommands } from '@/utils/commandMigration';
+import { supabase } from '@/integrations/supabase/client';
+
+// Dynamic icon component
+function CommandIcon({ name, className = "h-4 w-4" }: { name?: string; className?: string }) {
+  const IconComponent = (name && (Icons as any)[name]) || Icons.Wand2;
+  return <IconComponent className={className} aria-hidden="true" />;
+}
 
 interface ContextualAIToolbarProps {
   selectedText: string;
@@ -45,7 +47,19 @@ export function ContextualAIToolbar({
       
       setLoading(true);
       try {
-        const allCommands = await loadUserCommands(user.id);
+        const { data: dbCommands, error } = await supabase
+          .from('user_commands' as any)
+          .select('*')
+          .eq('user_id', user.id)
+          .order('sort_order');
+
+        if (error) {
+          console.error('Error loading contextual commands:', error);
+          if (mounted.current) {
+            setCommands([]);
+          }
+          return;
+        }
         
         // Filter to contextual commands - those typically used for selected text
         const contextualFunctionNames = [
@@ -56,7 +70,14 @@ export function ContextualAIToolbar({
           'ai-rewrite'
         ];
         
-        const contextualCommands = allCommands.filter(cmd => 
+        // Map and filter the commands properly
+        const allCommands: UnifiedCommand[] = (dbCommands || []).map((cmd: any) => ({
+          ...cmd,
+          description: cmd.description || cmd.prompt?.substring(0, 50) + '...' || 'Custom command',
+          estimated_time: cmd.estimated_time || '3-5s'
+        }));
+        
+        const contextualCommands = allCommands.filter((cmd: UnifiedCommand) => 
           contextualFunctionNames.includes(cmd.function_name) ||
           cmd.category === 'edit' ||
           cmd.category === 'structure'
@@ -123,16 +144,6 @@ export function ContextualAIToolbar({
           </div>
         ) : (
           commands.map((command) => {
-            const iconMap: Record<string, any> = {
-              'wand2': Wand2,
-              'expand': Expand,
-              'minimize2': Minimize2,
-              'list': List,
-              'sparkles': Wand2,
-              'zap': Wand2
-            };
-            const Icon = iconMap[command.icon] || Wand2;
-            
             return (
               <EnhancedButton
                 key={command.id}
@@ -145,7 +156,7 @@ export function ContextualAIToolbar({
                 {aiLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Icon className="h-4 w-4" />
+                  <CommandIcon name={command.icon} />
                 )}
                 <span>{command.name}</span>
               </EnhancedButton>

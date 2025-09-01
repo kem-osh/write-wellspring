@@ -198,6 +198,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_commands: {
+        Row: {
+          ai_model: string | null
+          category: string | null
+          created_at: string
+          function_name: string | null
+          icon: string | null
+          id: string
+          max_tokens: number | null
+          name: string
+          prompt: string
+          sort_order: number | null
+          system_prompt: string
+          temperature: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_model?: string | null
+          category?: string | null
+          created_at?: string
+          function_name?: string | null
+          icon?: string | null
+          id?: string
+          max_tokens?: number | null
+          name: string
+          prompt: string
+          sort_order?: number | null
+          system_prompt: string
+          temperature?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_model?: string | null
+          category?: string | null
+          created_at?: string
+          function_name?: string | null
+          icon?: string | null
+          id?: string
+          max_tokens?: number | null
+          name?: string
+          prompt?: string
+          sort_order?: number | null
+          system_prompt?: string
+          temperature?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

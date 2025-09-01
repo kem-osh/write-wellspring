@@ -4,13 +4,51 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, Trash, Save, RotateCcw } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { UnifiedCommand } from '@/types/commands';
 import { restoreDefaultCommands } from '@/utils/commandMigration';
 import { makeNewCommand } from '@/utils/newCommand';
+
+// Function name options for edge functions
+const FUNCTION_OPTIONS = [
+  { value: 'ai-light-edit', label: 'Light Edit' },
+  { value: 'ai-rewrite', label: 'Rewrite' },
+  { value: 'ai-expand-content', label: 'Expand Content' },
+  { value: 'ai-condense-content', label: 'Condense Content' },
+  { value: 'ai-outline', label: 'Create Outline' },
+  { value: 'ai-continue', label: 'Continue Writing' },
+  { value: 'ai-analyze', label: 'Analyze Text' },
+  { value: 'ai-fact-check', label: 'Fact Check' },
+  { value: 'ai-generate-title', label: 'Generate Title' },
+  { value: 'ai-translate', label: 'Translate' },
+];
+
+// Category options
+const CATEGORY_OPTIONS = [
+  { value: 'edit', label: 'Edit' },
+  { value: 'structure', label: 'Structure' },
+  { value: 'analyze', label: 'Analyze' },
+  { value: 'style', label: 'Style' },
+  { value: 'utility', label: 'Utility' },
+];
+
+// Common Lucide icon options
+const ICON_OPTIONS = [
+  'Sparkles', 'PenTool', 'Expand', 'Shrink', 'List', 'Type', 'Plus', 'Brain', 
+  'Shield', 'FileText', 'CheckSquare', 'BarChart3', 'BookOpen', 'MessageCircle',
+  'Hash', 'Palette', 'Target', 'Zap', 'Languages', 'Globe', 'Eye', 'Settings'
+];
+
+// Icon preview component
+function IconPreview({ name }: { name?: string }) {
+  const IconComponent = (name && (Icons as any)[name]) || Icons.Sparkles;
+  return <IconComponent className="h-4 w-4" />;
+}
 
 interface CommandSettingsProps {
   showSettings: boolean;
@@ -43,23 +81,11 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
       if (error) throw error;
       
       if (data && data.length > 0) {
+        // Direct mapping from DB - no more hardcoded logic
         const unifiedCommands: UnifiedCommand[] = data.map((cmd: any) => ({
-          id: cmd.id,
-          name: cmd.name,
-          prompt: cmd.prompt,
-          system_prompt: cmd.system_prompt,
-          function_name: cmd.name.toLowerCase().replace(/\s+/g, '-'),
-          ai_model: cmd.ai_model,
-          max_tokens: cmd.max_tokens,
-          temperature: cmd.temperature,
-          sort_order: cmd.sort_order,
-          user_id: cmd.user_id,
-          created_at: cmd.created_at,
-          updated_at: cmd.updated_at,
-          icon: 'sparkles',
-          category: 'custom' as const,
-          description: cmd.prompt,
-          estimated_time: '30s'
+          ...cmd,
+          description: cmd.description || cmd.prompt?.substring(0, 50) + '...' || 'Custom command',
+          estimated_time: cmd.estimated_time || '3-5s'
         }));
         setCommands(unifiedCommands);
       } else {
@@ -91,6 +117,9 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
               name: command.name,
               prompt: command.prompt,
               system_prompt: command.system_prompt,
+              function_name: command.function_name,
+              icon: command.icon,
+              category: command.category,
               ai_model: command.ai_model,
               max_tokens: command.max_tokens,
               temperature: command.temperature,
@@ -109,6 +138,9 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
               name: command.name,
               prompt: command.prompt,
               system_prompt: command.system_prompt,
+              function_name: command.function_name,
+              icon: command.icon,
+              category: command.category,
               ai_model: command.ai_model,
               max_tokens: command.max_tokens,
               temperature: command.temperature,
@@ -246,7 +278,7 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label>Command Name</Label>
                     <Input
@@ -254,6 +286,25 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                       onChange={(e) => updateCommand(index, { name: e.target.value })}
                       placeholder="e.g., Improve Clarity"
                     />
+                  </div>
+
+                  <div>
+                    <Label>Function Name</Label>
+                    <Select
+                      value={command.function_name || 'ai-light-edit'}
+                      onValueChange={(value) => updateCommand(index, { function_name: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FUNCTION_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>
@@ -266,6 +317,54 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                       <option value="gpt-5-nano-2025-08-07">GPT-5 Nano (Fastest, Cheapest)</option>
                       <option value="gpt-5-mini-2025-08-07">GPT-5 Mini (Better Quality)</option>
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Icon</Label>
+                    <Select
+                      value={command.icon || 'Sparkles'}
+                      onValueChange={(value) => updateCommand(index, { icon: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue>
+                          <div className="flex items-center gap-2">
+                            <IconPreview name={command.icon} />
+                            <span>{command.icon || 'Sparkles'}</span>
+                          </div>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ICON_OPTIONS.map((iconName) => (
+                          <SelectItem key={iconName} value={iconName}>
+                            <div className="flex items-center gap-2">
+                              <IconPreview name={iconName} />
+                              <span>{iconName}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Category</Label>
+                    <Select
+                      value={command.category || 'edit'}
+                      onValueChange={(value) => updateCommand(index, { category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

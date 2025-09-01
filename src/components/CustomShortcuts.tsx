@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { 
-  Sparkles, Expand, Shrink, List, BookOpen, Zap, Loader2, 
-  FileText, Type, ChevronRight, Brain, Target, MessageCircle,
-  PenTool, Plus, CheckSquare, Hash, BarChart3, Palette, Shield
-} from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useHaptics } from '@/hooks/useHaptics';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,29 +20,11 @@ interface CustomShortcutsProps {
 
 type CommandCategory = 'edit' | 'structure' | 'analyze' | 'style';
 
-const getIconForCommand = (iconName: string) => {
-  const icons: Record<string, React.ReactNode> = {
-    sparkles: <Sparkles className="h-3.5 w-3.5" />,
-    'pen-tool': <PenTool className="h-3.5 w-3.5" />,
-    expand: <Expand className="h-3.5 w-3.5" />,
-    shrink: <Shrink className="h-3.5 w-3.5" />,
-    type: <Type className="h-3.5 w-3.5" />,
-    list: <List className="h-3.5 w-3.5" />,
-    'file-text': <FileText className="h-3.5 w-3.5" />,
-    'check-square': <CheckSquare className="h-3.5 w-3.5" />,
-    'bar-chart-3': <BarChart3 className="h-3.5 w-3.5" />,
-    'book-open': <BookOpen className="h-3.5 w-3.5" />,
-    'message-circle': <MessageCircle className="h-3.5 w-3.5" />,
-    hash: <Hash className="h-3.5 w-3.5" />,
-    palette: <Palette className="h-3.5 w-3.5" />,
-    target: <Target className="h-3.5 w-3.5" />,
-    plus: <Plus className="h-3.5 w-3.5" />,
-    shield: <Shield className="h-3.5 w-3.5" />,
-    brain: <Brain className="h-3.5 w-3.5" />,
-    zap: <Zap className="h-3.5 w-3.5" />,
-  };
-  return icons[iconName] || <Sparkles className="h-3.5 w-3.5" />;
-};
+// SAFE dynamic icon resolver (no per-command mapping)
+function CommandIcon({ name, className = "h-3.5 w-3.5" }: { name?: string; className?: string }) {
+  const IconComponent = (name && (Icons as any)[name]) || Icons.Sparkles;
+  return <IconComponent className={className} aria-hidden="true" />;
+}
 
 export function CustomShortcuts({ 
   onShortcut, 
@@ -76,7 +55,7 @@ export function CustomShortcuts({
     try {
       const { data: dbCommands, error } = await supabase
         .from('user_commands' as any)
-        .select('*')
+        .select('id,name,prompt,system_prompt,ai_model,max_tokens,temperature,function_name,icon,category,sort_order,created_at,updated_at')
         .eq('user_id', user.id)
         .order('sort_order');
 
@@ -91,25 +70,11 @@ export function CustomShortcuts({
         return;
       }
 
-      // Map database response to UnifiedCommand format with UI metadata
+      // Direct mapping from DB (no more hardcoded logic)
       const unifiedCommands: UnifiedCommand[] = (dbCommands || []).map((cmd: any) => ({
-        id: cmd.id,
-        user_id: cmd.user_id,
-        name: cmd.name,
-        prompt: cmd.prompt,
-        system_prompt: cmd.system_prompt,
-        ai_model: cmd.ai_model,
-        max_tokens: cmd.max_tokens,
-        temperature: cmd.temperature,
-        sort_order: cmd.sort_order,
-        created_at: cmd.created_at,
-        updated_at: cmd.updated_at,
-        // Add UI metadata fields based on function_name or name
-        function_name: getEntityFunctionName(cmd.name),
-        icon: getEntityIcon(cmd.name),
-        category: getEntityCategory(cmd.name),
-        description: cmd.prompt?.substring(0, 50) + '...' || 'Custom command',
-        estimated_time: '3-5s'
+        ...cmd,
+        description: cmd.description || cmd.prompt?.substring(0, 50) + '...' || 'Custom command',
+        estimated_time: cmd.estimated_time || '3-5s'
       }));
 
       // Single source of truth: DB
@@ -121,52 +86,6 @@ export function CustomShortcuts({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper functions to map command names to UI metadata
-  const getEntityFunctionName = (name: string): string => {
-    const mapping: Record<string, string> = {
-      'Light Polish': 'ai-light-edit',
-      'Heavy Polish': 'ai-rewrite', 
-      'Expand Content': 'ai-expand-content',
-      'Condense Content': 'ai-condense-content',
-      'Create Outline': 'ai-outline',
-      'Generate Title': 'ai-generate-title',
-      'Continue Writing': 'ai-continue',
-      'Analyze Text': 'ai-analyze',
-      'Fact Check': 'ai-fact-check'
-    };
-    return mapping[name] || 'ai-light-edit';
-  };
-
-  const getEntityIcon = (name: string): string => {
-    const mapping: Record<string, string> = {
-      'Light Polish': 'sparkles',
-      'Heavy Polish': 'pen-tool',
-      'Expand Content': 'expand',
-      'Condense Content': 'shrink',
-      'Create Outline': 'list',
-      'Generate Title': 'type',
-      'Continue Writing': 'plus',
-      'Analyze Text': 'brain',
-      'Fact Check': 'shield'
-    };
-    return mapping[name] || 'sparkles';
-  };
-
-  const getEntityCategory = (name: string): 'edit' | 'structure' | 'analyze' | 'style' | 'custom' => {
-    const mapping: Record<string, 'edit' | 'structure' | 'analyze' | 'style' | 'custom'> = {
-      'Light Polish': 'edit',
-      'Heavy Polish': 'edit', 
-      'Expand Content': 'structure',
-      'Condense Content': 'structure',
-      'Create Outline': 'structure',
-      'Generate Title': 'structure',
-      'Continue Writing': 'structure',
-      'Analyze Text': 'analyze',
-      'Fact Check': 'analyze'
-    };
-    return mapping[name] || 'edit';
   };
 
   const handleCommandClick = (command: UnifiedCommand) => {
@@ -234,11 +153,11 @@ export function CustomShortcuts({
                     onClick={() => handleCommandClick(command)}
                     disabled={isLoading}
                   >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      getIconForCommand(command.icon)
-                    )}
+                     {isLoading ? (
+                       <Loader2 className="h-4 w-4 animate-spin" />
+                     ) : (
+                       <CommandIcon name={command.icon} className="h-4 w-4" />
+                     )}
                    <span className="text-xs font-medium text-center leading-tight">
                      {command.name}
                    </span>
@@ -275,11 +194,11 @@ export function CustomShortcuts({
                   onClick={() => handleCommandClick(command)}
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    getIconForCommand(command.icon)
-                  )}
+                   {isLoading ? (
+                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                   ) : (
+                     <CommandIcon name={command.icon} />
+                   )}
                   <span className="text-sm font-medium">{command.name}</span>
                 </Button>
               </TooltipTrigger>
