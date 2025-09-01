@@ -1585,21 +1585,12 @@ export default function Dashboard() {
             {/* Desktop Bottom Toolbar */}
             <footer className="border-t bg-card">
               <div className="flex items-center gap-3 p-3 min-h-[68px]">
-                {/* Left Section - Voice & AI Chat */}
+                {/* Left Section - Voice Only */}
                 <div className="flex items-center gap-2 shrink-0">
                   <VoiceRecorder 
                     onTranscription={handleVoiceTranscription}
                     disabled={aiLoading}
                   />
-                  {!rightSidebarOpen && (
-                    <Button
-                      size="sm"
-                      className="h-11 bg-muted hover:bg-muted/80 text-muted-foreground border-0 hidden sm:flex items-center gap-1.5"
-                      onClick={() => setRightSidebarOpen(true)}
-                    >
-                      💬 <span className="hidden md:inline">AI Chat</span>
-                    </Button>
-                  )}
                 </div>
                 
                 {/* Center Section - AI Smart Carousel */}
@@ -1636,16 +1627,15 @@ export default function Dashboard() {
                       )}
                     </div>
                   )}
-                  {!isMobile && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setRightSidebarOpen(true)}
-                      className="h-11 hover:bg-muted/50 transition-colors relative"
-                    >
-                      💬 <span className="hidden md:inline">AI Chat</span>
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+                    className="h-11 hover:bg-muted/50 transition-colors relative"
+                    title={rightSidebarOpen ? "Close AI Chat" : "Open AI Chat"}
+                  >
+                    💬 <span className="hidden md:inline">{rightSidebarOpen ? "Close Chat" : "AI Chat"}</span>
+                  </Button>
                 </div>
               </div>
             </footer>
