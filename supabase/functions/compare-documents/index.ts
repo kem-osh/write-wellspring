@@ -88,6 +88,8 @@ serve(async (req) => {
     
     console.log(`Calculated ${similarities.length} similarity pairs`);
     
+    const hardcodedComparePrompt = 'Analyze these document versions and identify key differences, improvements, and common themes. Be concise and specific.';
+    
     // Use GPT-5 Nano for analysis (sufficient for comparison tasks)
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -100,7 +102,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Analyze these document versions and identify key differences, improvements, and common themes. Be concise and specific.'
+            content: hardcodedComparePrompt
           },
           {
             role: 'user',

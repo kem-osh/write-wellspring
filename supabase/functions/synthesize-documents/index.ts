@@ -76,7 +76,10 @@ serve(async (req) => {
       ? `${prompts[synthesisType]}\n\nAdditional instructions: ${instructions}`
       : prompts[synthesisType];
     
+    // Use hardcoded prompt for synthesis (special utility function)
     console.log(`Using synthesis type: ${synthesisType}`);
+    
+    const hardcodedSystemPrompt = 'You are an expert editor who combines multiple drafts into polished, coherent documents while preserving the author\'s unique voice.';
     
     // Use GPT-5 Mini for synthesis (excellent quality at low cost)
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -90,7 +93,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert editor who combines multiple drafts into polished, coherent documents while preserving the author\'s unique voice.'
+            content: hardcodedSystemPrompt
           },
           {
             role: 'user',
