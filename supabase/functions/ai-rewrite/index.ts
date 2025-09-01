@@ -123,11 +123,30 @@ serve(async (req) => {
     
     console.log(`Generated ${alternatives.length} rewrite alternatives`);
     
+    // Validate alternatives and add result field
+    const validAlternatives = alternatives.filter(alt => alt.content && alt.content.trim() !== '');
+    
+    if (validAlternatives.length === 0) {
+      console.error('All rewrite alternatives are empty');
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI generated empty alternatives. Please try again with different text.',
+          success: false
+        }),
+        { 
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
-        alternatives,
+        alternatives: validAlternatives,
+        result: validAlternatives[0].content, // Add result field for consistency
         originalLength: wordCount,
-        style: style
+        style: style,
+        success: true
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

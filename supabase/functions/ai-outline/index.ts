@@ -58,6 +58,21 @@ serve(async (req) => {
     const data = await response.json();
     const outlineText = data.choices[0]?.message?.content?.trim();
 
+    // Validate result is not empty
+    if (!outlineText || outlineText === '') {
+      console.error('OpenAI returned empty outline result');
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI generated empty content. Please try again with different text.',
+          success: false
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     console.log('Outline creation completed');
 
     return new Response(

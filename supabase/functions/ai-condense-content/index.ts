@@ -58,13 +58,28 @@ serve(async (req) => {
     const data = await response.json();
     const condensedText = data.choices[0]?.message?.content?.trim();
 
+    // Validate result is not empty
+    if (!condensedText || condensedText === '') {
+      console.error('OpenAI returned empty condensation result');
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI generated empty content. Please try again with different text.',
+          success: false
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     console.log('Content condensation completed');
 
     return new Response(
       JSON.stringify({ 
         result: condensedText,
         originalText: textToCondense,
-        condensedText: condensedText,
+        condensedText: condensedText,  
         success: true
       }),
       {

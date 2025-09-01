@@ -456,10 +456,10 @@ export default function Dashboard() {
       let result;
       
       if (functionName === 'ai-rewrite') {
-        // ai-rewrite returns alternatives array, take the first one
+        // ai-rewrite returns alternatives array, take the first one or fallback to result
         result = data?.alternatives?.[0]?.content || data?.result;
       } else {
-        // Other functions should return result field consistently
+        // Other functions should return result field consistently, with fallbacks
         result = data?.result || 
                  data?.editedText || 
                  data?.expandedText || 
@@ -471,9 +471,21 @@ export default function Dashboard() {
       console.log('Extracted result length:', result?.length || 0);
       console.log('Result preview:', result?.slice(0, 100) + '...');
       
-      if (!result) {
+      // Handle empty results gracefully - distinguish between empty string and no result
+      if (result === undefined || result === null) {
         console.error('No valid result field found in response:', data);
-        throw new Error(`No result returned from AI. Response keys: ${Object.keys(data || {}).join(', ')}`);
+        throw new Error(`No result returned from AI command '${commandType}'. Response keys: ${Object.keys(data || {}).join(', ')}`);
+      }
+      
+      // Handle empty string results with user-friendly message
+      if (typeof result === 'string' && result.trim() === '') {
+        console.warn('AI returned empty result for command:', commandType);
+        toast({
+          title: "AI returned empty result",
+          description: `The AI didn't generate any content for the '${commandType}' command. Please try again or use a different command.`,
+          variant: "destructive",
+        });
+        return;
       }
 
       console.log(`AI command ${commandType} completed successfully`);
@@ -803,13 +815,27 @@ export default function Dashboard() {
 
       if (error) throw error;
 
+      // Extract result with fallback to data.result
+      const suggestedText = data[type === 'light-edit' ? 'editedText' : 
+                                type === 'expand' ? 'expandedText' : 
+                                type === 'condense' ? 'condensedText' : 'outlineText'] || 
+                           data.result;
+
+      // Handle empty results gracefully
+      if (!suggestedText || suggestedText.trim() === '') {
+        toast({
+          title: "AI returned empty result",
+          description: `The AI didn't generate any content for the '${type}' command. Please try again.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const suggestion: AISuggestion = {
         id: Date.now().toString(),
         type,
         originalText: textToProcess,
-        suggestedText: data[type === 'light-edit' ? 'editedText' : 
-                          type === 'expand' ? 'expandedText' : 
-                          type === 'condense' ? 'condensedText' : 'outlineText'],
+        suggestedText,
         changes: type === 'light-edit' ? data.changes : true
       };
 
