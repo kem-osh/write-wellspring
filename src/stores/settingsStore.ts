@@ -15,7 +15,7 @@ export interface Settings {
   lineHeight: 'compact' | 'normal' | 'relaxed';
   
   // AI
-  defaultAIModel: 'gpt-5-nano' | 'gpt-5-mini';
+  defaultAIModel: 'gpt-4o-mini';
   voiceLanguage: string;
 }
 
@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS: Settings = {
   lineHeight: 'normal',
   
   // AI
-  defaultAIModel: 'gpt-5-nano', // Cheaper default
+  defaultAIModel: 'gpt-4o-mini', // Default model
   voiceLanguage: 'en-US',
 };
 

@@ -34,22 +34,22 @@ serve(async (req) => {
     });
 
     // Fetch user's Rewrite command configuration
-    const { data: commandConfig, error } = await supabase
+    const { data: userCommandConfig } = await supabase
       .from('user_commands')
       .select('*')
       .eq('user_id', userId)
       .eq('name', 'Rewrite')
       .single();
 
-    if (error || !commandConfig) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Rewrite command not configured. Please set it up in Settings > Custom Commands.',
-          success: false 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Define a default configuration for users who haven't customized
+    const defaultConfig = {
+      ai_model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      system_prompt: 'Rewrite this text with improved clarity and style while preserving the core meaning and author\'s voice.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
 
     console.log(`Rewriting text for user ${userId}, style: ${style}, text length: ${text.length}`);
 
@@ -118,7 +118,7 @@ serve(async (req) => {
               content: `Rewrite this text (version ${i + 1}, ${variationPrompt}):\n\n${text}`
             }
           ],
-          max_completion_tokens: commandConfig.max_tokens
+          ...(commandConfig.ai_model.includes('gpt-4') ? { max_tokens: commandConfig.max_tokens } : { max_completion_tokens: commandConfig.max_tokens })
         }),
       });
 

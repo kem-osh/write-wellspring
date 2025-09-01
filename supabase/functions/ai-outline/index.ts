@@ -38,22 +38,22 @@ serve(async (req) => {
     });
 
     // Fetch user's Outline command configuration
-    const { data: commandConfig, error } = await supabase
+    const { data: userCommandConfig } = await supabase
       .from('user_commands')
       .select('*')
       .eq('user_id', userId)
       .eq('name', 'Outline')
       .single();
 
-    if (error || !commandConfig) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Outline command not configured. Please set it up in Settings > Custom Commands.',
-          success: false 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Define a default configuration for users who haven't customized
+    const defaultConfig = {
+      ai_model: 'gpt-4o-mini',
+      max_tokens: 1000,
+      system_prompt: 'Create a structured outline with headers and bullet points based on this content. Organize information logically and hierarchically.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
 
     const textToOutline = selectedText || content;
     const aiModel = commandConfig.ai_model;
@@ -78,7 +78,7 @@ serve(async (req) => {
             content: textToOutline
           }
         ],
-        max_completion_tokens: maxCompletionTokens,
+        ...(aiModel.includes('gpt-4') ? { max_tokens: maxCompletionTokens } : { max_completion_tokens: maxCompletionTokens }),
       }),
     });
 

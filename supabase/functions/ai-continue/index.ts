@@ -74,22 +74,22 @@ serve(async (req) => {
     }
     
     // Fetch user's Continue command configuration
-    const { data: commandConfig, error } = await supabase
+    const { data: userCommandConfig } = await supabase
       .from('user_commands')
       .select('*')
       .eq('user_id', userId)
       .eq('name', 'Continue')
       .single();
 
-    if (error || !commandConfig) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Continue command not configured. Please set it up in Settings > Custom Commands.',
-          success: false 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Define a default configuration for users who haven't customized
+    const defaultConfig = {
+      ai_model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      system_prompt: 'Continue this text naturally in the author\'s style and voice. Maintain consistency in tone, perspective, and writing quality.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
 
     // Use user's configured model and settings
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -111,7 +111,7 @@ serve(async (req) => {
             content: `Continue this text naturally:\n\n${context}`
           }
         ],
-        max_completion_tokens: commandConfig.max_tokens
+        ...(commandConfig.ai_model.includes('gpt-4') ? { max_tokens: commandConfig.max_tokens } : { max_completion_tokens: commandConfig.max_tokens })
       }),
     });
 

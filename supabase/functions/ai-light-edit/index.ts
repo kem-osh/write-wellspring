@@ -40,22 +40,22 @@ serve(async (req) => {
     });
 
     // Fetch user's Light Edit command configuration
-    const { data: commandConfig, error } = await supabase
+    const { data: userCommandConfig } = await supabase
       .from('user_commands')
       .select('*')
       .eq('user_id', userId)
       .eq('name', 'Light Edit')
       .single();
 
-    if (error || !commandConfig) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Light Edit command not configured. Please set it up in Settings > Custom Commands.',
-          success: false 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Define a default configuration for users who haven't customized
+    const defaultConfig = {
+      ai_model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      system_prompt: 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
 
     const aiModel = commandConfig.ai_model;
     const maxCompletionTokens = commandConfig.max_tokens;
@@ -81,7 +81,7 @@ serve(async (req) => {
             content: textToEdit
           }
         ],
-        max_completion_tokens: maxCompletionTokens
+        ...(aiModel.includes('gpt-4') ? { max_tokens: maxCompletionTokens } : { max_completion_tokens: maxCompletionTokens })
       }),
     });
 

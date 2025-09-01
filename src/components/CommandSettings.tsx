@@ -19,7 +19,7 @@ export interface CustomCommand {
   name: string;
   prompt: string;
   icon: string;
-  model: 'gpt-5-nano-2025-08-07' | 'gpt-5-mini-2025-08-07';
+  model: 'gpt-4o-mini';
   maxTokens: number;
   sortOrder: number;
 }
@@ -30,7 +30,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Light Polish',
     prompt: 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.',
     icon: 'Sparkles',
-    model: 'gpt-5-nano-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 2000,
     sortOrder: 1
   },
@@ -39,7 +39,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Condense',
     prompt: 'Condense this text to its essential points while maintaining the core meaning and important details. Keep the tone and style consistent with the original.',
     icon: 'Minimize2',
-    model: 'gpt-5-nano-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 1000,
     sortOrder: 2
   },
@@ -48,7 +48,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Expand',
     prompt: 'Expand this text with relevant details, examples, and explanations while maintaining the same tone and style. Add depth and context where appropriate.',
     icon: 'Maximize2',
-    model: 'gpt-5-mini-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 2000,
     sortOrder: 3
   },
@@ -57,7 +57,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Outline',
     prompt: 'Create a structured outline with headers and bullet points based on the given content. Use proper heading hierarchy (##, ###) and bullet points (-) to organize the information clearly.',
     icon: 'List',
-    model: 'gpt-5-nano-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 1000,
     sortOrder: 4
   },
@@ -66,7 +66,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Continue',
     prompt: 'Continue writing from where the text left off, maintaining the same style, tone, and voice. Generate natural, coherent content that flows seamlessly from the existing text.',
     icon: 'PenTool',
-    model: 'gpt-5-mini-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 1500,
     sortOrder: 5
   },
@@ -75,7 +75,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Rewrite',
     prompt: 'Rewrite the selected text with improved clarity, flow, and impact while preserving the original meaning. Provide multiple alternative versions with different approaches.',
     icon: 'RefreshCw',
-    model: 'gpt-5-mini-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 2000,
     sortOrder: 6
   },
@@ -84,7 +84,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Fact Check',
     prompt: 'Analyze the text for factual claims and check consistency with available information. Identify potential inaccuracies or areas that need verification.',
     icon: 'CheckCircle',
-    model: 'gpt-5-mini-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 1500,
     sortOrder: 7
   },
@@ -93,7 +93,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Synthesize',
     prompt: 'Combine multiple documents into a coherent, unified piece. Merge key ideas, eliminate redundancy, and create a flowing narrative that incorporates the best elements from each source.',
     icon: 'Combine',
-    model: 'gpt-5-mini-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 3000,
     sortOrder: 8
   },
@@ -102,7 +102,7 @@ const DEFAULT_COMMANDS: CustomCommand[] = [
     name: 'Compare',
     prompt: 'Analyze and compare multiple documents, highlighting similarities, differences, and key insights. Provide a structured analysis of the relationships between the texts.',
     icon: 'GitCompare',
-    model: 'gpt-5-mini-2025-08-07',
+    model: 'gpt-4o-mini',
     maxTokens: 2500,
     sortOrder: 9
   }
@@ -163,7 +163,7 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
       name: 'New Command',
       prompt: 'Enter your custom prompt here',
       icon: 'sparkles',
-      model: 'gpt-5-nano-2025-08-07',
+      model: 'gpt-4o-mini',
       maxTokens: 500,
       sortOrder: commands.length + 1
     };
@@ -238,8 +238,8 @@ export function CommandSettings({ showSettings, onClose, onCommandsUpdated }: Co
                       onChange={(e) => updateCommand(command.id, { model: e.target.value as any })}
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                     >
-                      <option value="gpt-5-nano-2025-08-07">GPT-5 Nano (Fastest, Cheapest)</option>
-                      <option value="gpt-5-mini-2025-08-07">GPT-5 Mini (Better Quality)</option>
+                      <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
+                      <option value="gpt-4o">GPT-4o (Higher Quality)</option>
                     </select>
                   </div>
                 </div>

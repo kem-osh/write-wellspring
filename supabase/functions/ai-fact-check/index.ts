@@ -34,22 +34,22 @@ serve(async (req) => {
     });
 
     // Fetch user's Fact Check command configuration
-    const { data: commandConfig, error } = await supabase
+    const { data: userCommandConfig } = await supabase
       .from('user_commands')
       .select('*')
       .eq('user_id', userId)
       .eq('name', 'Fact Check')
       .single();
 
-    if (error || !commandConfig) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Fact Check command not configured. Please set it up in Settings > Custom Commands.',
-          success: false 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Define a default configuration for users who haven't customized
+    const defaultConfig = {
+      ai_model: 'gpt-4o-mini',
+      max_tokens: 1500,
+      system_prompt: 'Extract specific factual claims, statements, and assertions from the provided text. Focus on verifiable information such as dates, statistics, quotes, historical events, and specific details that can be fact-checked.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
 
     console.log(`Fact-checking text for user ${userId}, text length: ${text.length}`);
 
@@ -72,7 +72,9 @@ serve(async (req) => {
             content: `Extract specific claims from this text:\n\n${text}`
           }
         ],
-        max_completion_tokens: Math.min(commandConfig.max_tokens / 2, 800)
+        ...(commandConfig.ai_model.includes('gpt-4') ? 
+          { max_tokens: Math.min(commandConfig.max_tokens / 2, 800) } : 
+          { max_completion_tokens: Math.min(commandConfig.max_tokens / 2, 800) })
       }),
     });
 
@@ -136,7 +138,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -147,7 +149,7 @@ serve(async (req) => {
             content: `Text to check:\n${text}\n\nReference documents:\n${referenceContext}`
           }
         ],
-        max_completion_tokens: 1000
+        max_tokens: 1000
       }),
     });
 

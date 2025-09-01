@@ -38,22 +38,22 @@ serve(async (req) => {
     });
 
     // Fetch user's Expand command configuration
-    const { data: commandConfig, error } = await supabase
+    const { data: userCommandConfig } = await supabase
       .from('user_commands')
       .select('*')
       .eq('user_id', userId)
       .eq('name', 'Expand')
       .single();
 
-    if (error || !commandConfig) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Expand command not configured. Please set it up in Settings > Custom Commands.',
-          success: false 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Define a default configuration for users who haven't customized
+    const defaultConfig = {
+      ai_model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      system_prompt: 'Expand this content by adding depth, examples, and supporting details while maintaining the original tone and style. Increase length by 30-50%.'
+    };
+
+    // Use user's config if it exists, otherwise use the default
+    const commandConfig = userCommandConfig || defaultConfig;
 
     const textToExpand = selectedText || content;
     const aiModel = commandConfig.ai_model;
@@ -78,7 +78,7 @@ serve(async (req) => {
             content: textToExpand
           }
         ],
-        max_completion_tokens: maxCompletionTokens,
+        ...(aiModel.includes('gpt-4') ? { max_tokens: maxCompletionTokens } : { max_completion_tokens: maxCompletionTokens }),
       }),
     });
 

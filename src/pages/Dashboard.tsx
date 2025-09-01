@@ -564,7 +564,7 @@ export default function Dashboard() {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
             customPrompt: customPrompt,
-            model: model || 'gpt-5-nano-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 2000,
             userId: user.id
           }
@@ -578,7 +578,7 @@ export default function Dashboard() {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
             customPrompt: customPrompt,
-            model: model || 'gpt-5-nano-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 1000,
             userId: user.id
           }
@@ -592,7 +592,7 @@ export default function Dashboard() {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
             customPrompt: customPrompt,
-            model: model || 'gpt-5-mini-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 2000,
             userId: user.id
           }
@@ -606,7 +606,7 @@ export default function Dashboard() {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
             customPrompt: customPrompt,
-            model: model || 'gpt-5-nano-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 1000,
             userId: user.id
           }
@@ -619,7 +619,7 @@ export default function Dashboard() {
           body: {
             context: documentContent,
             customPrompt,
-            model: model || 'gpt-5-mini-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 1000,
             userId: user.id
           }
@@ -637,7 +637,7 @@ export default function Dashboard() {
             text: currentSelectedText || documentContent,
             style: 'auto',
             customPrompt,
-            model: model || 'gpt-5-mini-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 2000,
             userId: user.id
           }
@@ -660,7 +660,7 @@ export default function Dashboard() {
             text: currentSelectedText || documentContent,
             style: 'voice-match',
             customPrompt: customPrompt || 'Match the user\'s natural writing voice and style',
-            model: model || 'gpt-5-mini-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 2000,
             userId: user.id
           }
@@ -683,7 +683,7 @@ export default function Dashboard() {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
             customPrompt: customPrompt || 'Improve clarity and focus. Remove redundancy and strengthen the main points.',
-            model: model || 'gpt-5-nano-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 2000,
             userId: user.id
           }
@@ -697,7 +697,7 @@ export default function Dashboard() {
           body: {
             content: currentDocument.content,
             customPrompt: customPrompt || 'Provide a comprehensive review with suggestions for improvement',
-            model: model || 'gpt-5-mini-2025-08-07',
+            model: model || 'gpt-4o-mini',
             maxTokens: maxTokens || 1500,
             userId: user.id
           }
@@ -1282,7 +1282,7 @@ export default function Dashboard() {
           content: selectedText ? undefined : documentContent,
           selectedText: selectedText || undefined,
           customPrompt: prompt,
-          model: model || 'gpt-5-nano-2025-08-07',
+          model: model || 'gpt-4o-mini',
           maxTokens: maxTokens || 500
         }
       });
