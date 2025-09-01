@@ -145,7 +145,10 @@ export function DocumentCard({
               <div className="flex-1 min-w-0">
                 <div className={`flex items-center gap-3 ${compact ? 'mb-1' : 'mb-2'}`}>
                   <FileText className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-primary/70 flex-shrink-0`} />
-                  <h3 className={`${compact ? 'text-sm font-medium' : 'text-heading-md font-semibold'} truncate line-clamp-1`}>
+                  <h3 
+                    className={`${compact ? 'text-sm font-medium' : 'text-heading-md font-semibold'} line-clamp-2 lg:line-clamp-3`}
+                    title={document.title}
+                  >
                     {highlightSearchTerm(document.title, searchQuery)}
                   </h3>
                 </div>
