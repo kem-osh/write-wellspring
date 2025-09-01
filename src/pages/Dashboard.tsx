@@ -17,7 +17,8 @@ import { MobileDocumentLibrary } from "@/components/MobileDocumentLibrary";
 import { MobileAICommands } from "@/components/MobileAICommands";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { UserMenu } from "@/components/UserMenu";
-import { CustomShortcuts } from "@/components/CustomShortcuts";
+import { AICommandCarousel } from "@/components/AICommandCarousel";
+import { AICommandPalette } from "@/components/AICommandPalette";
 import { AdvancedAICommands } from "@/components/AdvancedAICommands";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
@@ -358,7 +359,7 @@ export default function Dashboard() {
     setDocumentContent(doc.content);
   };
 
-  // Enhanced AI command execution with proper error handling and text replacement
+  // Update executeAICommand to track usage (merged functionality)
   const executeAICommand = useCallback(async (
     command: UnifiedCommand
   ) => {
@@ -397,7 +398,20 @@ export default function Dashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Use the command's function_name directly (no more switch/case logic!)
+      // Track usage before execution
+      try {
+        await supabase
+          .from('user_commands')
+          .update({ 
+            usage_count: (command.usage_count || 0) + 1,
+            last_used_at: new Date().toISOString()
+          })
+          .eq('id', command.id);
+      } catch (error) {
+        console.error('Failed to update usage count:', error);
+      }
+
+      // Use the command's function_name directly
       const functionName = command.function_name;
       
       console.log(`Calling ${functionName}...`);
@@ -415,15 +429,11 @@ export default function Dashboard() {
       });
 
       console.log('AI Command Result:', JSON.stringify(data, null, 2));
-      console.log('Available keys in response:', Object.keys(data || {}));
       
       if (error) throw error;
 
       // Standardized response handling - all functions return { result }
       const result = data?.result;
-      
-      console.log('Extracted result length:', result?.length || 0);
-      console.log('Result preview:', result?.slice(0, 100) + '...');
       
       // Handle empty results gracefully
       if (result === undefined || result === null) {
@@ -495,13 +505,6 @@ export default function Dashboard() {
       setAiLoading(false);
     }
   }, [currentDocument, documentContent, getSelectedTextFromEditor, replaceSelectedText, toast]);
-
-  // Update handleCustomShortcut to use the new executeAICommand
-  const handleCustomShortcut = useCallback(async (
-    command: UnifiedCommand
-  ) => {
-    await executeAICommand(command);
-  }, [executeAICommand]);
 
   // Load documents and categories on mount
   useEffect(() => {
@@ -1106,7 +1109,7 @@ export default function Dashboard() {
             <MobileAICommands
               isOpen={mobileAICommandsOpen}
               onClose={() => setMobileAICommandsOpen(false)}
-              onCommand={handleCustomShortcut}
+              onCommand={executeAICommand}
               aiLoading={aiLoading}
               selectedText={selectedText}
             />
@@ -1114,7 +1117,7 @@ export default function Dashboard() {
             {/* Contextual AI Toolbar */}
             <ContextualAIToolbar
               selectedText={selectedText}
-              onCommand={handleCustomShortcut}
+              onCommand={executeAICommand}
               aiLoading={aiLoading}
               onClose={() => setSelectedText('')}
             />
@@ -1358,15 +1361,20 @@ export default function Dashboard() {
                   )}
                 </div>
                 
-                {/* Center Section - Command Shortcuts */}
-                <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
-                   <CustomShortcuts 
-                     onShortcut={handleCustomShortcut} 
-                     isLoading={aiLoading}
-                     selectedText={selectedText}
-                     onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
-                     onOpenMore={() => setShowMoreCommands(true)}
-                   />
+                 {/* Center Section - AI Command Interface */}
+                 <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
+                    <AICommandCarousel
+                      onCommand={executeAICommand} 
+                      isLoading={aiLoading}
+                      selectedText={selectedText}
+                      className="flex-1"
+                    />
+                    <AICommandPalette
+                      onCommand={executeAICommand}
+                      isLoading={aiLoading}
+                      selectedText={selectedText}
+                    />
+                  </div>
                   <div className="w-px h-6 bg-border mx-2" />
                   <AdvancedAICommands
                     selectedDocuments={selectedDocuments}
@@ -1460,14 +1468,18 @@ export default function Dashboard() {
             </DialogHeader>
 
             <div className="py-4">
-              <CustomShortcuts
-                onShortcut={(command) => {
+              <AICommandPalette
+                onCommand={(command) => {
                   executeAICommand(command);
                   setShowMoreCommands(false);
                 }}
                 isLoading={aiLoading}
                 selectedText={selectedText}
-                isMobile
+                trigger={
+                  <Button variant="outline" className="w-full">
+                    Browse All Commands
+                  </Button>
+                }
               />
             </div>
 
@@ -1485,6 +1497,5 @@ export default function Dashboard() {
           </SheetContent>
         </Sheet>
       </div>
-    </div>
-  );
-}
+    );
+  }
