@@ -1459,7 +1459,7 @@ export default function Dashboard() {
         <FullScreenAIChat
           isOpen={fullScreenChatOpen}
           onClose={() => setFullScreenChatOpen(false)}
-          onDocumentSelect={(documentId) => {
+          onDocumentSelect={(documentId: string) => {
             // Find the document and open it
             const doc = documents.find(d => d.id === documentId);
             if (doc) {
