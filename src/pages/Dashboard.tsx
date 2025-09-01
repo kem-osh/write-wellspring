@@ -32,7 +32,7 @@ import { useDocumentSelection } from "@/hooks/useDocumentSelection";
 import { ContextualAIToolbar } from "@/components/ContextualAIToolbar";
 import { SettingsModal } from "@/components/SettingsModal";
 import { useHaptics } from "@/hooks/useHaptics";
-import { AnalysisModal } from "@/components/AnalysisModal";
+import { CategorySelection } from "@/components/CategorySelection";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 interface Document {
@@ -124,7 +124,6 @@ export default function Dashboard() {
   const { impactLight, notificationSuccess, notificationError } = useHaptics();
   const { isMobile, isTablet, isDesktop } = useDevice();
   
-  const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   
   // Document selection functions
@@ -409,7 +408,12 @@ export default function Dashboard() {
     }, searchQuery.trim() ? 100 : 0);
   };
 
-  const createNewDocument = async () => {
+  // Handle category selection to create new document
+  const handleCategorySelection = async (category: string) => {
+    await createNewDocument(category);
+  };
+
+  const createNewDocument = async (category: string = 'general') => {
     if (!user) return;
 
     console.log('Creating new document...'); // Debug log
@@ -464,7 +468,6 @@ export default function Dashboard() {
   ) => {
     if (!user || isProcessing) return;
 
-    const currentDocument = documents.find(doc => doc.id === activeDocument);
     if (!currentDocument) {
       toast({ title: "Error", description: "No active document", variant: "destructive" });
       return;
@@ -549,7 +552,7 @@ export default function Dashboard() {
         toast({ title: "Success", description: "Text updated successfully" });
       } else if (result) {
         // Replace entire content
-        await updateDocumentContent(activeDocument, result);
+        await updateDocumentContent(currentDocument.id, result);
         toast({ title: "Success", description: "Document updated successfully" });
       } else {
         throw new Error('No result received from AI');
@@ -565,7 +568,7 @@ export default function Dashboard() {
     } finally {
       setIsProcessing(false);
     }
-  }, [user, isProcessing, documents, activeDocument, getSelectedText, replaceSelectedText, toast, updateDocumentContent]);
+  }, [user, isProcessing, documents, currentDocument, getSelectedText, replaceSelectedText, toast, updateDocumentContent]);
 
 
   // Update handleCustomShortcut to use the new executeAICommand
@@ -1159,19 +1162,7 @@ export default function Dashboard() {
                   settings={settings}
                 />
               ) : (
-                <div className="flex-1 flex items-center justify-center text-center p-8">
-                  <div>
-                    <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
-                    <p className="text-muted-foreground mb-4">
-                      Your AI-powered writing studio
-                    </p>
-                    <Button onClick={createNewDocument} className="touch-target">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Your First Document
-                    </Button>
-                  </div>
-                </div>
+                <CategorySelection onCategorySelect={handleCategorySelection} />
               )}
             </main>
 
@@ -1230,7 +1221,7 @@ export default function Dashboard() {
                 openDocument(doc);
                 setMobileDocumentLibraryOpen(false);
               }}
-              onCreateNew={createNewDocument}
+              onCreateNew={() => createNewDocument()}
               onDeleteDocument={deleteDocument}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -1355,7 +1346,7 @@ export default function Dashboard() {
                            
                            {/* New Document & Search */}
                            <div className="p-4 space-y-3">
-                             <Button onClick={createNewDocument} className="w-full">
+                             <Button onClick={() => createNewDocument()} className="w-full">
                                <Plus className="h-4 w-4 mr-2" />
                                New Document
                              </Button>
@@ -1422,21 +1413,9 @@ export default function Dashboard() {
                            onProvideEditor={handleEditorMount}
                          />
                        </div>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center text-center">
-                        <div>
-                          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                          <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
-                          <p className="text-muted-foreground mb-4">
-                            Your AI-powered writing studio for professional content creation
-                          </p>
-                          <Button onClick={createNewDocument}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Your First Document
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                     ) : (
+                       <CategorySelection onCategorySelect={handleCategorySelection} />
+                     )}
                   </div>
                 </ResizablePanel>
 
