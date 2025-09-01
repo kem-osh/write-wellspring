@@ -76,6 +76,7 @@ interface AISuggestion {
   changes?: boolean;
 }
 
+// Dashboard component - Main application interface with AI Command Interface
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
