@@ -106,6 +106,7 @@ export default function Dashboard() {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveIndicator, setSaveIndicator] = useState<'saved' | 'saving' | 'error' | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Auto-title generation constants
   const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
@@ -164,6 +165,82 @@ export default function Dashboard() {
   const insertTextAtCursor = (text: string) => {
     // Insert text at cursor position
     setDocumentContent(prev => prev + text);
+  };
+
+  // Handle advanced AI commands
+  const handleAdvancedCommand = async (commandType: string, customPrompt?: string, model?: string, maxTokens?: number) => {
+    if (!user || !currentDocument) return;
+    
+    try {
+      if (commandType === 'continue') {
+        const { data, error } = await supabase.functions.invoke('ai-continue', {
+          body: {
+            content: documentContent,
+            customPrompt,
+            model: model || 'gpt-4o-mini',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const continuedText = data?.result || data?.continuedText;
+        if (continuedText) {
+          insertTextAtCursor(continuedText);
+          toast({ title: "Success", description: "Content continued successfully" });
+        }
+      } else if (commandType === 'rewrite') {
+        const selectedText = getSelectedText();
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            content: selectedText || documentContent,
+            customPrompt,
+            model: model || 'gpt-4o-mini',
+            maxTokens: maxTokens || 2000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const rewrittenText = data?.result || data?.rewrittenText;
+        if (rewrittenText) {
+          if (selectedText) {
+            replaceSelectedText(rewrittenText);
+          } else {
+            setDocumentContent(rewrittenText);
+          }
+          toast({ title: "Success", description: "Content rewritten successfully" });
+        }
+      } else if (commandType === 'fact-check') {
+        const { data, error } = await supabase.functions.invoke('ai-fact-check', {
+          body: {
+            content: documentContent,
+            customPrompt,
+            model: model || 'gpt-4o-mini',
+            maxTokens: maxTokens || 1500,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const factCheckResult = data?.result || data?.factCheckResult;
+        if (factCheckResult) {
+          // Show fact-check results in a dialog or notification
+          toast({ 
+            title: "Fact Check Complete", 
+            description: "Review the fact-check results",
+            duration: 5000
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Advanced AI command error:', error);
+      toast({ 
+        title: "AI Command Failed", 
+        description: error.message || "The AI command failed to complete", 
+        variant: "destructive" 
+      });
+    }
   };
 
   // Helper functions for editor text selection
@@ -1018,11 +1095,6 @@ export default function Dashboard() {
   };
 
   const getCurrentText = () => documentContent;
-  const getSelectedText = () => selectedText;
-  const getCursorContext = () => {
-    // Return last 500 characters as cursor context
-    return documentContent.slice(-500);
-  };
 
   if (loading) {
     return (
