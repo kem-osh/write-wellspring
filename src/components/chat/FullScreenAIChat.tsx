@@ -5,6 +5,7 @@ import { ChatInput } from './ChatInput';
 import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { UnifiedCommand } from '@/types/commands'; // Import the UnifiedCommand type
 
 interface ChatMessage {
   id: string;
@@ -18,17 +19,23 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+// Updated Document interface for consistency
 interface Document {
   id: string;
   title: string;
   content: string;
   created_at: string;
+  category: string;
+  status: string;
+  word_count: number;
+  updated_at: string;
+  user_id?: string;
 }
 
 interface FullScreenAIChatProps {
   isOpen: boolean;
   onClose: () => void;
-  onDocumentSelect?: (documentId: string) => void;
+  onDocumentSelect?: (doc: Document) => void;
   onVoiceInput?: () => void;
 }
 
@@ -94,19 +101,37 @@ export function FullScreenAIChat({
     setIsLoading(true);
 
     try {
+      // Create the required `command` object for the backend
+      const chatCommand: Partial<UnifiedCommand> = {
+        ai_model: 'gpt-5-mini-2025-08-07',
+        system_prompt: 'You are a helpful assistant that analyzes documents. Use the provided context to give accurate responses about their writing.',
+        max_tokens: 1500,
+        temperature: 0.7,
+      };
+
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message: messageText, userId }
+        body: { 
+          message: messageText, 
+          userId,
+          command: chatCommand // Add the command object to the payload
+        }
       });
 
       if (error) throw error;
 
+      // Correctly access `data.message` for the response content
       addMessage({
         role: 'assistant',
-        content: data.response,
+        content: data.message, 
         sources: data.sources || []
       });
     } catch (error) {
       console.error('Error sending message:', error);
+      // Add an error message directly to the chat for better UX
+      addMessage({
+        role: 'assistant',
+        content: "I'm sorry, but I encountered an error while processing your request. Please try again in a moment.",
+      });
       toast({
         title: "Chat Error",
         description: "Failed to send message. Please try again.",
@@ -127,8 +152,11 @@ export function FullScreenAIChat({
 
       if (error) throw error;
 
-      onDocumentSelect?.(sourceId);
-      onClose();
+      // Pass the full document object to the handler
+      if (data) {
+        onDocumentSelect?.(data);
+        onClose();
+      }
     } catch (error) {
       console.error('Error fetching document:', error);
       toast({
