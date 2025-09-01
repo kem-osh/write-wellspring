@@ -78,15 +78,10 @@ export function MobileBottomNav({
   return (
     <>
       {/* Floating Pill Navigation Container */}
-      <nav className={`
-        fixed bottom-6 left-1/2 -translate-x-1/2 z-50
-        nav-pill
-        px-2 py-2
-        w-fit
-        ${className}
-      `}>
-        {/* Navigation Items */}
-        <div className="flex items-center justify-center gap-1">
+      <nav className="fixed bottom-6 inset-x-0 z-50">
+        <div className="mx-auto w-fit nav-pill px-2 py-2">
+          {/* Navigation Items */}
+          <div className="flex items-center justify-center gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -134,9 +129,9 @@ export function MobileBottomNav({
               </div>
             );
           })}
+          </div>
         </div>
       </nav>
-
       {/* Safe area padding for content */}
       <div className="h-20 pb-safe" />
     </>
