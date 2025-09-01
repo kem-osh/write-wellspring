@@ -114,6 +114,72 @@ export default function Dashboard() {
   const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
   const AUTO_TITLE_THRESHOLD = 200; // Characters needed for title generation
   
+  // Function to trigger auto-classification after AI commands
+  const triggerAutoClassification = useCallback(async () => {
+    if (!user || !currentDocument || isGeneratingTitle) return;
+    
+    const needsTitle = 
+      documentTitle === 'New Document' || 
+      documentTitle === '' || 
+      !documentTitle;
+
+    if (needsTitle && settings.autoGenerateTitles) {
+      setIsGeneratingTitle(true);
+      
+      try {
+        // Generate title
+        const paragraphs = documentContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+        const titleContent = paragraphs.slice(0, 2).join('\n\n');
+        
+        const { data: titleData, error: titleError } = await supabase.functions.invoke(
+          'ai-generate-title',
+          {
+            body: {
+              content: titleContent,
+              userId: user.id
+            }
+          }
+        );
+
+        if (titleData?.title && !titleError) {
+          setDocumentTitle(titleData.title);
+          toast({
+            title: "Title Generated",
+            description: `AI created: "${titleData.title}"`,
+          });
+        }
+        
+        // Also classify the document for category
+        const { data: classification } = await supabase.functions.invoke('ai-classify-document', {
+          body: { content: documentContent }
+        });
+        
+        if (classification?.category) {
+          console.log('Auto-classified category:', classification.category);
+          // Update document category in the database if it's a temp document or needs updating
+          if (currentDocument.id && !currentDocument.id.startsWith('temp-')) {
+            await supabase.from('documents').update({ 
+              category: classification.category,
+              status: classification.status || 'draft'
+            }).eq('id', currentDocument.id);
+            
+            // Update local state
+            setCurrentDocument(prev => prev ? { 
+              ...prev, 
+              category: classification.category,
+              status: classification.status || 'draft' 
+            } : null);
+          }
+        }
+        
+      } catch (error) {
+        console.error('Error in auto-classification:', error);
+      } finally {
+        setIsGeneratingTitle(false);
+      }
+    }
+  }, [user, currentDocument, documentContent, documentTitle, isGeneratingTitle, settings.autoGenerateTitles, toast]);
+  
   // Editor reference for text selection
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -476,6 +542,7 @@ export default function Dashboard() {
     }
 
     setIsProcessing(true);
+    setAiLoading(true);
     
     try {
       let result;
@@ -538,26 +605,122 @@ export default function Dashboard() {
         if (error) throw error;
         result = data?.outlineText || data?.result;
       } else if (commandType === 'continue') {
-        await handleAdvancedCommand('continue', customPrompt, model, maxTokens);
-        return;
+        const { data, error } = await supabase.functions.invoke('ai-continue', {
+          body: {
+            context: documentContent,
+            customPrompt,
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const continuedText = data?.result || data?.continuedText;
+        if (continuedText) {
+          insertTextAtCursor(continuedText);
+          toast({ title: "Success", description: "Content continued successfully" });
+        }
       } else if (commandType === 'rewrite') {
-        await handleAdvancedCommand('rewrite', customPrompt, model, maxTokens);
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'auto',
+            customPrompt,
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 2000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const rewrittenText = data?.alternatives?.[0] || data?.result;
+        if (rewrittenText) {
+          if (currentSelectedText) {
+            replaceSelectedText(rewrittenText);
+          } else {
+            setDocumentContent(rewrittenText);
+          }
+          toast({ title: "Success", description: "Content rewritten successfully" });
+        }
+      } else if (commandType === 'voice-match') {
+        // Use rewrite with voice matching style
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText || documentContent,
+            style: 'voice-match',
+            customPrompt: customPrompt || 'Match the user\'s natural writing voice and style',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 2000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        const rewrittenText = data?.alternatives?.[0] || data?.result;
+        if (rewrittenText) {
+          if (currentSelectedText) {
+            replaceSelectedText(rewrittenText);
+          } else {
+            setDocumentContent(rewrittenText);
+          }
+          toast({ title: "Success", description: "Content matched to your voice" });
+        }
+      } else if (commandType === 'focus-improve') {
+        // Use light-edit with focus improvement prompt
+        const { data, error } = await supabase.functions.invoke('ai-light-edit', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt || 'Improve clarity and focus. Remove redundancy and strengthen the main points.',
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 2000,
+            userId: user.id
+          }
+        });
+
+        if (error) throw error;
+        result = data?.editedText || data?.result;
+      } else if (commandType === 'review-analyze') {
+        // Use analyze function for comprehensive review
+        const { data, error } = await supabase.functions.invoke('ai-analyze', {
+          body: {
+            content: currentDocument.content,
+            customPrompt: customPrompt || 'Provide a comprehensive review with suggestions for improvement',
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1500,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        toast({ 
+          title: "Analysis Complete", 
+          description: "Review the analysis results",
+          duration: 5000
+        });
+        // Don't replace content for analysis, just show results
         return;
-      } else if (commandType === 'fact-check') {
-        await handleAdvancedCommand('fact-check', customPrompt, model, maxTokens);
-        return;
+      } else {
+        throw new Error(`Unknown command type: ${commandType}`);
       }
       
-      if (result && currentSelectedText) {
-        // Replace selected text
-        replaceSelectedText(result);
-        toast({ title: "Success", description: "Text updated successfully" });
-      } else if (result) {
-        // Replace entire content
-        await updateDocumentContent(currentDocument.id, result);
-        toast({ title: "Success", description: "Document updated successfully" });
-      } else {
-        throw new Error('No result received from AI');
+      // Handle result replacement for commands that return content
+      if (result && commandType !== 'continue' && commandType !== 'rewrite' && commandType !== 'voice-match') {
+        if (currentSelectedText) {
+          // Replace selected text
+          replaceSelectedText(result);
+          toast({ title: "Success", description: "Text updated successfully" });
+        } else {
+          // Replace entire content
+          setDocumentContent(result);
+          toast({ title: "Success", description: "Document updated successfully" });
+        }
+      }
+      
+      // Trigger auto-title generation and category classification after AI commands
+      if (documentContent.trim().length >= AUTO_TITLE_THRESHOLD) {
+        await triggerAutoClassification();
       }
       
     } catch (error: any) {
@@ -569,8 +732,9 @@ export default function Dashboard() {
       });
     } finally {
       setIsProcessing(false);
+      setAiLoading(false);
     }
-  }, [user, isProcessing, documents, currentDocument, getSelectedText, replaceSelectedText, toast, updateDocumentContent]);
+  }, [user, isProcessing, currentDocument, documentContent, getSelectedText, replaceSelectedText, insertTextAtCursor, setDocumentContent, toast]);
 
 
   // Update handleCustomShortcut to use the new executeAICommand
@@ -1388,15 +1552,15 @@ export default function Dashboard() {
                          <div className="flex-shrink-0 border-b bg-card">
                            <div className="p-4 border-b flex items-center justify-between">
                              <h3 className="font-medium">Documents</h3>
-                             <div className="flex items-center gap-1">
-                               <Button
-                                 variant="ghost"
-                                 size="icon"
-                                 onClick={() => setLibraryExpanded(true)}
-                                 title="Expand"
-                               >
-                                 <Expand className="h-4 w-4" />
-                               </Button>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setLibraryExpanded(true)}
+                                  title="Expand to Full Screen"
+                                >
+                                  <Expand className="h-4 w-4" />
+                                </Button>
                                <Button
                                  variant="ghost"
                                  size="sm"

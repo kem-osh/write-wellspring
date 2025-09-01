@@ -172,7 +172,7 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect, expanded, onE
             New Chat
           </Button>
           {onExpandToggle && (
-            <Button variant="ghost" size="icon" onClick={onExpandToggle} title="Expand">
+            <Button variant="ghost" size="icon" onClick={onExpandToggle} title="Expand to Full Screen">
               <Expand className="w-4 h-4" />
             </Button>
           )}

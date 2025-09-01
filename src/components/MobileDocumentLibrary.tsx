@@ -141,7 +141,7 @@ export function MobileDocumentLibrary({
                   size="icon"
                   onClick={onExpandToggle}
                   className="h-8 w-8"
-                  title="Expand"
+                  title="Expand to Full Screen"
                 >
                   <Expand className="h-4 w-4" />
                 </EnhancedButton>
