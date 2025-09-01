@@ -114,6 +114,7 @@ export function CustomShortcuts({
 
       // Single source of truth: DB
       setCommands(unifiedCommands);
+      console.log("[CommandsLoaded]", { count: (dbCommands||[]).length, first: (dbCommands||[])[0] });
     } catch (err) {
       console.error("Failed to load commands:", err);
       setCommands([]);
