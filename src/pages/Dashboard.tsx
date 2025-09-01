@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDevice } from "@/hooks/useDevice";
 import { MonacoEditor } from "@/components/MonacoEditor";
@@ -38,6 +38,7 @@ import { AnalysisModal } from "@/components/AnalysisModal";
 import { FactCheckModal } from "@/components/FactCheckModal";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { UnifiedCommand } from '@/types/commands';
+import { BulkUploader } from '@/features/corpus/components/BulkUploader';
 
 interface Document {
   id: string;
@@ -129,6 +130,7 @@ export default function Dashboard() {
   const [factCheckResult, setFactCheckResult] = useState<any>(null);
   const [showFactCheckModal, setShowFactCheckModal] = useState(false);
   const [showMoreCommands, setShowMoreCommands] = useState(false);
+  const [showBulkUploader, setShowBulkUploader] = useState(false);
   
   // Auto-title generation constants
   const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
@@ -1199,18 +1201,49 @@ export default function Dashboard() {
                              </Button>
                            </div>
                            
-                           {/* New Document & Search */}
-                           <div className="p-4 space-y-3">
-                             <Button onClick={createNewDocument} className="w-full">
-                               <Plus className="h-4 w-4 mr-2" />
-                               New Document
-                             </Button>
-                            <DocumentSearch 
-                              onSearch={handleDocumentSearch}
-                              onClear={clearDocumentSearch}
-                              isLoading={searchLoading}
-                            />
-                           </div>
+                            {/* New Document & Search */}
+                            <div className="p-4 space-y-3">
+                              <div className="flex gap-2">
+                                <Button onClick={createNewDocument} className="flex-1">
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  New Document
+                                </Button>
+                                <Dialog open={showBulkUploader} onOpenChange={setShowBulkUploader}>
+                                  <DialogTrigger asChild>
+                                    <Button variant="outline" size="default" className="px-3">
+                                      <Upload className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                                    <DialogHeader>
+                                      <DialogTitle>Bulk Document Upload</DialogTitle>
+                                      <DialogDescription>
+                                        Upload multiple documents to build your corpus. Files will be processed with AI to generate titles and embeddings for semantic search.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <BulkUploader 
+                                      onUploadComplete={(successCount, failCount) => {
+                                        if (successCount > 0) {
+                                          user && loadDocuments({ userId: user.id }); // Refresh document list
+                                        }
+                                        if (failCount === 0) {
+                                          setShowBulkUploader(false);
+                                        }
+                                      }}
+                                      onDocumentAdded={(document) => {
+                                        console.log('Document added:', document);
+                                      }}
+                                      onClose={() => setShowBulkUploader(false)}
+                                    />
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                             <DocumentSearch 
+                               onSearch={handleDocumentSearch}
+                               onClear={clearDocumentSearch}
+                               isLoading={searchLoading}
+                             />
+                            </div>
                          </div>
                          
                          {/* Scrollable Content Section */}
