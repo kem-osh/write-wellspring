@@ -4,18 +4,12 @@ import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { Badge } from '@/components/ui/badge';
 import { X, Sparkles, Zap, Loader2, Clock } from 'lucide-react';
 import { CustomShortcuts } from '@/components/CustomShortcuts';
+import { UnifiedCommand } from '@/types/commands';
 
 interface MobileAICommandsProps {
   isOpen: boolean;
   onClose: () => void;
-  onCommand: (
-    type: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
-         'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
-         'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
-    prompt: string, 
-    model?: string, 
-    maxTokens?: number
-  ) => void;
+  onCommand: (command: UnifiedCommand, selectedText?: string) => void;
   aiLoading: boolean;
   selectedText: string;
 }
@@ -28,15 +22,8 @@ export function MobileAICommands({
   selectedText
 }: MobileAICommandsProps) {
 
-  const handleCommand = (
-    type: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
-         'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
-         'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
-    prompt: string, 
-    model?: string, 
-    maxTokens?: number
-  ) => {
-    onCommand(type, prompt, model, maxTokens);
+  const handleCommand = (command: UnifiedCommand, selectedText?: string) => {
+    onCommand(command, selectedText);
     onClose();
   };
 

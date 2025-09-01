@@ -9,10 +9,11 @@ import {
   Loader2,
   ArrowRight
 } from 'lucide-react';
+import { UnifiedCommand } from '@/types/commands';
 
 interface ContextualAIToolbarProps {
   selectedText: string;
-  onCommand: (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string) => void;
+  onCommand: (command: UnifiedCommand, selectedText?: string) => void;
   aiLoading: boolean;
   onClose: () => void;
 }
@@ -35,30 +36,66 @@ export function ContextualAIToolbar({
 
   if (!isVisible || !selectedText) return null;
 
-  const commands = [
+  const commands: UnifiedCommand[] = [
     {
-      type: 'light-edit' as const,
-      icon: Wand2,
-      label: 'Polish',
-      prompt: 'Improve this text while keeping the original meaning and style'
+      id: 'light-edit-contextual',
+      user_id: '',
+      name: 'Polish',
+      prompt: 'Improve this text while keeping the original meaning and style',
+      ai_model: 'gpt-5-nano-2025-08-07',
+      max_tokens: 500,
+      system_prompt: 'You are an expert editor. Fix spelling, grammar, and basic formatting while preserving the author\'s voice.',
+      sort_order: 1,
+      function_name: 'ai-light-edit',
+      icon: 'wand2',
+      category: 'edit',
+      description: 'Quick polish for selected text',
+      estimated_time: '1-2s'
     },
     {
-      type: 'expand' as const,
-      icon: Expand,
-      label: 'Expand',
-      prompt: 'Expand this text with more detail and examples'
+      id: 'expand-contextual',
+      user_id: '',
+      name: 'Expand',
+      prompt: 'Expand this text with more detail and examples',
+      ai_model: 'gpt-5-mini-2025-08-07',
+      max_tokens: 1000,
+      system_prompt: 'You are an expert writer. Expand the content naturally with depth and examples.',
+      sort_order: 2,
+      function_name: 'ai-expand-content',
+      icon: 'expand',
+      category: 'edit',
+      description: 'Add detail to selected text',
+      estimated_time: '3-4s'
     },
     {
-      type: 'condense' as const,
-      icon: Minimize2,
-      label: 'Condense',
-      prompt: 'Make this text more concise while preserving key points'
+      id: 'condense-contextual',
+      user_id: '',
+      name: 'Condense',
+      prompt: 'Make this text more concise while preserving key points',
+      ai_model: 'gpt-5-mini-2025-08-07',
+      max_tokens: 800,
+      system_prompt: 'You are an expert editor. Condense the content while preserving all key points.',
+      sort_order: 3,
+      function_name: 'ai-condense-content',
+      icon: 'minimize2',
+      category: 'edit',
+      description: 'Make text more concise',
+      estimated_time: '2-3s'
     },
     {
-      type: 'outline' as const,
-      icon: List,
-      label: 'Outline',
-      prompt: 'Create a structured outline from this text'
+      id: 'outline-contextual',
+      user_id: '',
+      name: 'Outline',
+      prompt: 'Create a structured outline from this text',
+      ai_model: 'gpt-5-nano-2025-08-07',
+      max_tokens: 500,
+      system_prompt: 'You are an expert at creating structured outlines.',
+      sort_order: 4,
+      function_name: 'ai-outline',
+      icon: 'list',
+      category: 'structure',
+      description: 'Create outline from text',
+      estimated_time: '2-3s'
     }
   ];
 
@@ -92,13 +129,20 @@ export function ContextualAIToolbar({
       {/* Command buttons */}
       <div className="grid grid-cols-2 gap-2">
         {commands.map((command) => {
-          const Icon = command.icon;
+          const iconMap: Record<string, any> = {
+            'wand2': Wand2,
+            'expand': Expand,
+            'minimize2': Minimize2,
+            'list': List
+          };
+          const Icon = iconMap[command.icon] || Wand2;
+          
           return (
             <EnhancedButton
-              key={command.type}
+              key={command.id}
               variant="ghost"
               size="sm"
-              onClick={() => onCommand(command.type, command.prompt)}
+              onClick={() => onCommand(command, selectedText)}
               disabled={aiLoading}
               className="flex flex-col items-center gap-1 p-2 h-auto text-xs hover:bg-primary/10"
             >
@@ -107,7 +151,7 @@ export function ContextualAIToolbar({
               ) : (
                 <Icon className="h-4 w-4" />
               )}
-              <span>{command.label}</span>
+              <span>{command.name}</span>
             </EnhancedButton>
           );
         })}

@@ -777,73 +777,6 @@ export default function Dashboard() {
     }
   };
 
-    const textToProcess = selectedText || documentContent;
-    if (!textToProcess.trim()) {
-      toast({
-        title: "No content to process",
-        description: "Please add some content to your document first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAiLoading(true);
-
-    try {
-      const functionName = type === 'light-edit' ? 'ai-light-edit' : 
-                          type === 'expand' ? 'ai-expand-content' : 
-                          type === 'condense' ? 'ai-condense-content' :
-                          'ai-outline';
-
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: { 
-          content: selectedText ? undefined : documentContent,
-          selectedText: selectedText || undefined,
-          customPrompt: prompt,
-          model: model || 'gpt-5-nano-2025-08-07',
-          maxTokens: maxTokens || 500
-        }
-      });
-
-      if (error) throw error;
-
-      // Extract result with fallback to data.result
-      const suggestedText = data[type === 'light-edit' ? 'editedText' : 
-                                type === 'expand' ? 'expandedText' : 
-                                type === 'condense' ? 'condensedText' : 'outlineText'] || 
-                           data.result;
-
-      // Handle empty results gracefully
-      if (!suggestedText || suggestedText.trim() === '') {
-        toast({
-          title: "AI returned empty result",
-          description: `The AI didn't generate any content for the '${type}' command. Please try again.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const suggestion: AISuggestion = {
-        id: Date.now().toString(),
-        type,
-        originalText: textToProcess,
-        suggestedText,
-        changes: type === 'light-edit' ? data.changes : true
-      };
-
-      setAiSuggestion(suggestion);
-    } catch (error) {
-      console.error('AI processing error:', error);
-      toast({
-        title: "AI processing failed",
-        description: error instanceof Error ? error.message : "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   const handleVoiceTranscription = async (text: string) => {
     if (currentDocument && documentContent.trim()) {
       // Append to existing document with content
@@ -1210,7 +1143,7 @@ export default function Dashboard() {
             <MobileAICommands
               isOpen={mobileAICommandsOpen}
               onClose={() => setMobileAICommandsOpen(false)}
-              onCommand={handleCustomShortcutUpdated}
+              onCommand={handleCustomShortcut}
               aiLoading={aiLoading}
               selectedText={selectedText}
             />
@@ -1218,7 +1151,7 @@ export default function Dashboard() {
             {/* Contextual AI Toolbar */}
             <ContextualAIToolbar
               selectedText={selectedText}
-              onCommand={handleCustomShortcutUpdated}
+              onCommand={handleCustomShortcut}
               aiLoading={aiLoading}
               onClose={() => setSelectedText('')}
             />
