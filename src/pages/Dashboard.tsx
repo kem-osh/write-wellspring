@@ -14,8 +14,11 @@ import { useDevice } from "@/hooks/useDevice";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { MobileEditor } from "@/components/MobileEditor";
 import { MobileDocumentLibrary } from "@/components/MobileDocumentLibrary";
+import { MobileAICommands } from "@/components/MobileAICommands";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { UserMenu } from "@/components/UserMenu";
+import { CustomShortcuts } from "@/components/CustomShortcuts";
+import { AdvancedAICommands } from "@/components/AdvancedAICommands";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
@@ -36,7 +39,6 @@ import { FactCheckModal } from "@/components/FactCheckModal";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { UnifiedCommand } from '@/types/commands';
 import { BulkUploader } from '@/features/corpus/components/BulkUploader';
-import { AICommandPalette } from '@/components/AICommandPalette';
 
 interface Document {
   id: string;
@@ -127,6 +129,7 @@ export default function Dashboard() {
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [factCheckResult, setFactCheckResult] = useState<any>(null);
   const [showFactCheckModal, setShowFactCheckModal] = useState(false);
+  const [showMoreCommands, setShowMoreCommands] = useState(false);
   const [showBulkUploader, setShowBulkUploader] = useState(false);
   
   // Auto-title generation constants
@@ -1036,13 +1039,15 @@ export default function Dashboard() {
                 disabled={aiLoading}
               />
               
-              <div 
+              <Button
+                variant="ghost"
                 onClick={() => setMobileAICommandsOpen(true)}
-                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target cursor-pointer"
+                className="flex flex-col items-center justify-center p-2 min-w-0 touch-target"
+                disabled={!currentDocument}
               >
                 <MessageSquare className="h-5 w-5" />
                 <span className="text-xs mt-1">AI</span>
-              </div>
+              </Button>
               
               <Button
                 variant="ghost"
@@ -1097,29 +1102,14 @@ export default function Dashboard() {
               }}
             />
 
-            {/* Mobile AI Commands - Unified Command Palette */}
-            <Sheet open={mobileAICommandsOpen} onOpenChange={setMobileAICommandsOpen}>
-              <SheetContent side="bottom">
-                <DialogHeader>
-                  <DialogTitle>AI Commands</DialogTitle>
-                  <DialogDescription>
-                    Choose an AI command to enhance your writing
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="py-4">
-                  <AICommandPalette
-                    onCommandSelect={(command) => {
-                      handleCustomShortcut(command);
-                      setMobileAICommandsOpen(false);
-                    }}
-                    selectedText={selectedText}
-                    isLoading={aiLoading}
-                    trigger={null}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
+            {/* Mobile AI Commands Overlay */}
+            <MobileAICommands
+              isOpen={mobileAICommandsOpen}
+              onClose={() => setMobileAICommandsOpen(false)}
+              onCommand={handleCustomShortcut}
+              aiLoading={aiLoading}
+              selectedText={selectedText}
+            />
 
             {/* Contextual AI Toolbar */}
             <ContextualAIToolbar
@@ -1368,13 +1358,25 @@ export default function Dashboard() {
                   )}
                 </div>
                 
-                {/* Center Section - Unified AI Command Palette */}
+                {/* Center Section - Command Shortcuts */}
                 <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
-                   <AICommandPalette
-                     onCommandSelect={handleCustomShortcut}
-                     selectedText={selectedText}
+                   <CustomShortcuts 
+                     onShortcut={handleCustomShortcut} 
                      isLoading={aiLoading}
+                     selectedText={selectedText}
+                     onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
+                     onOpenMore={() => setShowMoreCommands(true)}
                    />
+                  <div className="w-px h-6 bg-border mx-2" />
+                  <AdvancedAICommands
+                    selectedDocuments={selectedDocuments}
+                    onDocumentCreated={handleDocumentCreated}
+                    onTextInsert={handleTextInsert}
+                    onTextReplace={handleTextReplace}
+                    getCurrentText={getCurrentText}
+                    getSelectedText={getSelectedText}
+                    getCursorContext={getCursorContext}
+                  />
                 </div>
                 
                 {/* Right Section - Word Count & Save */}
@@ -1450,6 +1452,38 @@ export default function Dashboard() {
           factCheckData={factCheckResult}
         />
 
+        {/* More Commands Sheet */}
+        <Sheet open={showMoreCommands} onOpenChange={setShowMoreCommands}>
+          <SheetContent side="bottom">
+            <DialogHeader>
+              <DialogTitle>All AI Commands</DialogTitle>
+            </DialogHeader>
+
+            <div className="py-4">
+              <CustomShortcuts
+                onShortcut={(command) => {
+                  executeAICommand(command);
+                  setShowMoreCommands(false);
+                }}
+                isLoading={aiLoading}
+                selectedText={selectedText}
+                isMobile
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => {
+                setShowMoreCommands(false);
+                setShowCommandSettings(true);
+              }}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Customize & Edit Commands
+            </Button>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );
