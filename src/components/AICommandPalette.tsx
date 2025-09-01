@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Command,
-  CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, Search } from 'lucide-react';
+import { Loader2, Sparkles, Search, Zap } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,11 +54,13 @@ function fuzzySearch(query: string, text: string): boolean {
 // Default trigger button
 const DefaultTrigger = ({ selectedText }: { selectedText?: string }) => (
   <Button variant="ghost" size="sm" className="gap-2">
-    <Search className="h-4 w-4" />
-    AI Commands...
-    <Badge variant="secondary" className="ml-2 text-xs">
-      {selectedText ? 'Selection' : 'Document'}
-    </Badge>
+    <Zap className="h-4 w-4" />
+    AI Commands
+    {selectedText && (
+      <Badge variant="secondary" className="ml-2 text-xs">
+        Selection
+      </Badge>
+    )}
   </Button>
 );
 
@@ -210,14 +212,14 @@ export function AICommandPalette({
 
   // Command content component
   const CommandContent = () => (
-    <Command shouldFilter={false}>
+    <Command shouldFilter={false} className="w-80">
       <CommandInput
         placeholder="Search AI commands..."
         value={searchQuery}
         onValueChange={setSearchQuery}
       />
       
-      <CommandList>
+      <CommandList className="max-h-96">
         {loading ? (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -285,16 +287,27 @@ export function AICommandPalette({
   }
 
   return (
-    <>
-      {/* Trigger Button */}
-      <div onClick={() => setOpen(true)}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
         {trigger || <DefaultTrigger selectedText={selectedText} />}
-      </div>
-
-      {/* Command Palette Dialog */}
-      <CommandDialog open={open} onOpenChange={handleOpenChange}>
+      </PopoverTrigger>
+      
+      <PopoverContent 
+        side="top" 
+        align="end" 
+        className="w-80 p-0 shadow-lg border"
+        onOpenAutoFocus={(e) => {
+          // Prevent auto-focus on popover open to avoid keyboard jumping
+          e.preventDefault();
+          // Focus the search input instead
+          setTimeout(() => {
+            const input = (e.currentTarget as HTMLElement).querySelector('input');
+            input?.focus();
+          }, 0);
+        }}
+      >
         <CommandContent />
-      </CommandDialog>
-    </>
+      </PopoverContent>
+    </Popover>
   );
 }
