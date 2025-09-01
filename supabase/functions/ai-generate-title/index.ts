@@ -23,8 +23,10 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Truncate content to first 500 characters for title generation
-    const truncatedContent = content.slice(0, 500);
+    // Extract first two paragraphs for better title generation
+    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    const firstTwoParagraphs = paragraphs.slice(0, 2).join('\n\n');
+    const truncatedContent = firstTwoParagraphs.slice(0, 800); // Increased limit for better context
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -37,14 +39,14 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Generate a concise, descriptive title (2-8 words) for the given content. The title should capture the main topic or theme. Only return the title, nothing else.'
+            content: 'Generate a concise, descriptive title (2-8 words) for the given content. The title should capture the main topic or theme. Do not use generic words like "document", "text", or "content". Be specific and engaging. Only return the title, nothing else.'
           },
           {
             role: 'user',
             content: `Please generate a title for this content:\n\n${truncatedContent}`
           }
         ],
-        max_completion_tokens: 20
+        max_completion_tokens: 30
       }),
     });
 
@@ -54,10 +56,19 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const title = data.choices[0]?.message?.content?.trim() || 'Untitled Document';
+    const rawTitle = data.choices[0]?.message?.content?.trim();
+    
+    console.log('Raw OpenAI response:', JSON.stringify(data, null, 2));
+    console.log('Raw title from OpenAI:', rawTitle);
+    
+    if (!rawTitle || rawTitle.length === 0) {
+      console.log('Empty response from OpenAI, using fallback');
+      const fallbackTitle = truncatedContent.split(/[.!?]/).find(s => s.trim().length > 10)?.trim().slice(0, 50) || 'New Document';
+      return new Response(JSON.stringify({ title: fallbackTitle }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // Clean up the title (remove quotes, extra punctuation)
-    const cleanTitle = title.replace(/^["']|["']$/g, '').replace(/[^\w\s-]/g, '').trim();
+    const cleanTitle = rawTitle.replace(/^["']|["']$/g, '').replace(/[^\w\s-]/g, '').trim() || 'New Document';
 
     console.log('Generated title:', cleanTitle);
 

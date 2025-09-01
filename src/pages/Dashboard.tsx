@@ -405,6 +405,9 @@ export default function Dashboard() {
         }
       });
 
+      console.log('AI Command Result:', JSON.stringify(data, null, 2));
+      console.log('Available keys in response:', Object.keys(data || {}));
+      
       if (error) throw error;
 
       // Extract result from response based on command type
@@ -415,8 +418,12 @@ export default function Dashboard() {
                     data?.outlineText ||
                     data?.content;
       
+      console.log('Extracted result length:', result?.length || 0);
+      console.log('Result preview:', result?.slice(0, 100) + '...');
+      
       if (!result) {
-        throw new Error('No result from AI - check edge function response format');
+        console.error('No valid result field found in response:', data);
+        throw new Error(`No result returned from AI. Response keys: ${Object.keys(data || {}).join(', ')}`);
       }
 
       console.log(`AI command ${commandType} completed successfully`);
@@ -491,16 +498,24 @@ export default function Dashboard() {
     const hasEnoughContent = documentContent.trim().length >= AUTO_TITLE_THRESHOLD;
 
     try {
+      // Declare classification variables
+      let autoCategory = settings.defaultCategory;
+      let autoStatus = 'draft';
+      
       // Generate title if needed and has enough content
       let finalTitle = documentTitle;
       if (needsTitle && hasEnoughContent && !isGeneratingTitle && settings.autoGenerateTitles) {
         setIsGeneratingTitle(true);
         
+        // Extract first two paragraphs for better title generation
+        const paragraphs = documentContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+        const titleContent = paragraphs.slice(0, 2).join('\n\n');
+        
         const { data: titleData, error: titleError } = await supabase.functions.invoke(
           'ai-generate-title',
           {
             body: {
-              content: documentContent.substring(0, 1000), // Use first 1000 chars for context
+              content: titleContent, // Use extracted paragraphs instead of substring
               userId: user.id
             }
           }
@@ -510,9 +525,28 @@ export default function Dashboard() {
           finalTitle = titleData.title;
           setDocumentTitle(finalTitle);
           toast({
-            title: "Document titled",
-            description: finalTitle,
+            title: "Title Generated",
+            description: `AI created: "${finalTitle}"`,
           });
+        }
+        
+        // Also classify the document for category and status
+        try {
+          const { data: classification } = await supabase.functions.invoke('ai-classify-document', {
+            body: { content: documentContent }
+          });
+          
+          if (classification?.category) {
+            autoCategory = classification.category;
+            console.log('Auto-classified category:', autoCategory);
+          }
+          if (classification?.status) {
+            autoStatus = classification.status;
+            console.log('Auto-classified status:', autoStatus);
+          }
+          
+        } catch (error) {
+          console.error('Error classifying document:', error);
         }
         
         setIsGeneratingTitle(false);
@@ -559,8 +593,8 @@ export default function Dashboard() {
           .insert({
             title: finalTitle,
             content: documentContent,
-            category: settings.defaultCategory,
-            status: 'draft',
+            category: autoCategory || settings.defaultCategory,
+            status: autoStatus || 'draft',
             word_count: wordCount,
             user_id: user.id
           })
