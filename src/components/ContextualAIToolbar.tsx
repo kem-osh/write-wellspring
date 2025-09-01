@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { 
   Wand2, 
@@ -10,6 +10,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { UnifiedCommand } from '@/types/commands';
+import { useAuth } from '@/hooks/useAuth';
+import { loadUserCommands } from '@/utils/commandMigration';
 
 interface ContextualAIToolbarProps {
   selectedText: string;
@@ -24,80 +26,67 @@ export function ContextualAIToolbar({
   aiLoading,
   onClose
 }: ContextualAIToolbarProps) {
+  const { user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
+  const [commands, setCommands] = useState<UnifiedCommand[]>([]);
+  const [loading, setLoading] = useState(false);
+  const mounted = useRef(true);
 
   useEffect(() => {
-    if (selectedText) {
+    mounted.current = true;
+    return () => { 
+      mounted.current = false; 
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadContextualCommands = async () => {
+      if (!user) return;
+      
+      setLoading(true);
+      try {
+        const allCommands = await loadUserCommands(user.id);
+        
+        // Filter to contextual commands - those typically used for selected text
+        const contextualFunctionNames = [
+          'ai-light-edit', 
+          'ai-expand-content', 
+          'ai-condense-content', 
+          'ai-outline',
+          'ai-rewrite'
+        ];
+        
+        const contextualCommands = allCommands.filter(cmd => 
+          contextualFunctionNames.includes(cmd.function_name) ||
+          cmd.category === 'edit' ||
+          cmd.category === 'structure'
+        );
+        
+        if (mounted.current) {
+          setCommands(contextualCommands);
+        }
+      } catch (error) {
+        console.error('Failed to load contextual commands:', error);
+        if (mounted.current) {
+          setCommands([]);
+        }
+      } finally {
+        if (mounted.current) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (selectedText && selectedText.trim().length > 0) {
       setIsVisible(true);
+      loadContextualCommands();
     } else {
       setIsVisible(false);
+      setCommands([]);
     }
-  }, [selectedText]);
+  }, [selectedText, user]);
 
-  if (!isVisible || !selectedText) return null;
-
-  const commands: UnifiedCommand[] = [
-    {
-      id: 'light-edit-contextual',
-      user_id: '',
-      name: 'Polish',
-      prompt: 'Improve this text while keeping the original meaning and style',
-      ai_model: 'gpt-5-nano-2025-08-07',
-      max_tokens: 500,
-      system_prompt: 'You are an expert editor. Fix spelling, grammar, and basic formatting while preserving the author\'s voice.',
-      sort_order: 1,
-      function_name: 'ai-light-edit',
-      icon: 'wand2',
-      category: 'edit',
-      description: 'Quick polish for selected text',
-      estimated_time: '1-2s'
-    },
-    {
-      id: 'expand-contextual',
-      user_id: '',
-      name: 'Expand',
-      prompt: 'Expand this text with more detail and examples',
-      ai_model: 'gpt-5-mini-2025-08-07',
-      max_tokens: 1000,
-      system_prompt: 'You are an expert writer. Expand the content naturally with depth and examples.',
-      sort_order: 2,
-      function_name: 'ai-expand-content',
-      icon: 'expand',
-      category: 'edit',
-      description: 'Add detail to selected text',
-      estimated_time: '3-4s'
-    },
-    {
-      id: 'condense-contextual',
-      user_id: '',
-      name: 'Condense',
-      prompt: 'Make this text more concise while preserving key points',
-      ai_model: 'gpt-5-mini-2025-08-07',
-      max_tokens: 800,
-      system_prompt: 'You are an expert editor. Condense the content while preserving all key points.',
-      sort_order: 3,
-      function_name: 'ai-condense-content',
-      icon: 'minimize2',
-      category: 'edit',
-      description: 'Make text more concise',
-      estimated_time: '2-3s'
-    },
-    {
-      id: 'outline-contextual',
-      user_id: '',
-      name: 'Outline',
-      prompt: 'Create a structured outline from this text',
-      ai_model: 'gpt-5-nano-2025-08-07',
-      max_tokens: 500,
-      system_prompt: 'You are an expert at creating structured outlines.',
-      sort_order: 4,
-      function_name: 'ai-outline',
-      icon: 'list',
-      category: 'structure',
-      description: 'Create outline from text',
-      estimated_time: '2-3s'
-    }
-  ];
+  if (!isVisible || !selectedText || commands.length === 0) return null;
 
   const wordCount = selectedText.trim().split(/\s+/).length;
 
@@ -128,33 +117,41 @@ export function ContextualAIToolbar({
 
       {/* Command buttons */}
       <div className="grid grid-cols-2 gap-2">
-        {commands.map((command) => {
-          const iconMap: Record<string, any> = {
-            'wand2': Wand2,
-            'expand': Expand,
-            'minimize2': Minimize2,
-            'list': List
-          };
-          const Icon = iconMap[command.icon] || Wand2;
-          
-          return (
-            <EnhancedButton
-              key={command.id}
-              variant="ghost"
-              size="sm"
-              onClick={() => onCommand(command, selectedText)}
-              disabled={aiLoading}
-              className="flex flex-col items-center gap-1 p-2 h-auto text-xs hover:bg-primary/10"
-            >
-              {aiLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Icon className="h-4 w-4" />
-              )}
-              <span>{command.name}</span>
-            </EnhancedButton>
-          );
-        })}
+        {loading ? (
+          <div className="col-span-2 flex justify-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        ) : (
+          commands.map((command) => {
+            const iconMap: Record<string, any> = {
+              'wand2': Wand2,
+              'expand': Expand,
+              'minimize2': Minimize2,
+              'list': List,
+              'sparkles': Wand2,
+              'zap': Wand2
+            };
+            const Icon = iconMap[command.icon] || Wand2;
+            
+            return (
+              <EnhancedButton
+                key={command.id}
+                variant="ghost"
+                size="sm"
+                onClick={() => onCommand(command, selectedText)}
+                disabled={aiLoading || loading}
+                className="flex flex-col items-center gap-1 p-2 h-auto text-xs hover:bg-primary/10"
+              >
+                {aiLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Icon className="h-4 w-4" />
+                )}
+                <span>{command.name}</span>
+              </EnhancedButton>
+            );
+          })
+        )}
       </div>
 
       {/* Visual indicator */}
