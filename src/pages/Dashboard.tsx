@@ -536,6 +536,16 @@ export default function Dashboard() {
   ) => {
     if (!user || isProcessing) return;
 
+    // Check authentication first
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please refresh the page and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!currentDocument) {
       toast({ title: "Error", description: "No active document", variant: "destructive" });
       return;
@@ -707,9 +717,6 @@ export default function Dashboard() {
           body: {
             text: currentSelectedText || documentContent,
             style: 'polish',
-            customPrompt: customPrompt || 'Improve clarity, flow, and readability. Make style adjustments while preserving the author\'s voice. Enhance sentence structure and transitions.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1000,
             userId: user.id
           }
         });
@@ -730,9 +737,6 @@ export default function Dashboard() {
           body: {
             text: currentSelectedText || documentContent,
             style: 'simplify',
-            customPrompt: customPrompt || 'Rewrite for easier reading. Use shorter sentences, simpler words, and clearer structure. Target a general audience.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1000,
             userId: user.id
           }
         });
@@ -753,9 +757,6 @@ export default function Dashboard() {
           body: {
             text: currentSelectedText || documentContent,
             style: 'formal',
-            customPrompt: customPrompt || 'Make this more professional and academic while keeping the core meaning intact.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1000,
             userId: user.id
           }
         });
@@ -776,9 +777,6 @@ export default function Dashboard() {
           body: {
             text: currentSelectedText || documentContent,
             style: 'casual',
-            customPrompt: customPrompt || 'Make this more conversational and approachable while maintaining professionalism.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1000,
             userId: user.id
           }
         });
@@ -799,9 +797,6 @@ export default function Dashboard() {
           body: {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt || 'Extract the key points into a concise summary that is about 25% of the original length.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 600,
             userId: user.id
           }
         });
@@ -814,9 +809,6 @@ export default function Dashboard() {
           body: {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt || 'Convert this content into clear, scannable bullet points that capture all main ideas.',
-            model: model || 'gpt-5-nano-2025-08-07',
-            maxTokens: maxTokens || 600,
             userId: user.id
           }
         });
@@ -829,9 +821,6 @@ export default function Dashboard() {
           body: {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt || 'Improve readability by adding appropriate paragraph breaks and better text structure.',
-            model: model || 'gpt-5-nano-2025-08-07',
-            maxTokens: maxTokens || 800,
             userId: user.id
           }
         });
@@ -844,9 +833,6 @@ export default function Dashboard() {
           body: {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt || 'Add clear headers and subheaders to organize this content effectively.',
-            model: model || 'gpt-5-nano-2025-08-07',
-            maxTokens: maxTokens || 800,
             userId: user.id
           }
         });
@@ -857,10 +843,7 @@ export default function Dashboard() {
         console.log('Executing analyze command via ai-analyze');
         const { data, error } = await supabase.functions.invoke('ai-analyze', {
           body: {
-            content: currentDocument.content,
-            customPrompt: customPrompt || 'Comprehensive analysis with improvement recommendations',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1200,
+            text: currentSelectedText || documentContent,
             userId: user.id
           }
         });
@@ -879,9 +862,6 @@ export default function Dashboard() {
           body: {
             text: currentSelectedText || documentContent,
             style: 'voice-match',
-            customPrompt: customPrompt || 'Match the user\'s natural writing voice and style',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 2000,
             userId: user.id
           }
         });
@@ -902,9 +882,6 @@ export default function Dashboard() {
           body: {
             text: currentSelectedText || documentContent,
             style: 'tone-change',
-            customPrompt: customPrompt || 'Adjust the tone while preserving the core message and meaning.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1000,
             userId: user.id
           }
         });
@@ -925,9 +902,6 @@ export default function Dashboard() {
           body: {
             text: currentSelectedText || documentContent,
             style: 'strengthen',
-            customPrompt: customPrompt || 'Strengthen arguments with better evidence, clearer logic, and more persuasive language.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1500,
             userId: user.id
           }
         });
@@ -948,9 +922,6 @@ export default function Dashboard() {
           body: {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt || 'Add relevant examples, case studies, and illustrations to support the main points.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1500,
             userId: user.id
           }
         });
@@ -963,9 +934,6 @@ export default function Dashboard() {
           body: {
             content: currentDocument.content,
             selectedText: currentSelectedText || undefined,
-            customPrompt: customPrompt || 'Review this content for factual accuracy and provide verification suggestions.',
-            model: model || 'gpt-5-mini-2025-08-07',
-            maxTokens: maxTokens || 1000,
             userId: user.id
           }
         });
