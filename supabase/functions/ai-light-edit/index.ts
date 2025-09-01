@@ -57,12 +57,25 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log('OpenAI response data:', JSON.stringify(data, null, 2));
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid OpenAI response structure:', data);
+      throw new Error('Invalid response from OpenAI API');
+    }
+    
     const editedText = data.choices[0].message.content;
+    console.log('Raw edited text:', JSON.stringify(editedText));
+    
+    if (!editedText || editedText.trim().length === 0) {
+      console.error('OpenAI returned empty or null content for text length:', textToEdit.length);
+      throw new Error('AI model returned empty result. Please try again or use a different model.');
+    }
 
     // Check if there are actually changes
     const hasChanges = editedText.trim() !== textToEdit.trim();
 
-    console.log('Light edit completed. Has changes:', hasChanges);
+    console.log('Light edit completed. Has changes:', hasChanges, 'Original length:', textToEdit.length, 'Edited length:', editedText.trim().length);
 
     return new Response(
       JSON.stringify({ 
