@@ -35,6 +35,7 @@ import { useHaptics } from "@/hooks/useHaptics";
 import { AnalysisModal } from "@/components/AnalysisModal";
 import { FactCheckModal } from "@/components/FactCheckModal";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { UnifiedCommand } from '@/types/commands';
 
 interface Document {
   id: string;
@@ -354,13 +355,7 @@ export default function Dashboard() {
 
   // Enhanced AI command execution with proper error handling and text replacement
   const executeAICommand = useCallback(async (
-    commandType: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
-                 'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
-                 'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check' |
-                 'continue' | 'rewrite',
-    customPrompt?: string,
-    model?: string,
-    maxTokens?: number
+    command: UnifiedCommand
   ) => {
     if (!currentDocument) {
       toast({
@@ -384,10 +379,11 @@ export default function Dashboard() {
       return;
     }
 
-    console.log(`Executing AI command: ${commandType}`, {
+    console.log(`Executing AI command: ${command.name}`, {
+      functionName: command.function_name,
       selectedText: !!currentSelectedText,
       textLength: textToProcess.length,
-      model: model || 'gpt-5-nano-2025-08-07'
+      model: command.ai_model
     });
 
     setAiLoading(true);
@@ -396,68 +392,22 @@ export default function Dashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Map command types to edge function names
-      let functionName = 'ai-light-edit'; // default
+      // Use the command's function_name directly (no more switch/case logic!)
+      const functionName = command.function_name;
       
-      switch (commandType) {
-        case 'light-edit':
-          functionName = 'ai-light-edit';
-          break;
-        case 'expand':
-          functionName = 'ai-expand-content';
-          break;
-        case 'condense':
-          functionName = 'ai-condense-content';
-          break;
-        case 'outline':
-          functionName = 'ai-outline';
-          break;
-        case 'heavy-polish':
-        case 'simplify':
-        case 'formalize':
-        case 'casualize':
-        case 'rewrite':
-          functionName = 'ai-rewrite';
-          break;
-        case 'summarize':
-          functionName = 'ai-condense-content';
-          break;
-        case 'bullet-points':
-        case 'paragraph-breaks':
-        case 'add-headers':
-          functionName = 'ai-outline';
-          break;
-        case 'continue':
-          functionName = 'ai-continue';
-          break;
-        case 'analyze':
-          functionName = 'ai-analyze';
-          break;
-        case 'fact-check':
-          functionName = 'ai-fact-check';
-          break;
-        default:
-          console.warn(`Unknown command type: ${commandType}, using light-edit`);
-          functionName = 'ai-light-edit';
-      }
-
       console.log(`Calling ${functionName}...`);
       
       let payload;
       if (functionName === 'ai-rewrite') {
         payload = {
           text: textToProcess,
-          style: commandType === 'heavy-polish' ? 'auto' : 
-                 commandType === 'simplify' ? 'casual' :
-                 commandType === 'formalize' ? 'formal' :
-                 commandType === 'casualize' ? 'casual' : 
-                 commandType === 'rewrite' ? 'auto' : 'auto',
+          style: 'auto', // Could be enhanced to use command-specific styles
           userId: user.id
         };
       } else if (functionName === 'ai-continue') {
         payload = {
           context: textToProcess,
-          currentDocumentId: currentDocument.id.startsWith('temp-') ? null : currentDocument.id, // Handle temp docs
+          currentDocumentId: currentDocument.id.startsWith('temp-') ? null : currentDocument.id,
           userId: user.id
         };
       } else if (functionName === 'ai-fact-check') {
@@ -469,9 +419,9 @@ export default function Dashboard() {
         payload = {
           content: currentSelectedText ? undefined : documentContent,
           selectedText: currentSelectedText || undefined,
-          customPrompt: customPrompt,
-          model: model || 'gpt-5-nano-2025-08-07',
-          maxTokens: maxTokens || (commandType === 'light-edit' ? 2000 : 500),
+          customPrompt: command.prompt,
+          model: command.ai_model,
+          maxTokens: command.max_tokens,
           userId: user.id
         };
       }
@@ -485,23 +435,18 @@ export default function Dashboard() {
       
       if (error) throw error;
 
-      // Extract result from response based on command type
+      // Extract result from response based on command type (same logic as before)
       let result;
       
       if (functionName === 'ai-rewrite') {
-        // ai-rewrite returns alternatives array, take the first one or fallback to result
         result = data?.alternatives?.[0]?.content || data?.result;
       } else if (functionName === 'ai-continue') {
-        // ai-continue returns continuation field
         result = data?.continuation;
       } else if (functionName === 'ai-fact-check') {
-        // ai-fact-check returns analysis, don't replace content but we need full data
         result = data?.analysis || data?.result;
       } else if (functionName === 'ai-analyze') {
-        // ai-analyze returns analysis object, don't replace content but we need full data
         result = data?.analysis || data?.result;
       } else {
-        // Other functions should return result field consistently, with fallbacks
         result = data?.result || 
                  data?.editedText || 
                  data?.expandedText || 
@@ -513,28 +458,26 @@ export default function Dashboard() {
       console.log('Extracted result length:', result?.length || 0);
       console.log('Result preview:', result?.slice(0, 100) + '...');
       
-      // Handle empty results gracefully - distinguish between empty string and no result
+      // Handle empty results gracefully
       if (result === undefined || result === null) {
         console.error('No valid result field found in response:', data);
-        throw new Error(`No result returned from AI command '${commandType}'. Response keys: ${Object.keys(data || {}).join(', ')}`);
+        throw new Error(`No result returned from AI command '${command.name}'. Response keys: ${Object.keys(data || {}).join(', ')}`);
       }
       
-      // Handle empty string results with user-friendly message
       if (typeof result === 'string' && result.trim() === '') {
-        console.warn('AI returned empty result for command:', commandType);
+        console.warn('AI returned empty result for command:', command.name);
         toast({
           title: "AI returned empty result",
-          description: `The AI didn't generate any content for the '${commandType}' command. Please try again or use a different command.`,
+          description: `The AI didn't generate any content for the '${command.name}' command. Please try again or use a different command.`,
           variant: "destructive",
         });
         return;
       }
 
-      console.log(`AI command ${commandType} completed successfully`);
+      console.log(`AI command ${command.name} completed successfully`);
 
       // Handle analysis/fact-check results differently (don't replace content)
       if (functionName === 'ai-fact-check' || functionName === 'ai-analyze') {
-        // Show analysis in a modal or sidebar instead of replacing content
         if (functionName === 'ai-analyze') {
           setAnalysisResult(result);
           setShowAnalysisModal(true);
@@ -543,7 +486,7 @@ export default function Dashboard() {
             description: "Your document analysis is ready for review.",
           });
         } else if (functionName === 'ai-fact-check') {
-          setFactCheckResult(data); // Store full response for fact-check (includes analysis, extractedClaims, etc.)
+          setFactCheckResult(data);
           setShowFactCheckModal(true);
           toast({
             title: "Fact-Check Complete", 
@@ -555,19 +498,17 @@ export default function Dashboard() {
 
       // Replace text in editor for other commands
       if (currentSelectedText && editorRef.current) {
-        // Replace selected text using Monaco editor API
         replaceSelectedText(result);
       } else {
-        // Replace entire document content
         setDocumentContent(result);
       }
       
       toast({
-        title: `${commandType.charAt(0).toUpperCase() + commandType.slice(1)} completed`,
+        title: `${command.name} completed`,
         description: currentSelectedText ? 'Selected text updated' : 'Document updated',
       });
 
-      // Trigger auto-save after successful AI edit (will be available after handleAutoSave is defined)
+      // Trigger auto-save after successful AI edit
       setTimeout(() => {
         if (typeof handleAutoSave === 'function') {
           handleAutoSave();
@@ -575,9 +516,9 @@ export default function Dashboard() {
       }, 1000);
 
     } catch (error) {
-      console.error(`AI command ${commandType} error:`, error);
+      console.error(`AI command ${command.name} error:`, error);
       toast({
-        title: `Failed to execute ${commandType}`,
+        title: `Failed to execute ${command.name}`,
         description: error instanceof Error ? error.message : "Please try again later.",
         variant: "destructive",
       });
@@ -587,13 +528,11 @@ export default function Dashboard() {
   }, [currentDocument, documentContent, getSelectedTextFromEditor, replaceSelectedText, toast]);
 
   // Update handleCustomShortcut to use the new executeAICommand
-  const handleCustomShortcutUpdated = useCallback(async (
-    type: 'light-edit' | 'expand' | 'condense' | 'outline',
-    prompt: string,
-    model?: string,
-    maxTokens?: number
+  const handleCustomShortcut = useCallback(async (
+    command: UnifiedCommand,
+    selectedText?: string
   ) => {
-    await executeAICommand(type, prompt, model, maxTokens);
+    await executeAICommand(command);
   }, [executeAICommand]);
 
   // Load documents and categories on mount
@@ -837,16 +776,6 @@ export default function Dashboard() {
       });
     }
   };
-
-  const handleCustomShortcut = async (type: 'light-edit' | 'expand' | 'condense' | 'outline', prompt: string, model?: string, maxTokens?: number) => {
-    if (!currentDocument) {
-      toast({
-        title: "No document selected",
-        description: "Please select or create a document first.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     const textToProcess = selectedText || documentContent;
     if (!textToProcess.trim()) {
@@ -1502,7 +1431,7 @@ export default function Dashboard() {
                 {/* Center Section - Command Shortcuts */}
                 <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
                    <CustomShortcuts 
-                     onShortcut={handleCustomShortcutUpdated} 
+                     onShortcut={handleCustomShortcut} 
                      isLoading={aiLoading}
                      selectedText={selectedText}
                      onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
