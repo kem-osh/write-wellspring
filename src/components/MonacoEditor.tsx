@@ -7,13 +7,18 @@ interface MonacoEditorProps {
   onChange: (value: string) => void;
   isDarkMode: boolean;
   settings: Settings;
+  onSelectionChange?: (text: string) => void;
+  onProvideEditor?: (editor: any, monaco: any) => void;
 }
 
-export function MonacoEditor({ value, onChange, isDarkMode, settings }: MonacoEditorProps) {
+export function MonacoEditor({ value, onChange, isDarkMode, settings, onSelectionChange, onProvideEditor }: MonacoEditorProps) {
   const editorRef = useRef<any>(null);
 
   function handleEditorDidMount(editor: any, monaco: any) {
     editorRef.current = editor;
+    
+    // Expose editor to parent if needed
+    if (onProvideEditor) onProvideEditor(editor, monaco);
     
     // Configure Monaco for writing
     monaco.editor.defineTheme('writing-light', {
@@ -41,9 +46,23 @@ export function MonacoEditor({ value, onChange, isDarkMode, settings }: MonacoEd
         'editor.selectionBackground': '#1e3a8a',
       }
     });
-  }
 
-  function handleEditorChange(newValue: string | undefined) {
+    // Track selection changes and report selected text
+    if (onSelectionChange) {
+      editor.onDidChangeCursorSelection(() => {
+        try {
+          const model = editor.getModel();
+          const selection = editor.getSelection();
+          if (model && selection) {
+            const text = model.getValueInRange(selection) || '';
+            onSelectionChange(text);
+          }
+        } catch (e) {
+          // no-op
+        }
+      });
+    }
+  }
     onChange(newValue || '');
   }
 
