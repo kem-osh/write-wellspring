@@ -46,7 +46,7 @@ serve(async (req) => {
             content: `Please generate a title for this content:\n\n${truncatedContent}`
           }
         ],
-        max_completion_tokens: 30
+        max_completion_tokens: 3500
       }),
     });
 

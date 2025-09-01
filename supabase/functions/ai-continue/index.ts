@@ -73,7 +73,25 @@ serve(async (req) => {
       console.error('Embedding generation failed, proceeding without style matching');
     }
     
-    // Use GPT-5 Nano for continuation (fast and cheap)
+    // Fetch user's Continue command configuration
+    const { data: commandConfig, error } = await supabase
+      .from('user_commands')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('name', 'Continue')
+      .single();
+
+    if (error || !commandConfig) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Continue command not configured. Please set it up in Settings > Custom Commands.',
+          success: false 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use user's configured model and settings
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -81,11 +99,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: commandConfig.ai_model,
         messages: [
           {
             role: 'system',
-            content: `Continue writing in the exact same style and voice as the provided text. 
+            content: `${commandConfig.system_prompt}
                      ${styleExamples ? `Here are examples of the author's writing style:\n${styleExamples}` : ''}`
           },
           {
@@ -93,7 +111,7 @@ serve(async (req) => {
             content: `Continue this text naturally:\n\n${context}`
           }
         ],
-        max_completion_tokens: 500
+        max_completion_tokens: commandConfig.max_tokens
       }),
     });
 

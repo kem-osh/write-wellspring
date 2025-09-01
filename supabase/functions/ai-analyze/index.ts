@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, userId, model = 'gpt-5-mini-2025-08-07' } = await req.json();
+    const { text, userId } = await req.json();
 
     // Validate input
     if (!text || !userId) {
@@ -40,6 +40,26 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Fetch user's Analyze command if configured, otherwise use system defaults
+    let commandConfig;
+    try {
+      const { data } = await supabase
+        .from('user_commands')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('name', 'Analyze')
+        .single();
+      commandConfig = data;
+    } catch {
+      // Use system defaults if no custom command
+      commandConfig = {
+        ai_model: 'gpt-5-mini-2025-08-07',
+        max_tokens: 3500,
+        system_prompt: "Provide comprehensive analysis of this content including readability, tone, structure, and specific improvement recommendations.",
+        temperature: 0.1
+      };
+    }
+
     // Rate limiting check
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { count } = await supabase
@@ -55,43 +75,7 @@ serve(async (req) => {
       );
     }
 
-    const wordCount = text.trim().split(/\s+/).length;
-    const maxTokens = Math.min(1500, Math.max(600, wordCount * 2));
-
-    // Construct the analysis prompt
-    const prompt = `You are an expert writing analyst. Analyze the following text and provide a comprehensive JSON response with detailed feedback.
-
-Text to analyze:
-"${text}"
-
-Provide analysis in this exact JSON format:
-{
-  "readability": {
-    "score": (1-10, where 10 is most readable),
-    "level": "beginner/intermediate/advanced",
-    "suggestions": ["specific readability improvements"]
-  },
-  "tone": {
-    "current": "description of current tone",
-    "consistency": (1-10, where 10 is most consistent),
-    "suggestions": ["tone improvement suggestions"]
-  },
-  "structure": {
-    "score": (1-10, where 10 is best structured),
-    "flow": "assessment of logical flow",
-    "suggestions": ["structure improvements"]
-  },
-  "strengths": ["list of specific strengths"],
-  "weaknesses": ["list of specific weaknesses"],
-  "suggestions": ["actionable improvement recommendations"],
-  "wordCount": ${wordCount},
-  "readingTime": "X min Y sec",
-  "overallScore": (1-10 overall quality score)
-}
-
-Be specific, actionable, and constructive in your feedback.`;
-
-    console.log(`Making OpenAI API call for analysis with model: ${model}`);
+    console.log(`Making OpenAI API call for analysis with model: ${commandConfig.ai_model}`);
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -101,15 +85,15 @@ Be specific, actionable, and constructive in your feedback.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: model,
+        model: commandConfig.ai_model,
         messages: [
           { 
             role: 'system', 
-            content: 'You are an expert writing analyst. Always respond with valid JSON only, no additional text.' 
+            content: commandConfig.system_prompt
           },
-          { role: 'user', content: prompt }
+          { role: 'user', content: text }
         ],
-        max_completion_tokens: maxTokens,
+        max_completion_tokens: commandConfig.max_tokens,
         response_format: { type: 'json_object' }
       }),
     });
@@ -143,7 +127,7 @@ Be specific, actionable, and constructive in your feedback.`;
       await supabase.from('ai_usage').insert({
         user_id: userId,
         function_name: 'ai-analyze',
-        model: model,
+        model: commandConfig.ai_model,
         tokens_input: data.usage?.prompt_tokens || 0,
         tokens_output: data.usage?.completion_tokens || 0,
         cost_estimate: (data.usage?.total_tokens || 0) * 0.0001 // Rough estimate

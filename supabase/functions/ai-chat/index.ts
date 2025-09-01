@@ -34,6 +34,24 @@ serve(async (req) => {
       throw new Error('Missing message or userId');
     }
 
+    // Fetch user's Chat command configuration
+    const { data: commandConfig, error } = await supabase
+      .from('user_commands')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('name', 'Chat')
+      .single();
+
+    if (error || !commandConfig) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Chat command not configured. Please set it up in Settings > Custom Commands.',
+          success: false 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`Processing chat message for user ${userId}: ${message}`);
 
     // Generate embedding for the user's message to find relevant documents
@@ -197,7 +215,7 @@ Be helpful and suggest how they can get started with their writing projects.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: commandConfig.ai_model,
         messages: [
           {
             role: 'system',
@@ -208,7 +226,7 @@ Be helpful and suggest how they can get started with their writing projects.`;
             content: message
           }
         ],
-        max_completion_tokens: 1000,
+        max_completion_tokens: commandConfig.max_tokens,
       }),
     });
 
@@ -228,10 +246,10 @@ Be helpful and suggest how they can get started with their writing projects.`;
         await supabase.from('ai_usage').insert({
           user_id: userId,
           function_name: 'ai-chat',
-          model: 'gpt-5-mini-2025-08-07',
+          model: commandConfig.ai_model,
           tokens_input: usage.prompt_tokens,
           tokens_output: usage.completion_tokens,
-          cost_estimate: (usage.prompt_tokens * 0.00000025) + (usage.completion_tokens * 0.000001) // GPT-5 Mini pricing
+          cost_estimate: (usage.prompt_tokens * 0.00000025) + (usage.completion_tokens * 0.000001) // GPT-5 Mini pricing estimate
         });
         console.log('Usage tracked:', {
           total_tokens: usage.total_tokens,

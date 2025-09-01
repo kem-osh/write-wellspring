@@ -96,7 +96,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: 'gpt-5-mini-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -107,7 +107,7 @@ serve(async (req) => {
             content: documents.map(d => `${d.title}:\n${d.content.substring(0, 1000)}`).join('\n\n---\n\n')
           }
         ],
-        max_completion_tokens: 1000
+        max_completion_tokens: 3500
       }),
     });
 

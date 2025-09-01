@@ -62,7 +62,7 @@ Respond with ONLY a JSON object: {"category": "category_name", "status": "status
             content: `Classify this content:\n\n${classificationContent}`
           }
         ],
-        max_completion_tokens: 50
+        max_completion_tokens: 3500
       }),
     });
 

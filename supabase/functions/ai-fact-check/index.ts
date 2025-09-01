@@ -27,15 +27,33 @@ serve(async (req) => {
       throw new Error('Text and userId are required');
     }
 
-    console.log(`Fact-checking text for user ${userId}, text length: ${text.length}`);
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
         headers: { Authorization: req.headers.get('Authorization')! },
       },
     });
-    
-    // Extract potential facts/claims using GPT-5 Nano
+
+    // Fetch user's Fact Check command configuration
+    const { data: commandConfig, error } = await supabase
+      .from('user_commands')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('name', 'Fact Check')
+      .single();
+
+    if (error || !commandConfig) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Fact Check command not configured. Please set it up in Settings > Custom Commands.',
+          success: false 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Fact-checking text for user ${userId}, text length: ${text.length}`);
+
+    // Extract potential facts/claims using user's configured model
     const claimsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -43,18 +61,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: commandConfig.ai_model,
         messages: [
           {
             role: 'system',
-            content: 'Extract specific claims, facts, or statements that could be verified. List them clearly.'
+            content: commandConfig.system_prompt
           },
           {
             role: 'user',
-            content: text
+            content: `Extract specific claims from this text:\n\n${text}`
           }
         ],
-        max_completion_tokens: 500
+        max_completion_tokens: Math.min(commandConfig.max_tokens / 2, 800)
       }),
     });
 
