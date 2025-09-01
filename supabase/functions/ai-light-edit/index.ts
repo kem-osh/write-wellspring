@@ -14,19 +14,27 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
-    
-    const textToEdit = selectedText || content;
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
 
-    if (!textToEdit) {
-      throw new Error('No content provided');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
-    const systemPrompt = customPrompt || 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
-    const aiModel = model || 'gpt-5-nano-2025-08-07';
-    const maxCompletionTokens = maxTokens || 2000;
+    // 3) The 'command' object from the frontend is the single source of truth
+    const commandConfig = command;
 
-    console.log('Processing light edit for text length:', textToEdit.length, 'with maxCompletionTokens:', maxCompletionTokens);
+    // 4) Configure model strictly from commandConfig
+    const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    const systemPrompt = commandConfig.system_prompt || 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
+    const maxCompletionTokens = commandConfig.max_tokens || 2000;
+
+    console.log('Processing light edit for text length:', textToProcess.length, 'with maxCompletionTokens:', maxCompletionTokens);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -43,7 +51,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: textToEdit
+            content: textToProcess
           }
         ],
         max_completion_tokens: maxCompletionTokens
@@ -68,16 +76,10 @@ serve(async (req) => {
     console.log('Raw edited text:', JSON.stringify(editedText));
     
     if (!editedText || editedText.trim().length === 0) {
-      console.error('OpenAI returned empty or null content for text length:', textToEdit.length, '- returning original text as fallback');
+      console.error('OpenAI returned empty or null content for text length:', textToProcess.length, '- returning original text as fallback');
       return new Response(
         JSON.stringify({ 
-          result: textToEdit,
-          editedText: textToEdit, 
-          changes: false,
-          originalLength: textToEdit.length,
-          editedLength: textToEdit.length,
-          success: true,
-          fallback: true,
+          result: textToProcess,
           message: 'AI returned empty response, original text preserved'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -85,33 +87,21 @@ serve(async (req) => {
     }
 
     // Check if there are actually changes
-    const hasChanges = editedText.trim() !== textToEdit.trim();
+    const hasChanges = editedText.trim() !== textToProcess.trim();
 
-    console.log('Light edit completed. Has changes:', hasChanges, 'Original length:', textToEdit.length, 'Edited length:', editedText.trim().length);
+    console.log('Light edit completed. Has changes:', hasChanges, 'Original length:', textToProcess.length, 'Edited length:', editedText.trim().length);
 
+    // 6) Consistent success response
     return new Response(
-      JSON.stringify({ 
-        result: editedText.trim(),
-        editedText: editedText.trim(), 
-        changes: hasChanges,
-        originalLength: textToEdit.length,
-        editedLength: editedText.trim().length,
-        success: true
-      }),
+      JSON.stringify({ result: editedText.trim() }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in ai-light-edit function:', error);
+    console.error(`Error in ai-light-edit:`, error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false
-      }),
-      { 
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -14,17 +14,16 @@ serve(async (req) => {
   }
 
   try {
-    const { text, userId, model = 'gpt-5-mini-2025-08-07' } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
 
-    // Validate input
-    if (!text || !userId) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Missing required fields: text, userId',
-          success: false
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
     // Get environment variables
@@ -64,14 +63,18 @@ serve(async (req) => {
       );
     }
 
-    const wordCount = text.trim().split(/\s+/).length;
-    const maxTokens = Math.min(1500, Math.max(600, wordCount * 2));
+    // 3) The 'command' object from the frontend is the single source of truth
+    const commandConfig = command;
+    const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
+
+    const wordCount = textToProcess.trim().split(/\s+/).length;
+    const maxTokens = Math.min(commandConfig.max_tokens || 1500, Math.max(600, wordCount * 2));
 
     // Construct the analysis prompt
     const prompt = `You are an expert writing analyst. Analyze the following text and provide a comprehensive JSON response with detailed feedback.
 
 Text to analyze:
-"${text}"
+"${textToProcess}"
 
 Provide analysis in this exact JSON format:
 {
@@ -170,10 +173,11 @@ Be specific, actionable, and constructive in your feedback.`;
 
     console.log('Analysis completed successfully');
 
+    // 6) Consistent success response
     return new Response(
-      JSON.stringify({
-        analysis,
-        originalText: text,
+      JSON.stringify({ 
+        result: analysis,
+        originalText: textToProcess,
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -182,11 +186,8 @@ Be specific, actionable, and constructive in your feedback.`;
   } catch (error) {
     console.error('Error in ai-analyze function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'An unexpected error occurred. Please try again.',
-        success: false
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

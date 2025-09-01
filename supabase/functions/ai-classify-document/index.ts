@@ -12,10 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { content } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
 
-    if (!content) {
-      throw new Error('Content is required');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -23,8 +29,11 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    // 3) The 'command' object from the frontend is the single source of truth
+    const commandConfig = command;
+
     // Extract first few paragraphs for classification
-    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    const paragraphs = textToProcess.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     const classificationContent = paragraphs.slice(0, 3).join('\n\n').slice(0, 1000);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -34,7 +43,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: commandConfig.ai_model || 'gpt-5-nano-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -62,7 +71,7 @@ Respond with ONLY a JSON object: {"category": "category_name", "status": "status
             content: `Classify this content:\n\n${classificationContent}`
           }
         ],
-        max_completion_tokens: 50
+        max_completion_tokens: commandConfig.max_tokens || 50
       }),
     });
 
@@ -89,31 +98,24 @@ Respond with ONLY a JSON object: {"category": "category_name", "status": "status
       console.log('Classification result:', { category, status });
 
       return new Response(
-        JSON.stringify({ category, status }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ result: { category, status } }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
     } catch (parseError) {
       console.error('Failed to parse classification JSON:', parseError);
       // Fallback classification
       return new Response(
-        JSON.stringify({ category: 'General', status: 'draft' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ result: { category: 'General', status: 'draft' } }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
   } catch (error) {
     console.error('Error in ai-classify-document:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

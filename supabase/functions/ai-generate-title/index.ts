@@ -12,10 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { content } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
 
-    if (!content) {
-      throw new Error('Content is required');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -23,8 +29,11 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    // 3) The 'command' object from the frontend is the single source of truth  
+    const commandConfig = command;
+
     // Extract first two paragraphs for better title generation
-    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    const paragraphs = textToProcess.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     const firstTwoParagraphs = paragraphs.slice(0, 2).join('\n\n');
     const truncatedContent = firstTwoParagraphs.slice(0, 800); // Increased limit for better context
 
@@ -35,18 +44,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: commandConfig.ai_model || 'gpt-5-nano-2025-08-07',
         messages: [
           {
             role: 'system',
-            content: 'Generate a concise, descriptive title (2-8 words) for the given content. The title should capture the main topic or theme. Do not use generic words like "document", "text", or "content". Be specific and engaging. Only return the title, nothing else.'
+            content: commandConfig.system_prompt || 'Generate a concise, descriptive title (2-8 words) for the given content. The title should capture the main topic or theme. Do not use generic words like "document", "text", or "content". Be specific and engaging. Only return the title, nothing else.'
           },
           {
             role: 'user',
             content: `Please generate a title for this content:\n\n${truncatedContent}`
           }
         ],
-        max_completion_tokens: 30
+        max_completion_tokens: commandConfig.max_tokens || 30
       }),
     });
 
@@ -64,7 +73,7 @@ serve(async (req) => {
     if (!rawTitle || rawTitle.length === 0) {
       console.log('Empty response from OpenAI, using fallback');
       const fallbackTitle = truncatedContent.split(/[.!?]/).find(s => s.trim().length > 10)?.trim().slice(0, 50) || 'New Document';
-      return new Response(JSON.stringify({ title: fallbackTitle }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ result: fallbackTitle }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Clean up the title (remove quotes, extra punctuation)
@@ -73,20 +82,15 @@ serve(async (req) => {
     console.log('Generated title:', cleanTitle);
 
     return new Response(
-      JSON.stringify({ title: cleanTitle }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ result: cleanTitle }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in ai-generate-title:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

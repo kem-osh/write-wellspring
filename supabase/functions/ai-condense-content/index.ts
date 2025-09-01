@@ -12,10 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
 
-    if (!content && !selectedText) {
-      throw new Error('Content or selectedText is required');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -23,10 +29,11 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const textToCondense = selectedText || content;
-    const systemPrompt = customPrompt || 'Reduce this content by 60-70% while preserving all key points and the author\'s voice.';
-    const aiModel = model || 'gpt-5-mini-2025-08-07';
-    const maxCompletionTokens = maxTokens || 800;
+    // 3) The 'command' object from the frontend is the single source of truth
+    const commandConfig = command;
+    const systemPrompt = commandConfig.system_prompt || 'Reduce this content by 60-70% while preserving all key points and the author\'s voice.';
+    const aiModel = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
+    const maxCompletionTokens = commandConfig.max_tokens || 800;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -43,7 +50,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: textToCondense
+            content: textToProcess
           }
         ],
         max_completion_tokens: maxCompletionTokens
@@ -63,45 +70,26 @@ serve(async (req) => {
       console.error('OpenAI returned empty condensation result - returning original text as fallback');
       return new Response(
         JSON.stringify({ 
-          result: textToCondense,
-          originalText: textToCondense,
-          condensedText: textToCondense,
-          success: true,
-          fallback: true,
+          result: textToProcess,
           message: 'AI returned empty response, original text preserved'
         }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log('Content condensation completed');
 
+    // 6) Consistent success response
     return new Response(
-      JSON.stringify({ 
-        result: condensedText,
-        originalText: textToCondense,
-        condensedText: condensedText,  
-        success: true
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ result: condensedText }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in ai-condense-content:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

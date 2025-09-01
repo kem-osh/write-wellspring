@@ -21,13 +21,19 @@ serve(async (req) => {
       throw new Error('Missing required environment variables');
     }
 
-    const { text, userId } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
     
-    if (!text || !userId) {
-      throw new Error('Text and userId are required');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
-    console.log(`Fact-checking text for user ${userId}, text length: ${text.length}`);
+    console.log(`Fact-checking text for user ${userId}, text length: ${textToProcess.length}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
@@ -35,28 +41,14 @@ serve(async (req) => {
       },
     });
 
-    // Fetch user command configuration
-    const { data: userCommandConfig } = await supabase
-      .from('user_commands')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('name', 'Fact-Check')
-      .maybeSingle();
-
-    // Define default configuration
-    const defaultConfig = {
-      ai_model: 'gpt-5-mini-2025-08-07',
-      max_tokens: 1000,
-      system_prompt: 'You are a fact-checking assistant. Analyze the following text for factual accuracy and consistency.'
-    };
-
-    // Use user's config if it exists, otherwise use the default
-    const commandConfig = userCommandConfig || defaultConfig;
-    const model = commandConfig.ai_model || defaultConfig.ai_model;
+    // Use command configuration as source of truth
+    const commandConfig = command;
+    const model = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
+    const maxTokens = commandConfig.max_tokens || 1000;
+    const systemPrompt = commandConfig.system_prompt || 'You are a fact-checking assistant. Analyze the following text for factual accuracy and consistency.';
     
     // Determine token parameter based on model
     const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
-    const maxTokens = commandConfig.max_tokens || defaultConfig.max_tokens;
     const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
 
     console.log(`Using model: ${model}, ${tokenParam}: ${maxTokens}`);
@@ -71,7 +63,7 @@ serve(async (req) => {
         },
         {
           role: 'user',
-          content: text
+          content: textToProcess
         }
       ]
     };
@@ -146,11 +138,11 @@ serve(async (req) => {
       messages: [
         {
           role: 'system',
-          content: `${commandConfig.system_prompt || defaultConfig.system_prompt} Check if the claims in the text are consistent with the reference documents. Identify any contradictions or confirmations. If no reference documents are available, note that fact-checking is limited to internal consistency.`
+          content: `${commandConfig.system_prompt || systemPrompt} Check if the claims in the text are consistent with the reference documents. Identify any contradictions or confirmations. If no reference documents are available, note that fact-checking is limited to internal consistency.`
         },
         {
           role: 'user',
-          content: `Text to check:\n${text}\n\nReference documents:\n${referenceContext}`
+          content: `Text to check:\n${textToProcess}\n\nReference documents:\n${referenceContext}`
         }
       ]
     };
@@ -181,15 +173,7 @@ serve(async (req) => {
       console.error('OpenAI returned empty fact-check result');
       return new Response(
         JSON.stringify({ 
-          analysis: 'Unable to complete fact-check analysis. Please try again.',
-          extractedClaims: claims || 'No claims extracted',
-          referencedDocuments: relevantDocs?.map(d => ({ 
-            id: d.id, 
-            title: d.title,
-            relevance: (d.similarity * 100).toFixed(1) + '%'
-          })) || [],
-          hasReferences: relevantDocs.length > 0,
-          fallback: true,
+          result: 'Unable to complete fact-check analysis. Please try again.',
           message: 'AI returned empty response'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -198,30 +182,16 @@ serve(async (req) => {
     
     console.log('Fact-check completed successfully');
     
+    // 6) Consistent success response
     return new Response(
-      JSON.stringify({ 
-        analysis,
-        extractedClaims: claims,
-        referencedDocuments: relevantDocs?.map(d => ({ 
-          id: d.id, 
-          title: d.title,
-          relevance: (d.similarity * 100).toFixed(1) + '%'
-        })) || [],
-        hasReferences: relevantDocs.length > 0
-      }),
+      JSON.stringify({ result: analysis }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Fact-check error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false
-      }),
-      { 
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

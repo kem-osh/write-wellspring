@@ -12,10 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
 
-    if (!content && !selectedText) {
-      throw new Error('Content or selectedText is required');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -23,10 +29,11 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const textToOutline = selectedText || content;
-    const systemPrompt = customPrompt || 'Create a structured outline with headers and bullet points based on the given content. Use proper heading hierarchy (##, ###) and bullet points (-) to organize the information clearly. Maintain the original tone and key points while restructuring into an outline format.';
-    const aiModel = model || 'gpt-5-nano-2025-08-07';
-    const maxCompletionTokens = maxTokens || 1000;
+    // 3) The 'command' object from the frontend is the single source of truth
+    const commandConfig = command;
+    const systemPrompt = commandConfig.system_prompt || 'Create a structured outline with headers and bullet points based on the given content. Use proper heading hierarchy (##, ###) and bullet points (-) to organize the information clearly. Maintain the original tone and key points while restructuring into an outline format.';
+    const aiModel = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    const maxCompletionTokens = commandConfig.max_tokens || 1000;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -43,7 +50,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: textToOutline
+            content: textToProcess
           }
         ],
         max_completion_tokens: maxCompletionTokens,
@@ -63,45 +70,26 @@ serve(async (req) => {
       console.error('OpenAI returned empty outline result - returning original text as fallback');
       return new Response(
         JSON.stringify({ 
-          result: textToOutline,
-          originalText: textToOutline,
-          outlineText: textToOutline,
-          success: true,
-          fallback: true,
+          result: textToProcess,
           message: 'AI returned empty response, original text preserved'
         }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log('Outline creation completed');
 
+    // 6) Consistent success response
     return new Response(
-      JSON.stringify({ 
-        result: outlineText,
-        originalText: textToOutline,
-        outlineText: outlineText,
-        success: true
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ result: outlineText }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in ai-outline:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

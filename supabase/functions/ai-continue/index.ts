@@ -21,13 +21,19 @@ serve(async (req) => {
       throw new Error('Missing required environment variables');
     }
 
-    const { context, currentDocumentId, userId } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
     
-    if (!context || !userId) {
-      throw new Error('Context and userId are required');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
-    console.log(`Continuing text for user ${userId}, context length: ${context.length}`);
+    console.log(`Continuing text for user ${userId}, context length: ${textToProcess.length}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
@@ -35,28 +41,14 @@ serve(async (req) => {
       },
     });
 
-    // Fetch user command configuration
-    const { data: userCommandConfig } = await supabase
-      .from('user_commands')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('name', 'Continue')
-      .maybeSingle();
-
-    // Define default configuration
-    const defaultConfig = {
-      ai_model: 'gpt-5-nano-2025-08-07',
-      max_tokens: 500,
-      system_prompt: 'Continue writing in the exact same style and voice as the provided text.'
-    };
-
-    // Use user's config if it exists, otherwise use the default
-    const commandConfig = userCommandConfig || defaultConfig;
-    const model = commandConfig.ai_model || defaultConfig.ai_model;
+    // Use user command configuration as source of truth
+    const commandConfig = command;
+    const model = commandConfig.ai_model || 'gpt-5-nano-2025-08-07';
+    const maxTokens = commandConfig.max_tokens || 500;
+    const systemPrompt = commandConfig.system_prompt || 'Continue writing in the exact same style and voice as the provided text.';
     
     // Determine token parameter based on model
     const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
-    const maxTokens = commandConfig.max_tokens || defaultConfig.max_tokens;
     const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
 
     console.log(`Using model: ${model}, ${tokenParam}: ${maxTokens}`);
@@ -70,7 +62,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'text-embedding-3-small',
-        input: context
+        input: textToProcess
       }),
     });
 
@@ -105,12 +97,12 @@ serve(async (req) => {
       messages: [
         {
           role: 'system',
-          content: `${commandConfig.system_prompt || defaultConfig.system_prompt} 
+          content: `${commandConfig.system_prompt || systemPrompt} 
                    ${styleExamples ? `Here are examples of the author's writing style:\n${styleExamples}` : ''}`
         },
         {
           role: 'user',
-          content: `Continue this text naturally:\n\n${context}`
+          content: `Continue this text naturally:\n\n${textToProcess}`
         }
       ]
     };
@@ -141,8 +133,7 @@ serve(async (req) => {
       console.error('OpenAI returned empty continuation result - returning original text as fallback');
       return new Response(
         JSON.stringify({ 
-          continuation: context,
-          fallback: true,
+          result: textToProcess,
           message: 'AI returned empty response, original text preserved'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -151,21 +142,16 @@ serve(async (req) => {
     
     console.log('Generated continuation successfully');
     
+    // 6) Consistent success response
     return new Response(
-      JSON.stringify({ continuation }),
+      JSON.stringify({ result: continuation }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Continue error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false
-      }),
-      { 
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

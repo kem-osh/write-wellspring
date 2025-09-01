@@ -12,10 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { content, selectedText, customPrompt, model, maxTokens } = await req.json();
+    // 1) Expect the full command object and other necessary data
+    const { command, content, selectedText, userId } = await req.json();
 
-    if (!content && !selectedText) {
-      throw new Error('Content or selectedText is required');
+    // 2) Validate the payload
+    if (!userId || !command) {
+      throw new Error('User ID and command object are required.');
+    }
+    const textToProcess = selectedText || content;
+    if (!textToProcess) {
+      throw new Error('No text provided to process.');
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -23,10 +29,11 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const textToExpand = selectedText || content;
-    const systemPrompt = customPrompt || 'Expand this content by 20-40% while maintaining the original tone. Add depth, examples, and supporting details.';
-    const aiModel = model || 'gpt-5-mini-2025-08-07';
-    const maxCompletionTokens = maxTokens || 1500;
+    // 3) The 'command' object from the frontend is the single source of truth
+    const commandConfig = command;
+    const systemPrompt = commandConfig.system_prompt || 'Expand this content by 20-40% while maintaining the original tone. Add depth, examples, and supporting details.';
+    const aiModel = commandConfig.ai_model || 'gpt-5-mini-2025-08-07';
+    const maxCompletionTokens = commandConfig.max_tokens || 1500;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -43,7 +50,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: textToExpand
+            content: textToProcess
           }
         ],
         max_completion_tokens: maxCompletionTokens,
@@ -63,45 +70,26 @@ serve(async (req) => {
       console.error('OpenAI returned empty expansion result - returning original text as fallback');
       return new Response(
         JSON.stringify({ 
-          result: textToExpand,
-          originalText: textToExpand,
-          expandedText: textToExpand,
-          success: true,
-          fallback: true,
+          result: textToProcess,
           message: 'AI returned empty response, original text preserved'
         }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log('Content expansion completed');
 
+    // 6) Consistent success response
     return new Response(
-      JSON.stringify({ 
-        result: expandedText,
-        originalText: textToExpand,
-        expandedText: expandedText,
-        success: true
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ result: expandedText }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in ai-expand-content:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
