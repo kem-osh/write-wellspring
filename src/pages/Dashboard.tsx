@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Moon, Sun, Maximize2, Minimize2, Plus, FileText, Settings, X, Mic, Loader2, Menu, MoreVertical, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDevice } from "@/hooks/useDevice";
@@ -114,6 +115,7 @@ export default function Dashboard() {
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [factCheckResult, setFactCheckResult] = useState<any>(null);
   const [showFactCheckModal, setShowFactCheckModal] = useState(false);
+  const [showMoreCommands, setShowMoreCommands] = useState(false);
   
   // Auto-title generation constants
   const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
@@ -485,14 +487,16 @@ export default function Dashboard() {
             title: "Analysis Complete",
             description: "Your document analysis is ready for review.",
           });
-        } else if (functionName === 'ai-fact-check') {
+        } else {
+          // FACT CHECK
           setFactCheckResult(data);
           setShowFactCheckModal(true);
           toast({
-            title: "Fact-Check Complete", 
-            description: "Fact-check analysis is ready for review.",
+            title: 'Fact-Check Complete',
+            description: 'Fact-check analysis is ready for review.',
           });
         }
+        setAiLoading(false);
         return;
       }
 
@@ -778,69 +782,16 @@ export default function Dashboard() {
   };
 
   const handleVoiceTranscription = async (text: string) => {
-    if (currentDocument && documentContent.trim()) {
-      // Append to existing document with content
-      const newContent = documentContent + '\n\n' + text;
+    if (!text) return;
+
+    if (currentDocument) {
+      const newContent = documentContent ? `${documentContent}\n\n${text}` : text;
       setDocumentContent(newContent);
-      
-      // Auto-generate title if current title is generic and content is substantial
-      const wordCount = newContent.trim().split(/\s+/).filter(word => word.length > 0).length;
-      if (wordCount >= 50 && (documentTitle === "New Document" || documentTitle.trim() === "")) {
-        try {
-          const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
-            body: { content: newContent.substring(0, 200) }
-          });
-
-          if (titleData?.title) {
-            const currentDate = new Date().toLocaleDateString('en-US', { 
-              month: '2-digit', 
-              day: '2-digit', 
-              year: 'numeric' 
-            });
-            const generatedTitle = `${titleData.title} - ${currentDate}`;
-            setDocumentTitle(generatedTitle);
-          }
-        } catch (error) {
-          console.error('Failed to generate title:', error);
-        }
-      }
-
       toast({
-        title: "Voice added to document",
-        description: "Transcription has been added to your current document.",
-      });
-    } else if (currentDocument && !documentContent.trim()) {
-      // Replace empty document content
-      setDocumentContent(text);
-      
-      // Auto-generate title for new content
-      const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-      if (wordCount >= 10) {
-        try {
-          const { data: titleData } = await supabase.functions.invoke('ai-generate-title', {
-            body: { content: text.substring(0, 200) }
-          });
-
-          if (titleData?.title) {
-            const currentDate = new Date().toLocaleDateString('en-US', { 
-              month: '2-digit', 
-              day: '2-digit', 
-              year: 'numeric' 
-            });
-            const generatedTitle = `${titleData.title} - ${currentDate}`;
-            setDocumentTitle(generatedTitle);
-          }
-        } catch (error) {
-          console.error('Failed to generate title:', error);
-        }
-      }
-
-      toast({
-        title: "Voice transcription complete",
-        description: "Your document has been updated with the transcribed content.",
+        title: 'Voice Added',
+        description: 'Transcription has been added to your document.',
       });
     } else {
-      // Create new document
       await createNewDocumentFromVoice(text);
     }
   };
@@ -1368,6 +1319,7 @@ export default function Dashboard() {
                      isLoading={aiLoading}
                      selectedText={selectedText}
                      onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
+                     onOpenMore={() => setShowMoreCommands(true)}
                    />
                   <div className="w-px h-6 bg-border mx-2" />
                   <AdvancedAICommands
@@ -1453,6 +1405,39 @@ export default function Dashboard() {
           onOpenChange={setShowFactCheckModal}
           factCheckData={factCheckResult}
         />
+
+        {/* More Commands Sheet */}
+        <Sheet open={showMoreCommands} onOpenChange={setShowMoreCommands}>
+          <SheetContent side="bottom">
+            <DialogHeader>
+              <DialogTitle>All AI Commands</DialogTitle>
+            </DialogHeader>
+
+            <div className="py-4">
+              <CustomShortcuts
+                onShortcut={(command) => {
+                  executeAICommand(command);
+                  setShowMoreCommands(false);
+                }}
+                isLoading={aiLoading}
+                selectedText={selectedText}
+                isMobile
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => {
+                setShowMoreCommands(false);
+                setShowCommandSettings(true);
+              }}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Customize & Edit Commands
+            </Button>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );

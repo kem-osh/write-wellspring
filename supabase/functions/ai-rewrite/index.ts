@@ -35,6 +35,13 @@ serve(async (req) => {
       },
     });
     
+    // DEFAULT CONFIG FALLBACK
+    const defaultConfig = {
+      ai_model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      system_prompt: 'You are an expert editor. Rewrite the following text to improve its clarity, engagement, and impact. Preserve the core meaning.'
+    };
+
     // If style is 'auto', detect from user's documents
     let stylePrompt = '';
     if (style === 'auto') {
@@ -64,7 +71,7 @@ serve(async (req) => {
           stylePrompt = `Match this writing style:\n${recentDocs[0].content.substring(0, 500)}`;
           console.log('Using recent documents for style matching');
         } else {
-          stylePrompt = 'Rewrite in a clear, engaging style.';
+          stylePrompt = defaultConfig.system_prompt;
           console.log('No documents found, using default style prompt');
         }
       }

@@ -17,6 +17,7 @@ interface CustomShortcutsProps {
   onCommandsChange?: () => void;
   selectedText?: string;
   isMobile?: boolean;
+  onOpenMore?: () => void;
 }
 
 type CommandCategory = 'edit' | 'structure' | 'analyze' | 'style';
@@ -50,7 +51,8 @@ export function CustomShortcuts({
   isLoading, 
   onCommandsChange, 
   selectedText, 
-  isMobile = false 
+  isMobile = false,
+  onOpenMore
 }: CustomShortcutsProps) {
   const { user } = useAuth();
   const { selectionChanged, impactLight } = useHaptics();
@@ -211,15 +213,15 @@ export function CustomShortcuts({
            <TooltipProvider>
              <Tooltip>
                <TooltipTrigger asChild>
-                 <Button
-                   size="sm"
-                   variant="outline"
-                   className="flex items-center gap-1 whitespace-nowrap min-w-fit h-11"
-                   onClick={() => {/* Open more commands modal */}}
-                 >
-                   <Plus className="h-3.5 w-3.5" />
-                   More
-                 </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1 whitespace-nowrap min-w-fit h-11"
+                    onClick={onOpenMore}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    More
+                  </Button>
                </TooltipTrigger>
                <TooltipContent side="top">
                  <p className="text-sm">View all {activeCategory} commands</p>
