@@ -122,12 +122,24 @@ export default {
 				'DEFAULT': 'var(--shadow)',
 				'md': 'var(--shadow-md)',
 				'lg': 'var(--shadow-lg)',
-				'xl': 'var(--shadow-xl)'
+				'xl': 'var(--shadow-xl)',
+				'pill': 'var(--pill-shadow)',
+				'pill-hover': 'var(--pill-shadow-hover)'
+			},
+			backdropBlur: {
+				'glass': 'var(--glass-blur)'
+			},
+			backgroundColor: {
+				'glass': 'var(--glass-bg)'
+			},
+			borderColor: {
+				'glass': 'var(--glass-border)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				'pill': 'var(--nav-pill-radius)'
 			},
 			keyframes: {
 				'accordion-down': {

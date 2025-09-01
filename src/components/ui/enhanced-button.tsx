@@ -17,7 +17,10 @@ const enhancedButtonVariants = cva(
         voice: "btn-voice rounded-full",
         ai: "btn-ai",
         save: "btn-save",
-        elevated: "bg-elevated text-foreground border border-border shadow-md hover:shadow-lg hover:border-primary/20 transform hover:translate-y-[-1px]"
+        elevated: "bg-elevated text-foreground border border-border shadow-md hover:shadow-lg hover:border-primary/20 transform hover:translate-y-[-1px]",
+        glass: "glass-panel hover:bg-primary/10 border-0",
+        pill: "nav-pill",
+        "nav-item": "nav-item-pill"
       },
       size: {
         default: "h-10 px-4 py-2",

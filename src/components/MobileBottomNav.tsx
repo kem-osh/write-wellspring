@@ -6,8 +6,6 @@ import {
   Mic, 
   Sparkles, 
   MessageSquare, 
-  Settings,
-  Plus,
   MoreHorizontal
 } from 'lucide-react';
 
@@ -45,14 +43,12 @@ export function MobileBottomNav({
     {
       id: 'documents',
       icon: FileText,
-      label: 'Docs',
       action: onDocumentLibrary,
       badge: null
     },
     {
       id: 'voice',
       icon: Mic,
-      label: 'Voice',
       action: onVoiceRecord,
       badge: null,
       special: 'voice'
@@ -60,7 +56,6 @@ export function MobileBottomNav({
     {
       id: 'ai',
       icon: Sparkles,
-      label: 'AI',
       action: onAICommands,
       badge: null,
       loading: aiLoading,
@@ -69,97 +64,80 @@ export function MobileBottomNav({
     {
       id: 'chat',
       icon: MessageSquare,
-      label: 'Chat',
       action: onAIChat,
       badge: unreadMessages > 0 ? unreadMessages : null
     },
     {
       id: 'more',
       icon: MoreHorizontal,
-      label: 'More',
       action: onSettings,
       badge: null
     }
   ];
 
   return (
-    <nav className={`
-      fixed bottom-0 left-0 right-0 z-40
-      bg-background/95 backdrop-blur-md border-t border-border
-      pb-safe
-      ${className}
-    `}>
-      {/* Floating Action Button */}
-      <EnhancedButton
-        variant="voice"
-        size="fab"
-        className="absolute -top-7 left-1/2 transform -translate-x-1/2 shadow-2xl"
-        onClick={() => handleTabPress('voice', onVoiceRecord)}
-      >
-        <Plus className="h-6 w-6" />
-      </EnhancedButton>
-
-      {/* Navigation Items */}
-      <div className="flex items-center justify-around px-4 py-3 pt-4">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          const isSpecial = item.special === 'voice' || item.special === 'ai';
-          
-          if (item.id === 'voice') {
-            // Skip the voice button as it's the FAB
-            return <div key={item.id} className="w-14" />;
-          }
-
-          return (
-            <EnhancedButton
-              key={item.id}
-              variant="ghost"
-              size="icon"
-              interactive={true}
-              className={`
-                flex flex-col items-center justify-center gap-1 h-auto py-2 px-3 min-w-[56px]
-                transition-all duration-200 rounded-xl
-                ${isActive ? 'bg-primary/10 text-primary scale-110' : 'text-muted-foreground'}
-                ${isSpecial ? 'hover:text-primary' : 'hover:text-foreground'}
-                touch-target focus-ring relative
-              `}
-              onClick={() => handleTabPress(item.id, item.action)}
-            >
-              {/* Badge */}
-              {item.badge && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center"
+    <>
+      {/* Floating Pill Navigation Container */}
+      <nav className={`
+        fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50
+        nav-pill
+        px-2 py-2
+        ${className}
+      `}>
+        {/* Navigation Items */}
+        <div className="flex items-center justify-center gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            const isVoice = item.special === 'voice';
+            
+            return (
+              <div key={item.id} className="relative">
+                <EnhancedButton
+                  variant={isVoice ? "voice" : "nav-item"}
+                  size={isVoice ? "lg" : "icon"}
+                  interactive={true}
+                  className={`
+                    relative transition-all duration-300
+                    ${isActive ? 'scale-110' : ''}
+                    ${isVoice ? 'mx-2' : ''}
+                    focus-ring
+                  `}
+                  onClick={() => handleTabPress(item.id, item.action)}
+                  aria-label={`Navigate to ${item.id}`}
                 >
-                  {item.badge > 9 ? '9+' : item.badge}
-                </Badge>
-              )}
+                  {/* Badge */}
+                  {item.badge && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 w-5 text-xs p-0 flex items-center justify-center z-10"
+                    >
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </Badge>
+                  )}
 
-              {/* Loading state for AI */}
-              {item.loading ? (
-                <div className="animate-spin">
-                  <Icon className="h-5 w-5" />
-                </div>
-              ) : (
-                <Icon className="h-5 w-5" />
-              )}
-              
-              <span className={`
-                text-xs font-medium transition-all duration-200
-                ${isActive ? 'text-primary' : 'text-current'}
-              `}>
-                {item.label}
-              </span>
+                  {/* Loading state for AI */}
+                  {item.loading ? (
+                    <div className="animate-spin">
+                      <Icon className={`${isVoice ? 'h-6 w-6' : 'h-5 w-5'}`} />
+                    </div>
+                  ) : (
+                    <Icon className={`${isVoice ? 'h-6 w-6' : 'h-5 w-5'}`} />
+                  )}
+                </EnhancedButton>
 
-              {/* Active indicator */}
-              {isActive && (
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-              )}
-            </EnhancedButton>
-          );
-        })}
-      </div>
-    </nav>
+                {/* Active indicator dot */}
+                {isActive && !isVoice && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full animate-scale-in" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Safe area padding for content */}
+      <div className="h-20 pb-safe" />
+    </>
   );
 }
