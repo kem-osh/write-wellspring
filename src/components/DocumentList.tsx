@@ -477,11 +477,18 @@ export function DocumentList({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => bulkChangeCategory('General')}>General</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => bulkChangeCategory('Blog')}>Blog</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => bulkChangeCategory('Book')}>Book</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => bulkChangeCategory('Essay')}>Essay</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => bulkChangeCategory('Notes')}>Notes</DropdownMenuItem>
+                {categories.map((category) => (
+                  <DropdownMenuItem 
+                    key={category.id} 
+                    onClick={() => bulkChangeCategory(category.name)}
+                  >
+                    <Circle 
+                      className="w-3 h-3 mr-2" 
+                      style={{ color: category.color, fill: category.color }} 
+                    />
+                    {category.name}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -588,29 +595,26 @@ export function DocumentList({
                                Rename
                              </DropdownMenuItem>
                              
-                             <DropdownMenuSub>
-                               <DropdownMenuSubTrigger>
-                                 <Tag className="w-4 h-4 mr-2" />
-                                 Category
-                               </DropdownMenuSubTrigger>
-                               <DropdownMenuSubContent>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'General')}>
-                                   General
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Blog')}>
-                                   Blog
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Book')}>
-                                   Book
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Essay')}>
-                                   Essay
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeCategory(doc.id, 'Notes')}>
-                                   Notes
-                                 </DropdownMenuItem>
-                               </DropdownMenuSubContent>
-                             </DropdownMenuSub>
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <Tag className="w-4 h-4 mr-2" />
+                                  Category
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  {categories.map((category) => (
+                                    <DropdownMenuItem 
+                                      key={category.id} 
+                                      onClick={() => changeCategory(doc.id, category.name)}
+                                    >
+                                      <Circle 
+                                        className="w-3 h-3 mr-2" 
+                                        style={{ color: category.color, fill: category.color }} 
+                                      />
+                                      {category.name}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
                              
                              <DropdownMenuSub>
                                <DropdownMenuSubTrigger>

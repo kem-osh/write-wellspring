@@ -223,8 +223,19 @@ export function AdvancedAICommands({
     setIsProcessing(true);
     
     try {
+      // Create command object for comparison
+      const compareCommand = {
+        name: "Document Comparison",
+        prompt: "Compare these documents and analyze their similarities, differences, themes, and structure.",
+        system_prompt: "You are an expert document analyst. Compare the provided documents thoroughly, identifying key similarities, differences, themes, and structural patterns.",
+        ai_model: "gpt-4o-mini",
+        max_tokens: 2000,
+        temperature: 0.3
+      };
+
       const { data, error } = await supabase.functions.invoke('compare-documents', {
         body: {
+          command: compareCommand,
           documentIds: selectedDocuments,
           userId: user.id
         }

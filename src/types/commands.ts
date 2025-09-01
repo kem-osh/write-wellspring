@@ -34,7 +34,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 1,
     function_name: 'ai-light-edit',
-    icon: 'sparkles',
+    icon: 'Sparkles',
     category: 'edit',
     description: 'Fix grammar, spelling, punctuation while preserving voice',
     estimated_time: '1-2s'
@@ -48,7 +48,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 2,
     function_name: 'ai-rewrite',
-    icon: 'pen-tool',
+    icon: 'PenTool',
     category: 'edit',
     description: 'Improve clarity, flow, and readability with style adjustments',
     estimated_time: '3-5s'
@@ -62,7 +62,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 3,
     function_name: 'ai-expand-content',
-    icon: 'expand',
+    icon: 'Expand',
     category: 'edit',
     description: 'Add 30-50% more content with examples and details',
     estimated_time: '4-6s'
@@ -76,7 +76,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 4,
     function_name: 'ai-condense-content',
-    icon: 'shrink',
+    icon: 'Shrink',
     category: 'edit',
     description: 'Reduce by 60% while keeping all key points',
     estimated_time: '3-5s'
@@ -90,7 +90,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 5,
     function_name: 'ai-rewrite',
-    icon: 'type',
+    icon: 'Type',
     category: 'style',
     description: 'Make easier to read with simpler language',
     estimated_time: '3-5s'
@@ -104,7 +104,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 6,
     function_name: 'ai-outline',
-    icon: 'list',
+    icon: 'List',
     category: 'structure',
     description: 'Create structured outline with headers and bullets',
     estimated_time: '2-3s'
@@ -118,7 +118,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 7,
     function_name: 'ai-condense-content',
-    icon: 'file-text',
+    icon: 'FileText',
     category: 'structure',
     description: 'Extract key points into 25% length summary',
     estimated_time: '3-4s'
@@ -132,7 +132,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 8,
     function_name: 'ai-outline',
-    icon: 'check-square',
+    icon: 'CheckSquare',
     category: 'structure',
     description: 'Convert to clear, scannable bullet points',
     estimated_time: '2-3s'
@@ -146,7 +146,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 9,
     function_name: 'ai-analyze',
-    icon: 'bar-chart-3',
+    icon: 'BarChart3',
     category: 'analyze',
     description: 'Get detailed analysis with actionable improvements',
     estimated_time: '5-8s'
@@ -160,7 +160,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 10,
     function_name: 'ai-rewrite',
-    icon: 'book-open',
+    icon: 'BookOpen',
     category: 'style',
     description: 'Make more professional and academic',
     estimated_time: '3-5s'
@@ -174,7 +174,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 11,
     function_name: 'ai-rewrite',
-    icon: 'message-circle',
+    icon: 'MessageCircle',
     category: 'style',
     description: 'Make more conversational and approachable',
     estimated_time: '3-5s'
@@ -188,7 +188,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 12,
     function_name: 'ai-continue',
-    icon: 'zap',
+    icon: 'Zap',
     category: 'edit',
     description: 'AI continues writing where you left off',
     estimated_time: '3-5s'
@@ -202,7 +202,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 13,
     function_name: 'ai-rewrite',
-    icon: 'pen-tool',
+    icon: 'PenTool',
     category: 'edit',
     description: 'A complete rewrite of the selected text or document',
     estimated_time: '4-7s'
@@ -216,7 +216,7 @@ export const DEFAULT_COMMANDS_TEMPLATE: Omit<UnifiedCommand, 'id' | 'user_id' | 
     temperature: 0.3,
     sort_order: 14,
     function_name: 'ai-fact-check',
-    icon: 'shield',
+    icon: 'Shield',
     category: 'analyze',
     description: 'Verify factual claims within the text',
     estimated_time: '6-10s'
