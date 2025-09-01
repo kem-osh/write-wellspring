@@ -46,6 +46,7 @@ import {
   Circle
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { DocumentCard } from './DocumentCard';
 
 interface Document {
   id: string;
@@ -426,371 +427,181 @@ export function DocumentList({
     bulkDelete();
   };
 
-  if (documents.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <FileText className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-        <h3 className="text-lg font-medium mb-2">
-          {searchQuery ? 'No documents found' : 'No documents yet'}
-        </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {searchQuery 
-            ? `No documents match "${searchQuery}". Try different keywords or check your filters.`
-            : "Create your first document to get started with LogosScribe."
-          }
-        </p>
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}
-            className="text-xs"
-          >
-            Clear search to see all documents
-          </Button>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
-      {/* Enhanced bulk actions bar */}
-      {isMultiSelectMode && (
-        <div className="flex items-center justify-between p-3 bg-muted border-b">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              checked={selectedDocs.size === documents.length}
-              onCheckedChange={toggleSelectAll}
-              className="mr-1"
-            />
-            <span className="text-sm font-medium">{selectedDocs.size} selected</span>
+      {/* No documents state */}
+      {documents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+          <div className="bg-surface/30 rounded-full p-8 mb-6">
+            <FileText className="h-16 w-16 text-muted-foreground/60" />
           </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Category dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Tag className="w-4 h-4 mr-2" />
-                  Category
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {categories.map((category) => (
-                  <DropdownMenuItem 
-                    key={category.id} 
-                    onClick={() => bulkChangeCategory(category.name)}
-                  >
-                    <Circle 
-                      className="w-3 h-3 mr-2" 
-                      style={{ color: category.color, fill: category.color }} 
-                    />
-                    {category.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Status dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Circle className="w-4 h-4 mr-2" />
-                  Status
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => bulkChangeStatus('draft')}>
-                  <Circle className="w-3 h-3 mr-2 fill-yellow-400 text-yellow-400" /> Draft
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => bulkChangeStatus('polished')}>
-                  <Circle className="w-3 h-3 mr-2 fill-blue-400 text-blue-400" /> Polished
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => bulkChangeStatus('final')}>
-                  <Circle className="w-3 h-3 mr-2 fill-green-400 text-green-400" /> Final
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Delete all button */}
-            <Button 
-              variant="outline" 
+          <h3 className="text-heading-lg font-semibold mb-3 text-foreground">
+            {searchQuery ? 'No documents found' : 'No documents yet'}
+          </h3>
+          <p className="text-body-md text-muted-foreground mb-6 max-w-md leading-relaxed">
+            {searchQuery 
+              ? `No documents match "${searchQuery}". Try different keywords or check your filters.`
+              : "Create your first document to get started with LogosScribe."
+            }
+          </p>
+          {searchQuery && (
+            <Button
+              variant="outline"
               size="sm"
-              onClick={bulkDelete}
-              className="text-destructive hover:text-destructive"
+              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}
+              className="font-medium"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete All
+              Clear search to see all documents
             </Button>
-            
-            {/* Clear selection button */}
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={exitMultiSelectMode}
-            >
-              Clear
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <ScrollArea className="flex-1">
-        <div className="space-y-1 p-2">
-          {documents.map((doc) => {
-            const isSelected = selectedDocs.has(doc.id);
-            const isCurrent = currentDocument?.id === doc.id;
-            const isEditing = editingId === doc.id;
-
-            return (
-              <ContextMenu key={doc.id}>
-                <ContextMenuTrigger asChild>
-                   <div
-                     className={`
-                       group relative flex items-start gap-3 p-3 rounded-lg border cursor-pointer 
-                       transition-all hover:bg-accent
-                       ${isCurrent ? 'bg-accent border-primary/50' : ''}
-                       ${isSelected ? 'bg-primary/10 border-primary' : ''}
-                     `}
-                     onClick={() => {
-                       if (isMultiSelectMode) {
-                         toggleDocumentSelection(doc.id);
-                       } else if (!isEditing) {
-                         onDocumentSelect(doc);
-                       }
-                     }}
-                   >
-                     {/* Selection checkbox (visible on hover or in multi-select mode) */}
-                     <div className={`flex-shrink-0 transition-opacity ${
-                       isMultiSelectMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                     }`}>
-                       <Checkbox
-                         checked={isSelected}
-                         onCheckedChange={() => toggleDocumentSelection(doc.id)}
-                         onClick={(e) => e.stopPropagation()}
-                       />
-                     </div>
-
-                     {/* Three-dot menu - moved to left side, always visible on mobile, hover on desktop */}
-                     {!isEditing && (
-                       <div className={`flex-shrink-0 transition-opacity ${
-                         isMultiSelectMode ? 'opacity-0' : 'md:opacity-0 md:group-hover:opacity-100 opacity-100'
-                       }`}>
-                         <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="h-8 w-8 p-0 min-w-8"
-                               onClick={(e) => e.stopPropagation()}
-                               aria-label="Document actions"
-                             >
-                               <MoreVertical className="h-4 w-4" />
-                             </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align="start" className="z-[60] bg-card">
-                             <DropdownMenuItem onClick={() => startRename(doc)}>
-                               <Edit2 className="w-4 h-4 mr-2" />
-                               Rename
-                             </DropdownMenuItem>
-                             
-                              <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                  <Tag className="w-4 h-4 mr-2" />
-                                  Category
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                  {categories.map((category) => (
-                                    <DropdownMenuItem 
-                                      key={category.id} 
-                                      onClick={() => changeCategory(doc.id, category.name)}
-                                    >
-                                      <Circle 
-                                        className="w-3 h-3 mr-2" 
-                                        style={{ color: category.color, fill: category.color }} 
-                                      />
-                                      {category.name}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-                             
-                             <DropdownMenuSub>
-                               <DropdownMenuSubTrigger>
-                                 <Circle className="w-4 h-4 mr-2" />
-                                 Status
-                               </DropdownMenuSubTrigger>
-                               <DropdownMenuSubContent>
-                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'draft')}>
-                                   <Circle className="w-3 h-3 mr-2 fill-yellow-500 text-yellow-500" />
-                                   Draft
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'polished')}>
-                                   <Circle className="w-3 h-3 mr-2 fill-blue-500 text-blue-500" />
-                                   Polished
-                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => changeStatus(doc.id, 'final')}>
-                                   <Circle className="w-3 h-3 mr-2 fill-green-500 text-green-500" />
-                                   Final
-                                 </DropdownMenuItem>
-                               </DropdownMenuSubContent>
-                             </DropdownMenuSub>
-                             
-                             <DropdownMenuItem onClick={() => duplicateDocument(doc)}>
-                               <Copy className="w-4 h-4 mr-2" />
-                               Duplicate
-                             </DropdownMenuItem>
-                             
-                             <DropdownMenuSeparator />
-                             
-                             <DropdownMenuItem 
-                               onClick={() => setDeleteConfirmId(doc.id)}
-                               className="text-destructive focus:text-destructive"
-                             >
-                               <Trash2 className="w-4 h-4 mr-2" />
-                               Delete
-                             </DropdownMenuItem>
-                           </DropdownMenuContent>
-                         </DropdownMenu>
-                       </div>
-                     )}
-
-                     {/* Document content - flexible container */}
-                     <div className="flex-1 min-w-0 overflow-hidden">
-                       {/* Title row with proper truncation */}
-                       <div className="mb-1">
-                         {isEditing ? (
-                           <Input
-                             value={editingTitle}
-                             onChange={(e) => setEditingTitle(e.target.value)}
-                             onKeyDown={(e) => {
-                               if (e.key === 'Enter') saveRename();
-                               if (e.key === 'Escape') cancelRename();
-                             }}
-                             onBlur={saveRename}
-                             className="h-6 text-sm w-full"
-                             autoFocus
-                             onClick={(e) => e.stopPropagation()}
-                           />
-                         ) : (
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <h3 className="font-medium text-sm overflow-hidden text-ellipsis whitespace-nowrap block">
-                                   {highlightSearchTerm(doc.title, searchQuery)}
-                                 </h3>
-                               </TooltipTrigger>
-                               {doc.title.length > 40 && (
-                                 <TooltipContent>
-                                   <p className="max-w-xs">{doc.title}</p>
-                                 </TooltipContent>
-                               )}
-                             </Tooltip>
-                           </TooltipProvider>
-                         )}
-                       </div>
-
-                       {/* Content preview with proper truncation */}
-                       <p className="text-xs text-muted-foreground mb-2 overflow-hidden text-ellipsis whitespace-nowrap leading-relaxed">
-                         {doc.content.trim() ? (
-                           highlightSearchTerm(getPreviewText(doc.content, 50), searchQuery)
-                         ) : (
-                           <span className="italic opacity-75">No content yet...</span>
-                         )}
-                       </p>
-
-                       {/* Metadata row with flex wrap for responsiveness */}
-                       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                         <span className="flex items-center gap-1 flex-shrink-0">
-                           <Calendar className="h-3 w-3" />
-                           {format(new Date(doc.updated_at), 'MM/dd')}
-                         </span>
-                         <span className="flex items-center gap-1 flex-shrink-0">
-                           <Hash className="h-3 w-3" />
-                           {formatWordCount(doc.word_count || 0)} words
-                         </span>
-                         
-                         {/* Status dot */}
-                         <div className="flex items-center gap-1 flex-shrink-0">
-                           <div 
-                             className={`w-2 h-2 rounded-full ${
-                               doc.status === 'draft' ? 'bg-yellow-500' :
-                               doc.status === 'polished' ? 'bg-blue-500' :
-                               doc.status === 'final' ? 'bg-green-500' : 'bg-gray-400'
-                             }`}
-                           />
-                           <span className="capitalize">{doc.status}</span>
-                         </div>
-                         
-                         {/* Category badge */}
-                         <div className="flex items-center gap-1 flex-shrink-0">
-                           <div 
-                             className="w-2 h-2 rounded-full" 
-                             style={{ backgroundColor: getCategoryColor(doc.category) }}
-                           />
-                           <span className="text-xs truncate max-w-16" title={doc.category}>
-                             {doc.category}
-                           </span>
-                         </div>
-                       </div>
-                     </div>
-                   </div>
-                </ContextMenuTrigger>
-                
-                <ContextMenuContent>
-                  <ContextMenuItem onClick={() => startRename(doc)}>
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Rename
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => duplicateDocument(doc)}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Duplicate
-                  </ContextMenuItem>
-                  <ContextMenuSeparator />
-                  <ContextMenuItem onClick={() => setDeleteConfirmId(doc.id)} className="text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            );
-          })}
-          
-          {/* Load More Button */}
-          {hasMore && (
-            <div className="p-4 text-center border-t">
-              <Button 
-                variant="outline" 
-                onClick={onLoadMore}
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin mr-2" />
-                    Loading more documents...
-                  </>
-                ) : (
-                  'Load More Documents'
-                )}
-              </Button>
-            </div>
           )}
         </div>
-      </ScrollArea>
+      ) : (
+        <>
+          {/* Enhanced bulk actions bar */}
+          {isMultiSelectMode && (
+            <div className="flex items-center justify-between p-4 bg-surface/60 backdrop-blur-sm border-b border-border/50 shadow-sm rounded-t-lg">
+              <div className="flex items-center gap-4">
+                <Checkbox
+                  checked={selectedDocs.size === documents.length}
+                  onCheckedChange={toggleSelectAll}
+                  className="mr-2"
+                />
+                <span className="text-body-md font-semibold text-foreground">{selectedDocs.size} selected</span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                {/* Category dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-card hover:bg-secondary/80">
+                      <Tag className="w-4 h-4 mr-2" />
+                      Category
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-card border-border shadow-lg">
+                    {categories.map((category) => (
+                      <DropdownMenuItem 
+                        key={category.id} 
+                        onClick={() => bulkChangeCategory(category.name)}
+                        className="hover:bg-secondary/50"
+                      >
+                        <Circle 
+                          className="w-3 h-3 mr-2" 
+                          style={{ color: category.color, fill: category.color }} 
+                        />
+                        {category.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {/* Status dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-card hover:bg-secondary/80">
+                      <Circle className="w-4 h-4 mr-2" />
+                      Status
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-card border-border shadow-lg">
+                    <DropdownMenuItem onClick={() => bulkChangeStatus('draft')} className="hover:bg-secondary/50">
+                      <Circle className="w-3 h-3 mr-2 fill-status-draft text-status-draft" /> Draft
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => bulkChangeStatus('polished')} className="hover:bg-secondary/50">
+                      <Circle className="w-3 h-3 mr-2 fill-primary text-primary" /> Polished
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => bulkChangeStatus('final')} className="hover:bg-secondary/50">
+                      <Circle className="w-3 h-3 mr-2 fill-accent text-accent" /> Final
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {/* Delete all button */}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={bulkDelete}
+                  className="text-destructive hover:text-destructive bg-card hover:bg-destructive/5 border-destructive/20"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete All
+                </Button>
+                
+                {/* Clear selection button */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={exitMultiSelectMode}
+                  className="hover:bg-secondary/50"
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <ScrollArea className="flex-1">
+            <div className="p-6">
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                {documents.map((doc) => (
+                  <DocumentCard
+                    key={doc.id}
+                    document={doc}
+                    isSelected={selectedDocs.has(doc.id)}
+                    onSelect={() => {
+                      if (isMultiSelectMode) {
+                        toggleDocumentSelection(doc.id);
+                      } else {
+                        onDocumentSelect(doc);
+                      }
+                    }}
+                    onEdit={(doc) => startRename(doc)}
+                    onDuplicate={duplicateDocument}
+                    onDelete={(docId) => setDeleteConfirmId(docId)}
+                    searchQuery={searchQuery}
+                    showCheckbox={isMultiSelectMode}
+                    onSelectionToggle={toggleDocumentSelection}
+                  />
+                ))}
+              </div>
+              
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="mt-8 flex justify-center">
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={onLoadMore}
+                    disabled={loading}
+                    className="px-8"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
+                        Loading more documents...
+                      </>
+                    ) : (
+                      'Load More Documents'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </>
+      )}
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Document</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-heading-md">Delete Document</AlertDialogTitle>
+            <AlertDialogDescription className="text-body-md text-muted-foreground">
               Are you sure you want to delete this document? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-secondary/50 hover:bg-secondary/80">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => deleteConfirmId && deleteDocument(deleteConfirmId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

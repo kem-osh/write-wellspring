@@ -64,10 +64,10 @@ export function DocumentCard({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'status-draft';
-      case 'polished': return 'status-polished'; 
-      case 'final': return 'status-final';
-      default: return 'muted';
+      case 'draft': return 'bg-status-draft/10 text-status-draft border-status-draft/20';
+      case 'polished': return 'bg-primary/10 text-primary border-primary/20'; 
+      case 'final': return 'bg-accent/10 text-accent border-accent/20';
+      default: return 'bg-muted/50 text-muted-foreground border-border';
     }
   };
 
@@ -116,34 +116,36 @@ export function DocumentCard({
 
   return (
     <Card 
-      variant="interactive"
-      className={`group ${isSelected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+      variant="elevated"
+      className={`group transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer ${
+        isSelected ? 'ring-2 ring-primary/50 bg-primary/5 shadow-md' : 'hover:shadow-md'
+      }`}
       onClick={handleCardClick}
     >
-      <CardContent padding={compact ? "sm" : "default"}>
-        <div className="space-y-3">
+      <CardContent padding={compact ? "sm" : "lg"}>
+        <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Selection Checkbox */}
               {showCheckbox && (
                 <button
                   onClick={handleCheckboxToggle}
                   data-checkbox
-                  className="touch-target p-1 -m-1 rounded hover:bg-muted/50 transition-colors"
+                  className="touch-target p-2 -m-2 rounded-md hover:bg-secondary/50 transition-colors"
                 >
                   {isSelected ? (
-                    <CheckSquare className="h-4 w-4 text-primary" />
+                    <CheckSquare className="h-5 w-5 text-primary" />
                   ) : (
-                    <Square className="h-4 w-4 text-muted-foreground" />
+                    <Square className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                   )}
                 </button>
               )}
               
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <h3 className="text-heading-sm truncate">
+                <div className="flex items-center gap-3 mb-2">
+                  <FileText className="h-5 w-5 text-primary/70 flex-shrink-0" />
+                  <h3 className="text-heading-md font-semibold truncate">
                     {highlightSearchTerm(document.title, searchQuery)}
                   </h3>
                 </div>
@@ -189,34 +191,40 @@ export function DocumentCard({
           </div>
 
           {/* Metadata */}
-          <div className="flex items-center gap-2 text-caption">
-            <Calendar className="h-3 w-3" />
-            <span>{format(new Date(document.updated_at), 'MMM d, yyyy')}</span>
-            <span>•</span>
-            <Hash className="h-3 w-3" />
-            <span>{formatWordCount(document.word_count)} words</span>
+          <div className="flex items-center gap-3 text-body-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>{format(new Date(document.updated_at), 'MMM d, yyyy')}</span>
+            </div>
+            <span className="text-border">•</span>
+            <div className="flex items-center gap-2">
+              <Hash className="h-4 w-4" />
+              <span>{formatWordCount(document.word_count)} words</span>
+            </div>
           </div>
 
           {/* Content Preview */}
           {!compact && document.content && (
-            <p className="text-body-md text-muted-foreground leading-relaxed line-clamp-3">
-              {highlightSearchTerm(getPreviewText(document.content), searchQuery)}
-            </p>
+            <div className="bg-surface/30 rounded-lg p-4 border border-border/30">
+              <p className="text-body-md text-foreground/80 leading-relaxed line-clamp-3">
+                {highlightSearchTerm(getPreviewText(document.content, 140), searchQuery)}
+              </p>
+            </div>
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/50">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={`text-xs ${getStatusColor(document.status)}`}>
+          <div className="flex items-center justify-between pt-4 border-t border-border/30">
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className={`text-xs font-medium px-3 py-1 ${getStatusColor(document.status)}`}>
                 {document.status}
               </Badge>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs font-medium px-3 py-1 bg-secondary/50 text-secondary-foreground border-secondary/50">
                 {document.category}
               </Badge>
             </div>
             
-            <div className="flex items-center gap-1 text-caption">
-              <Clock className="h-3 w-3" />
+            <div className="flex items-center gap-2 text-body-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
               <span>{format(new Date(document.updated_at), 'HH:mm')}</span>
             </div>
           </div>
