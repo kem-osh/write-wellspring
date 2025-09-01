@@ -23,7 +23,7 @@ serve(async (req) => {
     }
 
     const systemPrompt = customPrompt || 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.';
-    const aiModel = model || 'gpt-4o-mini';
+    const aiModel = model || 'gpt-5-mini-2025-08-07';
     const maxCompletionTokens = maxTokens || 2000;
 
     console.log('Processing light edit for text length:', textToEdit.length, 'with maxCompletionTokens:', maxCompletionTokens);
@@ -46,7 +46,7 @@ serve(async (req) => {
             content: textToEdit
           }
         ],
-        max_tokens: maxCompletionTokens
+        max_completion_tokens: maxCompletionTokens
       }),
     });
 
