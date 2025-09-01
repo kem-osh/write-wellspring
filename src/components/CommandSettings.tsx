@@ -27,39 +27,84 @@ export interface CustomCommand {
 const DEFAULT_COMMANDS: CustomCommand[] = [
   {
     id: 'light-edit',
-    name: 'Light Edit',
-    prompt: 'Fix spelling, grammar, and basic formatting. Preserve the author\'s voice and style completely. Make minimal changes.',
-    icon: 'sparkles',
+    name: 'Light Polish',
+    prompt: 'You are a professional editor. Fix spelling, grammar, and basic formatting issues while preserving the author\'s voice, style, and tone exactly. Make only necessary corrections. Return only the corrected text without any explanations or additional commentary.',
+    icon: 'Sparkles',
     model: 'gpt-5-nano-2025-08-07',
-    maxTokens: 500,
+    maxTokens: 2000,
     sortOrder: 1
-  },
-  {
-    id: 'expand',
-    name: 'Expand',
-    prompt: 'Expand this content by 20-40% while maintaining the original tone. Add depth, examples, and supporting details.',
-    icon: 'expand',
-    model: 'gpt-5-mini-2025-08-07',
-    maxTokens: 1500,
-    sortOrder: 2
   },
   {
     id: 'condense',
     name: 'Condense',
-    prompt: 'Reduce this content by 60-70% while preserving all key points and the author\'s voice.',
-    icon: 'shrink',
+    prompt: 'Condense this text to its essential points while maintaining the core meaning and important details. Keep the tone and style consistent with the original.',
+    icon: 'Minimize2',
+    model: 'gpt-5-nano-2025-08-07',
+    maxTokens: 1000,
+    sortOrder: 2
+  },
+  {
+    id: 'expand',
+    name: 'Expand',
+    prompt: 'Expand this text with relevant details, examples, and explanations while maintaining the same tone and style. Add depth and context where appropriate.',
+    icon: 'Maximize2',
     model: 'gpt-5-mini-2025-08-07',
-    maxTokens: 800,
+    maxTokens: 2000,
     sortOrder: 3
   },
   {
     id: 'outline',
     name: 'Outline',
-    prompt: 'Create a structured outline with headers and bullet points based on this content.',
-    icon: 'list',
+    prompt: 'Create a structured outline with headers and bullet points based on the given content. Use proper heading hierarchy (##, ###) and bullet points (-) to organize the information clearly.',
+    icon: 'List',
     model: 'gpt-5-nano-2025-08-07',
-    maxTokens: 500,
+    maxTokens: 1000,
     sortOrder: 4
+  },
+  {
+    id: 'continue',
+    name: 'Continue',
+    prompt: 'Continue writing from where the text left off, maintaining the same style, tone, and voice. Generate natural, coherent content that flows seamlessly from the existing text.',
+    icon: 'PenTool',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 1500,
+    sortOrder: 5
+  },
+  {
+    id: 'rewrite',
+    name: 'Rewrite',
+    prompt: 'Rewrite the selected text with improved clarity, flow, and impact while preserving the original meaning. Provide multiple alternative versions with different approaches.',
+    icon: 'RefreshCw',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 2000,
+    sortOrder: 6
+  },
+  {
+    id: 'fact-check',
+    name: 'Fact Check',
+    prompt: 'Analyze the text for factual claims and check consistency with available information. Identify potential inaccuracies or areas that need verification.',
+    icon: 'CheckCircle',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 1500,
+    sortOrder: 7
+  },
+  {
+    id: 'synthesize',
+    name: 'Synthesize',
+    prompt: 'Combine multiple documents into a coherent, unified piece. Merge key ideas, eliminate redundancy, and create a flowing narrative that incorporates the best elements from each source.',
+    icon: 'Combine',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 3000,
+    sortOrder: 8
+  },
+  {
+    id: 'compare',
+    name: 'Compare',
+    prompt: 'Analyze and compare multiple documents, highlighting similarities, differences, and key insights. Provide a structured analysis of the relationships between the texts.',
+    icon: 'GitCompare',
+    model: 'gpt-5-mini-2025-08-07',
+    maxTokens: 2500,
+    sortOrder: 9
   }
 ];
 

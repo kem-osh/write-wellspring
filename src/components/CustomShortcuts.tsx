@@ -266,7 +266,14 @@ export function CustomShortcuts({
   const handleCommandClick = (command: EnhancedCommand) => {
     selectionChanged(); // Haptic feedback
     impactLight(); // Secondary haptic
-    onShortcut(getActionType(command.id), command.prompt, command.model, command.maxTokens);
+    
+    // Map command IDs to action types for proper handling in Dashboard
+    let actionType = command.id;
+    if (['continue', 'rewrite', 'fact-check', 'synthesize', 'compare'].includes(command.id)) {
+      actionType = command.id;
+    }
+    
+    onShortcut(actionType as any, command.prompt, command.model, command.maxTokens);
   };
 
   const filteredCommands = commands.filter(cmd => cmd.category === activeCategory);

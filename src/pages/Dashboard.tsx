@@ -347,13 +347,214 @@ export default function Dashboard() {
 
   // Enhanced AI command execution with proper error handling and text replacement
   const executeAICommand = useCallback(async (
-    commandType: 'light-edit' | 'heavy-polish' | 'expand' | 'condense' | 'simplify' | 'formalize' | 'casualize' | 
-                 'outline' | 'summarize' | 'bullet-points' | 'paragraph-breaks' | 'add-headers' |
-                 'analyze' | 'match-voice' | 'change-tone' | 'strengthen-args' | 'add-examples' | 'fact-check',
+    commandType: string, 
+    customPrompt?: string, 
+    model?: string, 
+    maxTokens?: number
+  ) => {
+    if (!user || isProcessing) return;
+
+    const currentDocument = documents.find(doc => doc.id === activeDocument);
+    if (!currentDocument) {
+      toast({ title: "Error", description: "No active document", variant: "destructive" });
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      let result;
+      const currentSelectedText = getSelectedText();
+      
+      if (commandType === 'light-edit') {
+        const { data, error } = await supabase.functions.invoke('ai-light-edit', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt,
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 2000,
+            userId: user.id
+          }
+        });
+
+        if (error) throw error;
+        result = data?.editedText || data?.result;
+      } else if (commandType === 'condense') {
+        const { data, error } = await supabase.functions.invoke('ai-condense-content', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt,
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.condensedText || data?.result;
+      } else if (commandType === 'expand') {
+        const { data, error } = await supabase.functions.invoke('ai-expand-content', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt,
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 2000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.expandedText || data?.result;
+      } else if (commandType === 'outline') {
+        const { data, error } = await supabase.functions.invoke('ai-outline', {
+          body: {
+            content: currentDocument.content,
+            selectedText: currentSelectedText || undefined,
+            customPrompt: customPrompt,
+            model: model || 'gpt-5-nano-2025-08-07',
+            maxTokens: maxTokens || 1000,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        result = data?.outlineText || data?.result;
+      } else if (commandType === 'continue') {
+        await handleAdvancedCommand('continue', customPrompt, model, maxTokens);
+        return;
+      } else if (commandType === 'rewrite') {
+        await handleAdvancedCommand('rewrite', customPrompt, model, maxTokens);
+        return;
+      } else if (commandType === 'fact-check') {
+        await handleAdvancedCommand('fact-check', customPrompt, model, maxTokens);
+        return;
+      }
+      
+      if (result && currentSelectedText) {
+        // Replace selected text
+        replaceSelectedText(result);
+        toast({ title: "Success", description: "Text updated successfully" });
+      } else if (result) {
+        // Replace entire content
+        await updateDocumentContent(activeDocument, result);
+        toast({ title: "Success", description: "Document updated successfully" });
+      } else {
+        throw new Error('No result received from AI');
+      }
+      
+    } catch (error: any) {
+      console.error('AI command error:', error);
+      toast({ 
+        title: "AI Command Failed", 
+        description: error.message || "The AI command failed to complete", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [user, isProcessing, documents, activeDocument, getSelectedText, replaceSelectedText, toast, updateDocumentContent]);
+
+  const handleAdvancedCommand = async (
+    commandType: 'continue' | 'rewrite' | 'fact-check',
     customPrompt?: string,
     model?: string,
     maxTokens?: number
   ) => {
+    if (!user || isProcessing) return;
+
+    const currentDocument = documents.find(doc => doc.id === activeDocument);
+    if (!currentDocument) return;
+
+    setIsProcessing(true);
+    
+    try {
+      const currentSelectedText = getSelectedText();
+      
+      if (commandType === 'continue') {
+        const context = getCursorContext() || currentDocument.content?.slice(-500) || '';
+        if (!context.trim()) {
+          toast({ title: "Error", description: "No context found for continuation", variant: "destructive" });
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('ai-continue', {
+          body: {
+            context,
+            userId: user.id,
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1500
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data?.continuation || data?.result) {
+          insertTextAtCursor(data.continuation || data.result);
+          toast({ title: "Success", description: "Text continued successfully" });
+        }
+      } else if (commandType === 'rewrite') {
+        if (!currentSelectedText.trim()) {
+          toast({ title: "Error", description: "Please select text to rewrite", variant: "destructive" });
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+          body: {
+            text: currentSelectedText,
+            style: 'auto',
+            userId: user.id,
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 2000
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data?.alternatives) {
+          setRewriteResults(data);
+          setShowRewriteDialog(true);
+        } else if (data?.result) {
+          replaceSelectedText(data.result);
+          toast({ title: "Success", description: "Text rewritten successfully" });
+        }
+      } else if (commandType === 'fact-check') {
+        const text = currentSelectedText || currentDocument.content || '';
+        if (!text.trim()) {
+          toast({ title: "Error", description: "No text found to fact-check", variant: "destructive" });
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('ai-fact-check', {
+          body: {
+            text,
+            userId: user.id,
+            model: model || 'gpt-5-mini-2025-08-07',
+            maxTokens: maxTokens || 1500
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data?.analysis || data?.result) {
+          setFactCheckResults(data);
+          setShowFactCheckDialog(true);
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('Advanced command error:', error);
+      toast({ 
+        title: "Command Failed", 
+        description: error.message || "The command failed to complete", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
     if (!currentDocument) {
       toast({
         title: "No document selected",
@@ -521,7 +722,7 @@ export default function Dashboard() {
     } finally {
       setAiLoading(false);
     }
-  }, [currentDocument, documentContent, getSelectedTextFromEditor, replaceSelectedText, toast]);
+  }, [currentDocument, documentContent, getSelectedTextFromEditor, replaceSelectedText, toast, user, isProcessing]);
 
   // Update handleCustomShortcut to use the new executeAICommand
   const handleCustomShortcutUpdated = useCallback(async (
