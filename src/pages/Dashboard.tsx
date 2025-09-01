@@ -13,7 +13,7 @@ import { useDevice } from "@/hooks/useDevice";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { MobileEditor } from "@/components/MobileEditor";
 import { MobileDocumentLibrary } from "@/components/MobileDocumentLibrary";
-import { MobileAICommands } from "@/components/MobileAICommands";
+// Removed MobileAICommands - using AISmartCarousel instead
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { UserMenu } from "@/components/UserMenu";
 import { AISmartCarousel } from "@/components/AISmartCarousel";
@@ -121,7 +121,7 @@ export default function Dashboard() {
   
   // Mobile state
   const [mobileDocumentLibraryOpen, setMobileDocumentLibraryOpen] = useState(false);
-  const [mobileAICommandsOpen, setMobileAICommandsOpen] = useState(false);
+  // Removed mobileAICommandsOpen - now using AISmartCarousel instead
   
   // Import haptics hook
   const { impactLight, notificationSuccess, notificationError } = useHaptics();
@@ -1249,14 +1249,8 @@ export default function Dashboard() {
               }}
             />
 
-            {/* Mobile AI Commands Overlay */}
-            <MobileAICommands
-              isOpen={mobileAICommandsOpen}
-              onClose={() => setMobileAICommandsOpen(false)}
-              onCommand={handleCustomShortcutUpdated}
-              aiLoading={aiLoading}
-              selectedText={selectedText}
-            />
+            {/* Mobile AI Commands Overlay - Remove since AI Smart Carousel handles this */}
+            {/* Legacy MobileAICommands component removed in favor of AISmartCarousel */}
 
             {/* Contextual AI Toolbar */}
             <ContextualAIToolbar
@@ -1609,24 +1603,15 @@ export default function Dashboard() {
                   )}
                 </div>
                 
-                {/* Center Section - Command Shortcuts */}
+                {/* Center Section - AI Smart Carousel */}
                 <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
-                   <CustomShortcuts 
-                     onShortcut={handleCustomShortcutUpdated} 
-                     isLoading={aiLoading}
+                   <AISmartCarousel
+                     onCommand={executeAICommand}
+                     aiLoading={aiLoading}
                      selectedText={selectedText}
-                     onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
+                     onOpenSettings={() => setShowCommandSettings(true)}
+                     className="flex-1"
                    />
-                  <div className="w-px h-6 bg-border mx-2" />
-                  <AdvancedAICommands
-                    selectedDocuments={selectedDocuments}
-                    onDocumentCreated={handleDocumentCreated}
-                    onTextInsert={handleTextInsert}
-                    onTextReplace={handleTextReplace}
-                    getCurrentText={getCurrentText}
-                    getSelectedText={getSelectedText}
-                    getCursorContext={getCursorContext}
-                  />
                 </div>
                 
                 {/* Right Section - Word Count & Save */}
