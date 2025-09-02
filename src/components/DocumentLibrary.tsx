@@ -116,7 +116,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
         return (
           doc.title.toLowerCase().includes(query) ||
           doc.content.toLowerCase().includes(query) ||
-          doc.tags.some(tag => tag.toLowerCase().includes(query))
+          (doc.category && doc.category.toLowerCase().includes(query))
         );
       }
       return true;
@@ -235,21 +235,26 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
                 <div className="px-4 mb-3">
                   <BulkDocumentActions
                     selectedDocumentIds={selectedDocuments}
-                    onClearSelection={clearSelection}
+                    documents={filteredDocuments}
+                    onClose={clearSelection}
+                    onAction={(action, result) => {
+                      // Handle bulk action results
+                      clearSelection();
+                    }}
                   />
                 </div>
               )}
               
               <div className="px-4 space-y-3 overflow-y-auto h-full pb-20">
                 {filteredDocuments.map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    document={doc}
-                    isSelected={isDocumentSelected(doc.id)}
-                    onToggleSelect={() => toggleDocumentSelection(doc.id)}
-                    viewMode="list"
-                    className="w-full"
-                  />
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      isSelected={isDocumentSelected(doc.id)}
+                      onSelectionToggle={toggleDocumentSelection}
+                      className="w-full"
+                      compact={true}
+                    />
                 ))}
               </div>
             </TabsContent>
@@ -278,9 +283,14 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
           parentFolderId={selectedFolder}
         />
         <BulkUploader
-          isOpen={showUploader}
+          onUploadComplete={(completed, failed) => {
+            // Handle upload completion
+            setShowUploader(false);
+          }}
+          onDocumentAdded={(doc) => {
+            // Handle new document
+          }}
           onClose={() => setShowUploader(false)}
-          folderId={selectedFolder}
         />
       </div>
     );
@@ -372,9 +382,15 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
           {showFilters && (
             <div className="mt-4">
             <DocumentFilters
-              currentFilter={statusFilter}
-              onFilterChange={setStatusFilter}
-              filterOptions={['all', 'draft', 'polished', 'final']}
+              onFiltersChange={(filters) => {
+                setStatusFilter(filters.status.join(',') || 'all');
+                setSortBy(filters.sortBy === 'recent' ? 'updated_at' : 'title');
+              }}
+              initialFilters={{
+                category: 'all',
+                status: statusFilter === 'all' ? [] : [statusFilter],
+                sortBy: sortBy === 'updated_at' ? 'recent' : 'az'
+              }}
             />
             </div>
           )}
@@ -385,7 +401,11 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
           <div className="p-4 bg-muted/50 border-b">
             <BulkDocumentActions
               selectedDocumentIds={selectedDocuments}
-              onClearSelection={clearSelection}
+              documents={filteredDocuments}
+              onClose={clearSelection}
+              onAction={(action, result) => {
+                clearSelection();
+              }}
             />
           </div>
         )}
@@ -409,8 +429,8 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
                   key={doc.id}
                   document={doc}
                   isSelected={isDocumentSelected(doc.id)}
-                  onToggleSelect={() => toggleDocumentSelection(doc.id)}
-                  viewMode={viewMode}
+                  onSelectionToggle={toggleDocumentSelection}
+                  compact={viewMode === 'list'}
                 />
               ))}
             </div>
@@ -430,9 +450,13 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
         parentFolderId={selectedFolder}
       />
       <BulkUploader
-        isOpen={showUploader}
+        onUploadComplete={(completed, failed) => {
+          setShowUploader(false);
+        }}
+        onDocumentAdded={(doc) => {
+          // Handle new document
+        }}
         onClose={() => setShowUploader(false)}
-        folderId={selectedFolder}
       />
     </div>
   );
