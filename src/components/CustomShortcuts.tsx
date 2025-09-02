@@ -179,7 +179,7 @@ export function CustomShortcuts({
 
   // Desktop: Horizontal scrolling with overflow
   return (
-    <div className="relative flex-1 max-w-lg">
+    <div className="relative flex-1">
       <div 
         className="flex items-center gap-2 overflow-x-auto scroll-area-horizontal py-1 px-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
