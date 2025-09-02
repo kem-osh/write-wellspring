@@ -116,14 +116,14 @@ export function DocumentCard({
 
   return (
     <Card 
-      variant={compact ? "mobile" : "elevated"}
-      className={`group transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer ${
-        isSelected ? 'ring-2 ring-primary/50 bg-primary/5 shadow-md' : 'hover:shadow-md'
+      variant={compact ? "mobile" : "compact"}
+      className={`group transition-all duration-200 hover:shadow-sm cursor-pointer ${
+        isSelected ? 'ring-1 ring-primary/40 bg-primary/5' : 'hover:shadow-sm'
       }`}
       onClick={handleCardClick}
     >
-      <CardContent padding={compact ? "xs" : "sm"}>
-        <div className={`space-y-${compact ? '3' : '4'}`}>
+      <CardContent padding="xs">
+        <div className="space-y-2">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 min-w-0">
