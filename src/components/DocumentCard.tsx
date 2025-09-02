@@ -215,7 +215,7 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-label={ariaLabel}
       aria-disabled={disabled}
     >
-      <CardContent className="p-3 h-24 flex items-center">
+      <CardContent className="p-3 h-32 flex flex-col justify-center">
         <div className="flex items-center gap-2 w-full">
           {/* Selection Checkbox */}
           {(showCheckbox || isSelected) && (
