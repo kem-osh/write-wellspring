@@ -11,11 +11,14 @@ import { DocumentCard } from './DocumentCard';
 import { FolderTree } from './FolderTree';
 import { DocumentFilters } from './DocumentFilters';
 import { BulkDocumentActions } from './BulkDocumentActions';
+import { MobileBulkActions } from './MobileBulkActions';
 import { CreateDocumentModal } from './CreateDocumentModal';
 import { CreateFolderModal } from './CreateFolderModal';
 import { BulkUploader } from '@/features/corpus/components/BulkUploader';
 import { supabase } from '@/integrations/supabase/client';
 import { useDocumentSelection } from '@/hooks/useDocumentSelection';
+import { useRealtimeDocuments } from '@/hooks/useRealtimeDocuments';
+import { useErrorBoundary } from '@/hooks/useErrorBoundary';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -149,6 +152,9 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
+  // Error handling and connectivity
+  const { executeWithRetry, isOnline } = useErrorBoundary();
+  
   // State management
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -192,51 +198,76 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
   } = useQuery({
     queryKey: ['documents', selectedFolder, debouncedSearch, filters],
     queryFn: async () => {
-      let query = supabase
-        .from('documents')
-        .select(`
-          *,
-          folder:folders(name, color)
-        `);
+      return await executeWithRetry({
+        execute: async () => {
+          let query = supabase
+            .from('documents')
+            .select(`
+              *,
+              folder:folders(name, color)
+            `);
 
-      // Folder filter
-      if (selectedFolder) {
-        query = query.eq('folder_id', selectedFolder);
-      }
+          // Folder filter
+          if (selectedFolder) {
+            query = query.eq('folder_id', selectedFolder);
+          }
 
-      // Search filter
-      if (debouncedSearch) {
-        query = query.or(`title.ilike.%${debouncedSearch}%, content.ilike.%${debouncedSearch}%`);
-      }
+          // Search filter
+          if (debouncedSearch) {
+            query = query.or(`title.ilike.%${debouncedSearch}%, content.ilike.%${debouncedSearch}%`);
+          }
 
-      // Status filter
-      if (filters.status.length > 0) {
-        query = query.in('status', filters.status);
-      }
+          // Status filter
+          if (filters.status.length > 0) {
+            query = query.in('status', filters.status);
+          }
 
-      // Category filter
-      if (filters.category !== 'all') {
-        query = query.eq('category', filters.category);
-      }
+          // Category filter
+          if (filters.category !== 'all') {
+            query = query.eq('category', filters.category);
+          }
 
-      // Sorting
-      const sortMap: Record<string, [string, boolean]> = {
-        'recent': ['updated_at', false],
-        'oldest': ['created_at', true],
-        'az': ['title', true],
-        'za': ['title', false],
-        'wordcount': ['word_count', false]
-      };
-      const [sortField, ascending] = sortMap[filters.sortBy];
-      query = query.order(sortField, { ascending });
+          // Sorting
+          const sortMap: Record<string, [string, boolean]> = {
+            'recent': ['updated_at', false],
+            'oldest': ['created_at', true],
+            'az': ['title', true],
+            'za': ['title', false],
+            'wordcount': ['word_count', false]
+          };
+          const [sortField, ascending] = sortMap[filters.sortBy];
+          query = query.order(sortField, { ascending });
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as Document[];
+          const { data, error } = await query;
+          if (error) throw error;
+          return data as Document[];
+        },
+        retryConfig: { maxAttempts: 3, backoffMs: 1000 }
+      }) || [];
     },
-    retry: 2,
+    retry: false, // Handle retries via executeWithRetry
     refetchOnWindowFocus: false,
   });
+
+  // Enable real-time document synchronization
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { connected } = useRealtimeDocuments(currentUser?.id);
+  
+  // Get current user for real-time sync
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    getCurrentUser();
+  }, []);
+  
+  // Invalidate queries when real-time updates occur
+  useEffect(() => {
+    if (connected) {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    }
+  }, [connected, queryClient]);
 
   // Fetch folders
   const { 
@@ -522,8 +553,19 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
           </Tabs>
         </div>
 
-        {/* Bulk Actions Modal */}
-        {selectedCount > 0 && (
+        {/* Mobile Bulk Actions */}
+        <MobileBulkActions
+          selectedCount={selectedCount}
+          totalWords={documentStats?.totalWords || 0}
+          onAction={(actionId) => {
+            clearSelection();
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
+          }}
+          onClear={clearSelection}
+        />
+
+        {/* Desktop Bulk Actions Modal */}
+        {selectedCount > 0 && !isMobile && (
           <BulkDocumentActions
             selectedDocumentIds={selectedDocuments}
             documents={documents}
@@ -730,7 +772,18 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
         </div>
       </div>
 
-      {/* Bulk Actions Modal */}
+      {/* Mobile Bulk Actions */}
+      <MobileBulkActions
+        selectedCount={selectedCount}
+        totalWords={documentStats?.totalWords || 0}
+        onAction={(actionId) => {
+          clearSelection();
+          queryClient.invalidateQueries({ queryKey: ['documents'] });
+        }}
+        onClear={clearSelection}
+      />
+
+      {/* Desktop Bulk Actions Modal */}
       {selectedCount > 0 && (
         <BulkDocumentActions
           selectedDocumentIds={selectedDocuments}

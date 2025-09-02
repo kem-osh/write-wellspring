@@ -203,9 +203,11 @@ export type Database = {
           ai_model: string | null
           category: string | null
           created_at: string
+          description: string | null
           function_name: string | null
           icon: string | null
           id: string
+          last_used_at: string | null
           max_tokens: number | null
           name: string
           prompt: string
@@ -213,15 +215,18 @@ export type Database = {
           system_prompt: string
           temperature: number | null
           updated_at: string
+          usage_count: number | null
           user_id: string
         }
         Insert: {
           ai_model?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
           function_name?: string | null
           icon?: string | null
           id?: string
+          last_used_at?: string | null
           max_tokens?: number | null
           name: string
           prompt: string
@@ -229,15 +234,18 @@ export type Database = {
           system_prompt: string
           temperature?: number | null
           updated_at?: string
+          usage_count?: number | null
           user_id: string
         }
         Update: {
           ai_model?: string | null
           category?: string | null
           created_at?: string
+          description?: string | null
           function_name?: string | null
           icon?: string | null
           id?: string
+          last_used_at?: string | null
           max_tokens?: number | null
           name?: string
           prompt?: string
@@ -245,6 +253,7 @@ export type Database = {
           system_prompt?: string
           temperature?: number | null
           updated_at?: string
+          usage_count?: number | null
           user_id?: string
         }
         Relationships: []
