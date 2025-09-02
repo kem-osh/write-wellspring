@@ -1122,6 +1122,17 @@ export default function Dashboard() {
               </div>
               
               <div className="flex items-center gap-2">
+                {/* AI Commands - Continue, Rewrite, Fact Check */}
+                <AdvancedAICommands
+                  selectedDocuments={selectedDocuments}
+                  onDocumentCreated={handleDocumentCreated}
+                  onTextInsert={handleTextInsert}
+                  onTextReplace={handleTextReplace}
+                  getCurrentText={getCurrentText}
+                  getSelectedText={getSelectedText}
+                  getCursorContext={getCursorContext}
+                />
+                <div className="w-px h-6 bg-border mx-2" />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1328,7 +1339,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 
-                {/* Center Section - Command Shortcuts */}
+                {/* Center Section - Custom Shortcuts Only */}
                 <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
                    <CustomShortcuts 
                      onShortcut={handleCustomShortcut} 
@@ -1337,16 +1348,6 @@ export default function Dashboard() {
                      onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
                      onOpenMore={() => setShowMoreCommands(true)}
                    />
-                  <div className="w-px h-6 bg-border mx-2" />
-                  <AdvancedAICommands
-                    selectedDocuments={selectedDocuments}
-                    onDocumentCreated={handleDocumentCreated}
-                    onTextInsert={handleTextInsert}
-                    onTextReplace={handleTextReplace}
-                    getCurrentText={getCurrentText}
-                    getSelectedText={getSelectedText}
-                    getCursorContext={getCursorContext}
-                  />
                 </div>
                 
                 {/* Right Section - Word Count & Save */}
