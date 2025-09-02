@@ -33,7 +33,7 @@ async function generateTitle(content: string, openaiApiKey: string): Promise<str
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system', 
@@ -44,7 +44,7 @@ async function generateTitle(content: string, openaiApiKey: string): Promise<str
             content: `Generate a title for this content:\n\n${content.substring(0, 1000)}`
           }
         ],
-        max_completion_tokens: 50
+        max_tokens: 50
       }),
     });
 
