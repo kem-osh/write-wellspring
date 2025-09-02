@@ -254,7 +254,7 @@ export function AIChatSidebar({
       </div>
 
       {/* Enhanced Input Area */}
-      <div className="flex-shrink-0 px-[40px] py-5 border-t border-sidebar-border bg-sidebar shadow-lg">
+      <div className="flex-shrink-0 pl-0 pr-[40px] py-5 border-t border-sidebar-border bg-sidebar shadow-lg">
         <div className="flex gap-3 items-end">
           <div className="flex-1">
             <Textarea value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask about your documents, get writing help..." className="min-h-[56px] max-h-[120px] resize-none bg-card/50 border-border focus:bg-card focus:border-sidebar-primary/40 rounded-xl shadow-sm transition-all duration-200" disabled={isLoading} />
