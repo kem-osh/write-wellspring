@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 
 // Type declarations for Speech Recognition API
@@ -38,17 +40,21 @@ declare const SpeechRecognition: {
 };
 
 interface VoiceRecorderProps {
-  onTranscription: (text: string) => void;
+  onTranscription?: (text: string) => void;
+  onDocumentCreated?: (documentId: string) => void;
   disabled?: boolean;
 }
 
 type RecorderState = 'ready' | 'recording' | 'processing' | 'error' | 'unsupported';
 
-export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps) {
+export function VoiceRecorder({ onTranscription, onDocumentCreated, disabled }: VoiceRecorderProps) {
   const [state, setState] = useState<RecorderState>('ready');
   const [transcript, setTranscript] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const interimTranscriptRef = useRef('');
 
   // Check for browser support
@@ -102,13 +108,16 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
       if (finalText.trim()) {
         setState('processing');
         
-        onTranscription(finalText);
-        
-        const wordCount = finalText.trim().split(/\s+/).filter(word => word.length > 0).length;
-        toast({
-          title: "Voice transcription complete",
-          description: `Captured ${wordCount} words successfully`,
-        });
+        try {
+          // Process the audio with our edge function
+          await processVoiceRecording(finalText);
+        } catch (error) {
+          console.error('Voice processing error:', error);
+          // Fallback to old behavior if processing fails
+          if (onTranscription) {
+            onTranscription(finalText);
+          }
+        }
       }
       
       setState('ready');
@@ -147,15 +156,51 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
     return recognition;
   };
 
-  const startRecording = () => {
+  const startRecording = async () => {
     if (state !== 'ready' || disabled) return;
 
-    const recognition = initializeRecognition();
-    if (!recognition) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to use voice recording.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    triggerHapticFeedback();
-    recognitionRef.current = recognition;
-    recognition.start();
+    try {
+      // Start both speech recognition and audio recording
+      const recognition = initializeRecognition();
+      if (!recognition) return;
+
+      // Request microphone access and start recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+
+      triggerHapticFeedback();
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording failed",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive",
+      });
+      setState('error');
+      setTimeout(() => setState('ready'), 2000);
+    }
   };
 
   const stopRecording = () => {
@@ -164,6 +209,10 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
       recognitionRef.current.stop();
       recognitionRef.current = null;
     }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
   };
 
   const handleClick = () => {
@@ -171,6 +220,74 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
       stopRecording();
     } else if (state === 'ready') {
       startRecording();
+    }
+  };
+
+  // Process voice recording with Whisper
+  const processVoiceRecording = async (fallbackText: string) => {
+    if (!user || !mediaRecorderRef.current) {
+      if (onTranscription) onTranscription(fallbackText);
+      return;
+    }
+
+    try {
+      // Wait for audio recording to finish
+      const audioBlob = await new Promise<Blob>((resolve) => {
+        if (mediaRecorderRef.current?.state === 'recording') {
+          mediaRecorderRef.current.onstop = () => {
+            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            resolve(blob);
+          };
+        } else {
+          // Already stopped
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          resolve(blob);
+        }
+      });
+
+      // Convert to base64
+      const reader = new FileReader();
+      const base64Audio = await new Promise<string>((resolve) => {
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]); // Remove data:audio/webm;base64, prefix
+        };
+        reader.readAsDataURL(audioBlob);
+      });
+
+      // Send to voice transcription function
+      const { data, error } = await supabase.functions.invoke('voice-transcribe', {
+        body: {
+          audio: base64Audio,
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.document) {
+        toast({
+          title: "Voice note saved",
+          description: `Created "${data.document.title}" with ${data.wordCount} words`,
+        });
+        
+        if (onDocumentCreated) {
+          onDocumentCreated(data.document.id);
+        }
+      }
+
+    } catch (error) {
+      console.error('Voice processing failed:', error);
+      toast({
+        title: "Voice processing failed",
+        description: "Using fallback transcription instead",
+        variant: "destructive",
+      });
+      
+      // Fallback to speech recognition text
+      if (onTranscription) {
+        onTranscription(fallbackText);
+      }
     }
   };
 
