@@ -204,31 +204,31 @@ export function AIChatSidebar({ isOpen, onClose, onDocumentSelect }: AIChatSideb
                   I can help you write, edit, find information in your documents, or answer questions about your content.
                 </p>
                 
-                {/* Compact Suggestion Cards */}
-                <div className="flex flex-col gap-2 w-full max-w-xs">
+                {/* Compact Centered Suggestion Cards */}
+                <div className="flex flex-col gap-2 items-center">
                   <button
                     onClick={() => sendMessage("Summarize my recent blog posts")}
-                    className="group p-2 text-xs bg-card hover:bg-sidebar-accent border border-border rounded-lg transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                    className="group px-3 py-2 text-xs bg-card hover:bg-sidebar-accent border border-border rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-sm">📝</span>
                       <span className="font-medium group-hover:text-sidebar-primary transition-colors">Summarize recent posts</span>
                     </div>
                   </button>
                   <button
                     onClick={() => sendMessage("Help me improve this draft")}
-                    className="group p-2 text-xs bg-card hover:bg-sidebar-accent border border-border rounded-lg transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                    className="group px-3 py-2 text-xs bg-card hover:bg-sidebar-accent border border-border rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-sm">✨</span>
                       <span className="font-medium group-hover:text-sidebar-primary transition-colors">Improve my draft</span>
                     </div>
                   </button>
                   <button
                     onClick={() => sendMessage("What topics have I written about?")}
-                    className="group p-2 text-xs bg-card hover:bg-sidebar-accent border border-border rounded-lg transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                    className="group px-3 py-2 text-xs bg-card hover:bg-sidebar-accent border border-border rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-sm">🔍</span>
                       <span className="font-medium group-hover:text-sidebar-primary transition-colors">Analyze my topics</span>
                     </div>
