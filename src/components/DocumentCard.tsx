@@ -6,10 +6,16 @@ import { Card, CardContent } from '@/components/ui/card';
 interface Document {
   id: string;
   title: string;
+  content: string;
   description?: string;
+  category: string;
+  status: string;
+  word_count: number;
   type?: string;
   size?: number;
   lastModified?: Date;
+  created_at: string;
+  updated_at: string;
   isLoading?: boolean;
   thumbnail?: string;
 }
@@ -22,19 +28,25 @@ interface DocumentCardProps {
   className?: string;
   disabled?: boolean;
   showMetadata?: boolean;
+  showCheckbox?: boolean;
+  onSelectionToggle?: (docId: string) => void;
+  searchQuery?: string;
+  onEdit?: (doc: any) => void;
+  onDuplicate?: (doc: Document) => Promise<void>;
+  onDelete?: (docId: any) => void;
 }
 
 // Loading skeleton component
 const DocumentCardSkeleton: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
-  <Card variant={compact ? "mobile" : "elevated"} className="animate-pulse">
-    <CardContent padding={compact ? "xs" : "sm"}>
-      <div className={`space-y-${compact ? '2' : '4'}`}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-8 h-8 bg-gray-200 rounded"></div>
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+  <Card className="animate-pulse">
+    <CardContent className={compact ? "p-3" : "p-4"}>
+      <div className={`space-y-${compact ? '2' : '3'}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <div className="w-6 h-6 bg-muted rounded"></div>
+            <div className="flex-1 space-y-1">
+              <div className="h-3 bg-muted rounded w-3/4"></div>
+              <div className="h-2 bg-muted rounded w-1/2"></div>
             </div>
           </div>
         </div>
@@ -98,8 +110,8 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     className
   );
 
-  // Memoized variant
-  const cardVariant = useMemo(() => compact ? "mobile" : "elevated", [compact]);
+  // Memoized classes for content padding
+  const contentClasses = useMemo(() => compact ? "p-2" : "p-3", [compact]);
 
   // Memoized aria label
   const ariaLabel = useMemo(() => {
@@ -146,7 +158,6 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
   return (
     <Card 
-      variant={cardVariant}
       className={cardClasses}
       onClick={handleCardClick}
       onKeyDown={handleKeyDown}
@@ -156,22 +167,22 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-label={ariaLabel}
       aria-disabled={disabled}
     >
-      <CardContent padding={compact ? "xs" : "sm"}>
-        <div className={`space-y-${compact ? '2' : '4'}`}>
+      <CardContent className={contentClasses}>
+        <div className={`space-y-${compact ? '1' : '2'}`}>
           {/* Header */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               {/* Document Icon */}
               <div className="flex-shrink-0">
                 {document.thumbnail ? (
                   <img 
                     src={document.thumbnail} 
                     alt=""
-                    className="w-8 h-8 object-cover rounded"
+                    className={`object-cover rounded ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-8 h-8 flex items-center justify-center text-lg">
+                  <div className={`flex items-center justify-center ${compact ? 'w-6 h-6 text-sm' : 'w-8 h-8 text-lg'}`}>
                     {getDocumentIcon(document.type)}
                   </div>
                 )}
@@ -179,14 +190,14 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
               {/* Document Info */}
               <div className="flex-1 min-w-0">
-                <h3 className={`font-medium text-gray-900 truncate ${
+                <h3 className={`font-medium text-foreground truncate ${
                   compact ? 'text-sm' : 'text-base'
                 }`}>
                   {document.title || 'Untitled Document'}
                 </h3>
                 
                 {document.description && !compact && (
-                  <p className="text-sm text-gray-600 truncate mt-1">
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
                     {document.description}
                   </p>
                 )}
@@ -195,9 +206,9 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
             {/* Selection Indicator */}
             {isSelected && (
-              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+              <div className={`flex-shrink-0 rounded-full bg-primary flex items-center justify-center ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}>
                 <svg 
-                  className="w-3 h-3 text-white" 
+                  className={`text-primary-foreground ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`}
                   fill="currentColor" 
                   viewBox="0 0 20 20"
                   aria-hidden="true"
@@ -214,7 +225,7 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
           {/* Metadata */}
           {showMetadata && !compact && (
-            <div className="flex items-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               {document.type && (
                 <span className="uppercase font-medium">
                   {document.type}
@@ -237,9 +248,9 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
           {/* Compact metadata */}
           {showMetadata && compact && (document.type || document.size) && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {document.type && (
-                <span className="uppercase font-medium">
+                <span className="uppercase font-medium text-xs">
                   {document.type}
                 </span>
               )}
