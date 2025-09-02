@@ -15,6 +15,7 @@ import { MobileBulkActions } from './MobileBulkActions';
 import { CreateDocumentModal } from './CreateDocumentModal';
 import { CreateFolderModal } from './CreateFolderModal';
 import { BulkUploader } from '@/features/corpus/components/BulkUploader';
+import { WelcomeScreen } from './WelcomeScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { useDocumentSelection } from '@/hooks/useDocumentSelection';
 import { useRealtimeDocuments } from '@/hooks/useRealtimeDocuments';
@@ -374,6 +375,23 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
   const selectedFolderName = useMemo(() => {
     return selectedFolder ? folders.find(f => f.id === selectedFolder)?.name : null;
   }, [selectedFolder, folders]);
+
+  // Check if user has no documents for welcome screen
+  const showWelcomeScreen = !documentsLoading && documents.length === 0 && !debouncedSearch;
+
+  // Welcome screen for new users
+  if (showWelcomeScreen) {
+    return (
+      <WelcomeScreen 
+        onCreateDocument={() => setShowCreateModal(true)}
+        onUploadFiles={() => setShowUploader(true)}
+        onBrowseTemplates={() => {
+          // Future: Navigate to templates section
+          setShowCreateModal(true);
+        }}
+      />
+    );
+  }
 
   // Error state
   if (documentsError) {
