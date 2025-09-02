@@ -255,12 +255,12 @@ export function AIChatSidebar({
 
       {/* Enhanced Input Area */}
       <div className="flex-shrink-0 pl-0 pr-[40px] py-5 border-t border-sidebar-border bg-sidebar shadow-lg">
-        <div className="flex gap-3 items-end">
-          <div className="flex-1">
+        <div className="flex gap-2 items-end max-w-full">
+          <div className="flex-1 min-w-0">
             <Textarea value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask about your documents, get writing help..." className="min-h-[56px] max-h-[120px] resize-none bg-card/50 border-border focus:bg-card focus:border-sidebar-primary/40 rounded-xl shadow-sm transition-all duration-200" disabled={isLoading} />
           </div>
-          <Button onClick={() => sendMessage()} disabled={!inputMessage.trim() || isLoading} size="icon" className="h-[56px] w-[56px] flex-shrink-0 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-sidebar-primary hover:bg-sidebar-primary/90">
-            <Send className="w-5 h-5" />
+          <Button onClick={() => sendMessage()} disabled={!inputMessage.trim() || isLoading} size="icon" className="h-[56px] w-[48px] flex-shrink-0 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-sidebar-primary hover:bg-sidebar-primary/90">
+            <Send className="w-4 h-4" />
           </Button>
         </div>
         <div className="mt-3 text-center">
