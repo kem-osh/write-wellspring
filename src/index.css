@@ -621,9 +621,10 @@ html, body {
   }
 }
 
-  .animate-slideOutLeft {
-    animation: slideOutLeft 0.3s ease-out;
-  }
+/* Additional utilities outside of component layer */
+.animate-slideOutLeft {
+  animation: slideOutLeft 0.3s ease-out;
+}
 
   /* Mobile Optimizations */
   .mobile-layout button {
