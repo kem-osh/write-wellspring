@@ -164,7 +164,7 @@ export function CustomShortcuts({
         {primaryCommands.map(command => <TooltipProvider key={command.id}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" onClick={() => handleCommandClick(command)} disabled={isLoading} className="flex items-center gap-1.5 whitespace-nowrap min-w-fit h-11 bg-command-button text-command-button-foreground hover:bg-command-button/90 border-0 transition-all duration-200 text-gray-950 text-sm px-[10px] py-[10px] mx-[5px] my-[5px] bg-blue-300 hover:bg-blue-200 rounded-md font-medium">
+                <Button size="sm" onClick={() => handleCommandClick(command)} disabled={isLoading} className="flex items-center justify-center gap-1.5 whitespace-nowrap w-32 h-11 bg-command-button text-command-button-foreground hover:bg-command-button/90 border-0 transition-all duration-200 text-gray-950 text-sm px-[10px] py-[10px] mx-[5px] my-[5px] bg-blue-300 hover:bg-blue-200 rounded-md font-medium">
                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CommandIcon name={command.icon} />}
                   <span className="text-sm font-medium">{command.name}</span>
                 </Button>
