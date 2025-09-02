@@ -1322,7 +1322,18 @@ export default function Dashboard() {
             {/* Desktop Bottom Toolbar */}
             <footer className="border-t bg-card">
               <div className="flex items-center gap-3 p-3 min-h-[68px]">
-                {/* Left Section - Voice & AI Chat */}
+                {/* Left Section - Custom Shortcuts */}
+                <div className="flex-1 flex items-center gap-1 overflow-x-auto">
+                   <CustomShortcuts 
+                     onShortcut={handleCustomShortcut} 
+                     isLoading={aiLoading}
+                     selectedText={selectedText}
+                     onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
+                     onOpenMore={() => setShowMoreCommands(true)}
+                   />
+                </div>
+                
+                {/* Center Section - Voice & AI Chat */}
                 <div className="flex items-center gap-2 shrink-0">
                   <VoiceRecorder 
                     onTranscription={handleVoiceTranscription}
@@ -1337,17 +1348,6 @@ export default function Dashboard() {
                       💬 <span className="hidden md:inline">AI Chat</span>
                     </Button>
                   )}
-                </div>
-                
-                {/* Center Section - Custom Shortcuts Only */}
-                <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
-                   <CustomShortcuts 
-                     onShortcut={handleCustomShortcut} 
-                     isLoading={aiLoading}
-                     selectedText={selectedText}
-                     onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
-                     onOpenMore={() => setShowMoreCommands(true)}
-                   />
                 </div>
                 
                 {/* Right Section - Word Count & Save */}
