@@ -1,238 +1,264 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/enhanced-card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { EnhancedButton } from '@/components/ui/enhanced-button';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
-  FileText, 
-  MoreVertical, 
-  Edit2, 
-  Copy, 
-  Trash2, 
-  Calendar,
-  Hash,
-  Clock,
-  CheckSquare,
-  Square
-} from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useCallback, useMemo } from 'react';
+import { clsx } from 'clsx';
+import { Card, CardContent } from '@/components/ui/card';
 
+// TypeScript interfaces for better type safety
 interface Document {
   id: string;
   title: string;
-  content: string;
-  category: string;
-  status: string;
-  word_count: number;
-  created_at: string;
-  updated_at: string;
+  description?: string;
+  type?: string;
+  size?: number;
+  lastModified?: Date;
+  isLoading?: boolean;
+  thumbnail?: string;
 }
 
 interface DocumentCardProps {
   document: Document;
-  isSelected?: boolean;
-  onSelect: (doc: Document) => void;
-  onEdit?: (doc: Document) => void;
-  onDuplicate?: (doc: Document) => void;
-  onDelete?: (docId: string) => void;
-  searchQuery?: string;
   compact?: boolean;
-  showCheckbox?: boolean;
-  onSelectionToggle?: (documentId: string) => void;
+  isSelected?: boolean;
+  onSelect?: (document: Document) => void;
+  className?: string;
+  disabled?: boolean;
+  showMetadata?: boolean;
 }
 
-export function DocumentCard({
-  document,
-  isSelected,
+// Loading skeleton component
+const DocumentCardSkeleton: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
+  <Card variant={compact ? "mobile" : "elevated"} className="animate-pulse">
+    <CardContent padding={compact ? "xs" : "sm"}>
+      <div className={`space-y-${compact ? '2' : '4'}`}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-8 h-8 bg-gray-200 rounded"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Main DocumentCard component
+export const DocumentCard = React.memo<DocumentCardProps>(({ 
+  document, 
+  compact = false, 
+  isSelected = false, 
   onSelect,
-  onEdit,
-  onDuplicate,
-  onDelete,
-  searchQuery,
-  compact = false,
-  showCheckbox = false,
-  onSelectionToggle
-}: DocumentCardProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  className = '',
+  disabled = false,
+  showMetadata = true
+}) => {
+  // Early return for missing document
+  if (!document) {
+    console.warn('DocumentCard: document prop is required');
+    return null;
+  }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'bg-status-draft/10 text-status-draft border-status-draft/20';
-      case 'polished': return 'bg-primary/10 text-primary border-primary/20'; 
-      case 'final': return 'bg-accent/10 text-accent border-accent/20';
-      default: return 'bg-muted/50 text-muted-foreground border-border';
+  // Show skeleton for loading state
+  if (document.isLoading) {
+    return <DocumentCardSkeleton compact={compact} />;
+  }
+
+  // Memoized click handler
+  const handleCardClick = useCallback(() => {
+    if (disabled) return;
+    onSelect?.(document);
+  }, [document, onSelect, disabled]);
+
+  // Memoized keyboard handler
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (disabled) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCardClick();
     }
-  };
+  }, [handleCardClick, disabled]);
 
-  const formatWordCount = (count: number) => {
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}k`;
-    }
-    return count.toString();
-  };
-
-  const getPreviewText = (content: string, maxLength: number = 120) => {
-    const text = content.replace(/\n/g, ' ').trim();
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-
-  const highlightSearchTerm = (text: string, query?: string) => {
-    if (!query) return text;
+  // Memoized class names
+  const cardClasses = clsx(
+    // Base styles
+    'group transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
     
-    const regex = new RegExp(`(${query})`, 'gi');
-    const parts = text.split(regex);
+    // Cursor and interaction states
+    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
     
-    return parts.map((part, index) =>
-      regex.test(part) ? (
-        <mark key={index} className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded">
-          {part}
-        </mark>
-      ) : (
-        part
-      )
-    );
-  };
+    // Hover effects based on compact mode
+    !disabled && (compact ? 'hover:shadow-sm' : 'hover:shadow-lg hover:-translate-y-0.5'),
+    
+    // Selection states
+    isSelected && !disabled && 'ring-2 ring-primary/50 bg-primary/5 shadow-md',
+    !isSelected && !disabled && 'hover:shadow-md',
+    
+    // Custom className
+    className
+  );
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Don't trigger selection if clicking on checkbox or menu
-    if ((e.target as Element).closest('[data-checkbox]') || isMenuOpen) {
-      return;
-    }
-    onSelect(document);
-  };
+  // Memoized variant
+  const cardVariant = useMemo(() => compact ? "mobile" : "elevated", [compact]);
 
-  const handleCheckboxToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelectionToggle?.(document.id);
-  };
+  // Memoized aria label
+  const ariaLabel = useMemo(() => {
+    const title = document.title || 'Untitled document';
+    const status = isSelected ? ', selected' : '';
+    return `${title}${status}`;
+  }, [document.title, isSelected]);
+
+  // Format file size helper
+  const formatFileSize = useCallback((bytes?: number): string => {
+    if (!bytes) return '';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+  }, []);
+
+  // Format date helper
+  const formatDate = useCallback((date?: Date): string => {
+    if (!date) return '';
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+  }, []);
+
+  // Get document icon based on type
+  const getDocumentIcon = useCallback((type?: string): string => {
+    const iconMap: Record<string, string> = {
+      'pdf': '📄',
+      'doc': '📝',
+      'docx': '📝',
+      'xls': '📊',
+      'xlsx': '📊',
+      'ppt': '📽️',
+      'pptx': '📽️',
+      'txt': '📃',
+      'image': '🖼️',
+      'video': '🎥',
+      'audio': '🎵'
+    };
+    return iconMap[type?.toLowerCase() || ''] || '📄';
+  }, []);
 
   return (
     <Card 
-      variant={compact ? "mobile" : "compact"}
-      className={`group transition-all duration-200 hover:shadow-sm cursor-pointer ${
-        isSelected ? 'ring-1 ring-primary/40 bg-primary/5' : 'hover:shadow-sm'
-      }`}
+      variant={cardVariant}
+      className={cardClasses}
       onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-selected={isSelected}
+      aria-label={ariaLabel}
+      aria-disabled={disabled}
     >
-      <CardContent padding="xs">
-        <div className="space-y-2">
+      <CardContent padding={compact ? "xs" : "sm"}>
+        <div className={`space-y-${compact ? '2' : '4'}`}>
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              {/* Selection Checkbox */}
-              {showCheckbox && (
-                <button
-                  onClick={handleCheckboxToggle}
-                  data-checkbox
-                  className={`touch-target ${compact ? 'p-1 -m-1' : 'p-2 -m-2'} rounded-md hover:bg-secondary/50 transition-colors`}
-                >
-                  {isSelected ? (
-                    <CheckSquare className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-primary`} />
-                  ) : (
-                    <Square className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-muted-foreground hover:text-foreground`} />
-                  )}
-                </button>
-              )}
-              
+              {/* Document Icon */}
+              <div className="flex-shrink-0">
+                {document.thumbnail ? (
+                  <img 
+                    src={document.thumbnail} 
+                    alt=""
+                    className="w-8 h-8 object-cover rounded"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-8 h-8 flex items-center justify-center text-lg">
+                    {getDocumentIcon(document.type)}
+                  </div>
+                )}
+              </div>
+
+              {/* Document Info */}
               <div className="flex-1 min-w-0">
-                <div className={`flex items-center gap-3 ${compact ? 'mb-1' : 'mb-2'}`}>
-                  <FileText className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-primary/70 flex-shrink-0`} />
-                  <h3 
-                    className={`${compact ? 'text-sm font-medium' : 'text-heading-md font-semibold'} line-clamp-2 lg:line-clamp-3`}
-                    title={document.title}
-                  >
-                    {highlightSearchTerm(document.title, searchQuery)}
-                  </h3>
-                </div>
+                <h3 className={`font-medium text-gray-900 truncate ${
+                  compact ? 'text-sm' : 'text-base'
+                }`}>
+                  {document.title || 'Untitled Document'}
+                </h3>
+                
+                {document.description && !compact && (
+                  <p className="text-sm text-gray-600 truncate mt-1">
+                    {document.description}
+                  </p>
+                )}
               </div>
             </div>
 
-            <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size={compact ? "sm" : "icon"}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity touch-target"
-                  onClick={(e) => e.stopPropagation()}
+            {/* Selection Indicator */}
+            {isSelected && (
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                <svg 
+                  className="w-3 h-3 text-white" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
                 >
-                  <MoreVertical className={compact ? "h-3 w-3" : "h-4 w-4"} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                {onEdit && (
-                  <DropdownMenuItem onClick={() => onEdit(document)}>
-                    <Edit2 className="w-4 h-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                )}
-                {onDuplicate && (
-                  <DropdownMenuItem onClick={() => onDuplicate(document)}>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Duplicate
-                  </DropdownMenuItem>
-                )}
-                {(onEdit || onDuplicate) && onDelete && <DropdownMenuSeparator />}
-                {onDelete && (
-                  <DropdownMenuItem 
-                    onClick={() => onDelete(document.id)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <path 
+                    fillRule="evenodd" 
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+              </div>
+            )}
           </div>
 
           {/* Metadata */}
-          <div className={`flex items-center gap-3 ${compact ? 'text-xs' : 'text-body-sm'} text-muted-foreground`}>
-            <div className="flex items-center gap-2">
-              <Calendar className={compact ? "h-3 w-3" : "h-4 w-4"} />
-              <span>{format(new Date(document.updated_at), 'MMM d, yyyy')}</span>
-            </div>
-            <span className="text-border">•</span>
-            <div className="flex items-center gap-2">
-              <Hash className={compact ? "h-3 w-3" : "h-4 w-4"} />
-              <span>{formatWordCount(document.word_count)} words</span>
-            </div>
-          </div>
-
-          {/* Content Preview - Hide in compact mode */}
-          {!compact && document.content && (
-            <div className="bg-surface/30 rounded-lg p-4 border border-border/30">
-              <p className="text-body-md text-foreground/80 leading-relaxed line-clamp-2">
-                {highlightSearchTerm(getPreviewText(document.content, 140), searchQuery)}
-              </p>
+          {showMetadata && !compact && (
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              {document.type && (
+                <span className="uppercase font-medium">
+                  {document.type}
+                </span>
+              )}
+              
+              {document.size && (
+                <span>
+                  {formatFileSize(document.size)}
+                </span>
+              )}
+              
+              {document.lastModified && (
+                <span>
+                  Modified {formatDate(document.lastModified)}
+                </span>
+              )}
             </div>
           )}
 
-          {/* Footer */}
-          <div className={`flex items-center justify-between ${compact ? 'pt-2' : 'pt-4'} border-t border-border/30`}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className={`${compact ? 'text-[10px] px-2 py-0.5' : 'text-xs px-3 py-1'} font-medium ${getStatusColor(document.status)}`}>
-                {document.status}
-              </Badge>
-              <Badge variant="outline" className={`${compact ? 'text-[10px] px-2 py-0.5' : 'text-xs px-3 py-1'} font-medium bg-secondary/50 text-secondary-foreground border-secondary/50`}>
-                {document.category}
-              </Badge>
+          {/* Compact metadata */}
+          {showMetadata && compact && (document.type || document.size) && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              {document.type && (
+                <span className="uppercase font-medium">
+                  {document.type}
+                </span>
+              )}
+              {document.type && document.size && <span>•</span>}
+              {document.size && (
+                <span>
+                  {formatFileSize(document.size)}
+                </span>
+              )}
             </div>
-            
-            <div className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-body-sm'} text-muted-foreground`}>
-              <Clock className={compact ? "h-3 w-3" : "h-4 w-4"} />
-              <span>{format(new Date(document.updated_at), 'HH:mm')}</span>
-            </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
-}
+});
+
+// Set display name for better debugging
+DocumentCard.displayName = 'DocumentCard';
+
+// Export types for external use
+export type { Document, DocumentCardProps };
