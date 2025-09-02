@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mapParams } from "../_shared/modelParams.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -213,9 +214,8 @@ The user doesn't seem to have any documents in their library yet, or their query
 Encourage them to create some documents first, or ask more specific questions about their writing needs.
 Be helpful and suggest how they can get started with their writing projects.`;
     
-    // Determine token parameter based on model
-    const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
-    const tokenParam = isNewerModel ? 'max_completion_tokens' : 'max_tokens';
+    // Use the modelParams helper for correct parameter handling
+    const { tokenKey, tokens, includeTemp } = mapParams(model, maxTokens, temperature);
 
     const requestBody = {
       model: model,
@@ -231,10 +231,10 @@ Be helpful and suggest how they can get started with their writing projects.`;
       ]
     };
 
-    // Add appropriate token parameter and temperature
-    requestBody[tokenParam] = maxTokens;
-    if (!isNewerModel) {
-      requestBody.temperature = temperature;
+    // Add appropriate token parameter and temperature based on model
+    requestBody[tokenKey] = tokens;
+    if (includeTemp !== false) {
+      requestBody.temperature = includeTemp;
     }
 
     // Call OpenAI for the chat response

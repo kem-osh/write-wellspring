@@ -142,13 +142,13 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { file_content, file_name, user_id } = await req.json();
+    const { file_content, file_name } = await req.json();
     
     // Validate input parameters
-    if (!file_content || !file_name || !user_id) {
+    if (!file_content || !file_name) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing required parameters: file_content, file_name, user_id',
+        error: 'Missing required parameters: file_content, file_name',
         error_code: 'VALIDATION_ERROR'
       }), {
         status: 400,
@@ -167,14 +167,54 @@ serve(async (req) => {
       });
     }
 
+    // Validate authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authorization header is required',
+        error_code: 'AUTH_ERROR'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Initialize Supabase client with Authorization header for RLS compliance
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
         headers: {
-          Authorization: req.headers.get('Authorization')!,
+          Authorization: authHeader,
         },
       },
     });
+
+    // Extract user ID from JWT token for security
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid or expired authentication token',
+        error_code: 'AUTH_ERROR'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Server-side file type validation
+    const fileExtension = file_name.toLowerCase().substring(file_name.lastIndexOf('.'));
+    const allowedExtensions = ['.txt', '.md'];
+    if (!allowedExtensions.includes(fileExtension)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `File type ${fileExtension} not supported. Only .txt and .md files are allowed.`,
+        error_code: 'VALIDATION_ERROR'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Truncate content if too large (max 30k chars for embeddings)
     const maxContentLength = 30000;
@@ -202,12 +242,12 @@ serve(async (req) => {
     // Calculate word count
     const wordCount = processedContent.trim().split(/\s+/).length;
 
-    // Insert document into database
+    // Insert document into database using authenticated user ID
     console.log('Inserting document into database...');
     const { data: document, error: dbError } = await supabase
       .from('documents')
       .insert({
-        user_id,
+        user_id: user.id, // Use authenticated user ID for security
         title,
         content: file_content, // Store full content, not truncated
         embedding,
