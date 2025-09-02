@@ -1020,7 +1020,7 @@ export default function Dashboard() {
                          {/* Fixed Header Section */}
                          <div className="flex-shrink-0 border-b bg-card">
                            {/* Title and Close Button */}
-                           <div className="p-4 border-b flex items-center justify-between bg-slate-300">
+                           <div className="p-4 border-b flex items-center justify-between bg-slate-400">
                              <h3 className="font-medium">Documents</h3>
                              <Button variant="ghost" size="sm" onClick={() => setLeftSidebarOpen(false)}>
                                <X className="h-4 w-4" />
@@ -1028,7 +1028,7 @@ export default function Dashboard() {
                            </div>
                            
                             {/* New Document & Search */}
-                            <div className="p-4 space-y-3 bg-slate-300">
+                            <div className="p-4 space-y-3 bg-slate-400">
                               <div className="flex gap-2">
                                 <Button onClick={createNewDocument} className="flex-1">
                                   <Plus className="h-4 w-4 mr-2" />
