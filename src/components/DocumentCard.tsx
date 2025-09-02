@@ -215,89 +215,104 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-label={ariaLabel}
       aria-disabled={disabled}
     >
-      <CardContent className="p-3 flex items-center gap-3">
-        {/* Selection Checkbox */}
-        {(showCheckbox || isSelected) && (
-          <div className="flex-shrink-0">
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={handleSelectionChange}
-              disabled={disabled}
-              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-            />
-          </div>
-        )}
+      <CardContent className={contentClasses}>
+        <div className="space-y-2">
+          {/* Header with checkbox and quick actions */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              {/* Selection Checkbox */}
+              {(showCheckbox || isSelected) && (
+                <div className="flex-shrink-0 pt-0.5">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={handleSelectionChange}
+                    disabled={disabled}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4"
+                  />
+                </div>
+              )}
 
-        {/* Document Icon */}
-        <div className="flex-shrink-0">
-          <div className="flex items-center justify-center rounded-md w-8 h-8 bg-primary/10">
-            <FileText className="text-primary w-4 h-4" />
-          </div>
-        </div>
+              {/* Document Icon */}
+              <div className="flex-shrink-0 pt-0.5">
+                <div className={`flex items-center justify-center rounded-md bg-muted/50 ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}>
+                  <FileText className={`text-muted-foreground ${compact ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                </div>
+              </div>
 
-        {/* Document Info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm text-foreground truncate mb-1">
-            {(document.title || 'Untitled Document').length > 45 
-              ? `${(document.title || 'Untitled Document').substring(0, 45)}...` 
-              : (document.title || 'Untitled Document')}
-          </h3>
-          
-          <p className="text-xs text-muted-foreground truncate mb-1">
-            {document.content 
-              ? document.content.length > 60 
-                ? `${document.content.substring(0, 60)}...`
-                : document.content
-              : 'No content'}
-          </p>
-          
-          {/* Stats Row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {document.word_count > 0 && (
-              <span>{document.word_count > 1000 ? `${Math.round(document.word_count/1000)}k words` : `${document.word_count} words`}</span>
-            )}
-            <span>{formatDate(document.updated_at)}</span>
-          </div>
-        </div>
+              {/* Document Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-semibold text-foreground leading-tight ${compact ? 'text-xs' : 'text-sm'}`}>
+                      {highlightText(document.title || 'Untitled Document', searchQuery)}
+                    </h3>
+                    
+                    {document.content && !compact && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                        {highlightText(
+                          document.content.substring(0, 80) + (document.content.length > 80 ? '...' : ''),
+                          searchQuery
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Status Badge */}
+                  {document.status && (
+                    <Badge 
+                      variant="secondary" 
+                      className={`text-xs font-medium ${getStatusColor(document.status)} flex-shrink-0 px-1.5 py-0.5`}
+                    >
+                      {document.status}
+                    </Badge>
+                  )}
+                </div>
 
-        {/* Status Badge */}
-        {document.status && (
-          <div className="flex-shrink-0">
-            <Badge 
-              variant="secondary" 
-              className={`text-xs font-medium ${getStatusColor(document.status)}`}
-            >
-              {document.status}
-            </Badge>
-          </div>
-        )}
+                {/* Document Stats - Simplified */}
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                  {document.word_count > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Hash className="w-2.5 h-2.5" />
+                      <span>{document.word_count > 1000 ? `${Math.round(document.word_count/1000)}k` : document.word_count}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>{formatDate(document.updated_at)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        {/* Quick Actions */}
-        <div className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isSelected ? 'opacity-100' : ''}`}>
-          <div className="flex gap-1">
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEdit}
-                className="h-8 w-8 p-0 hover:bg-muted"
-                title="Edit"
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-            )}
-            
-            {onDelete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDelete}
-                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            )}
+            {/* Quick Actions - Simplified */}
+            <div className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isSelected ? 'opacity-100' : ''}`}>
+              <div className="flex flex-col gap-0.5">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="h-6 w-6 p-0 hover:bg-muted-foreground/10"
+                    title="Edit document"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                )}
+                
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDelete}
+                    className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    title="Delete document"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>

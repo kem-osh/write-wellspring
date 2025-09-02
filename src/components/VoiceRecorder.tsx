@@ -200,28 +200,29 @@ export function VoiceRecorder({ onTranscription, disabled }: VoiceRecorderProps)
   };
 
   return (
-    <div className="relative flex items-center justify-center w-full">
+    <div className="relative flex items-center gap-2">
       <Button
         onClick={handleClick}
         disabled={disabled || state === 'processing' || state === 'error'}
         className={`
-          relative transition-all duration-300 h-16 w-16 rounded-full flex items-center justify-center font-bold text-lg shadow-xl
+          relative transition-all duration-200 h-11 px-3 rounded-lg flex items-center justify-center gap-2 min-w-fit font-medium
           ${state === 'recording' 
-            ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 animate-pulse shadow-2xl shadow-red-500/40 text-white scale-110 ring-4 ring-red-500/30' 
+            ? 'bg-red-500 hover:bg-red-600 animate-pulse shadow-lg shadow-red-500/25 text-white' 
             : state === 'processing'
-            ? 'bg-gradient-to-br from-muted to-muted/80 text-muted-foreground cursor-wait shadow-lg'
-            : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-2xl shadow-primary/25 hover:scale-105 hover:shadow-primary/40'
+            ? 'bg-muted text-muted-foreground cursor-wait'
+            : 'bg-voice-button hover:bg-voice-button/90 text-voice-button-foreground'
           }
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-primary/20'}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
       >
         {state === 'processing' ? (
-          <Loader2 className="h-6 w-6 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
         ) : state === 'error' ? (
-          <MicOff className="h-6 w-6" />
+          <MicOff className="h-4 w-4" />
         ) : (
-          <Mic className="h-6 w-6" />
+          <Mic className="h-4 w-4" />
         )}
+        <span className="text-sm hidden sm:inline">{getButtonText()}</span>
       </Button>
       
       {transcript && state === 'recording' && (
