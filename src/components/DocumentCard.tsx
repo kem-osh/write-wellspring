@@ -194,8 +194,8 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     className
   );
 
-  // Memoized classes for content padding
-  const contentClasses = useMemo(() => compact ? "p-2" : "p-3", [compact]);
+  // Memoized classes for content padding - more compact for mobile
+  const contentClasses = useMemo(() => compact ? "p-2" : "p-2.5", [compact]);
 
   // Memoized aria label
   const ariaLabel = useMemo(() => {
@@ -216,26 +216,26 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-disabled={disabled}
     >
       <CardContent className={contentClasses}>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* Header with checkbox and quick actions */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
               {/* Selection Checkbox */}
               {(showCheckbox || isSelected) && (
-                <div className="flex-shrink-0 pt-1">
+                <div className="flex-shrink-0 pt-0.5">
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={handleSelectionChange}
                     disabled={disabled}
-                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4"
                   />
                 </div>
               )}
 
               {/* Document Icon */}
-              <div className="flex-shrink-0 pt-1">
-                <div className={`flex items-center justify-center rounded-lg bg-muted/50 ${compact ? 'w-8 h-8' : 'w-10 h-10'}`}>
-                  <FileText className={`text-muted-foreground ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+              <div className="flex-shrink-0 pt-0.5">
+                <div className={`flex items-center justify-center rounded-md bg-muted/50 ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}>
+                  <FileText className={`text-muted-foreground ${compact ? 'w-3 h-3' : 'w-4 h-4'}`} />
                 </div>
               </div>
 
@@ -243,14 +243,14 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className={`font-semibold text-foreground leading-tight ${compact ? 'text-sm' : 'text-base'}`}>
+                    <h3 className={`font-semibold text-foreground leading-tight ${compact ? 'text-xs' : 'text-sm'}`}>
                       {highlightText(document.title || 'Untitled Document', searchQuery)}
                     </h3>
                     
                     {document.content && !compact && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                         {highlightText(
-                          document.content.substring(0, 120) + (document.content.length > 120 ? '...' : ''),
+                          document.content.substring(0, 80) + (document.content.length > 80 ? '...' : ''),
                           searchQuery
                         )}
                       </p>
@@ -261,61 +261,42 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
                   {document.status && (
                     <Badge 
                       variant="secondary" 
-                      className={`text-xs font-medium ${getStatusColor(document.status)} flex-shrink-0`}
+                      className={`text-xs font-medium ${getStatusColor(document.status)} flex-shrink-0 px-1.5 py-0.5`}
                     >
                       {document.status}
                     </Badge>
                   )}
                 </div>
 
-                {/* Document Stats */}
-                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                {/* Document Stats - Simplified */}
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                   {document.word_count > 0 && (
                     <div className="flex items-center gap-1">
-                      <Hash className="w-3 h-3" />
-                      <span>{document.word_count.toLocaleString()} words</span>
+                      <Hash className="w-2.5 h-2.5" />
+                      <span>{document.word_count > 1000 ? `${Math.round(document.word_count/1000)}k` : document.word_count}</span>
                     </div>
                   )}
                   
                   <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
+                    <Clock className="w-2.5 h-2.5" />
                     <span>{formatDate(document.updated_at)}</span>
                   </div>
-                  
-                  {document.category && document.category !== 'general' && (
-                    <div className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-primary"></span>
-                      <span className="capitalize">{document.category}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Simplified */}
             <div className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isSelected ? 'opacity-100' : ''}`}>
-              <div className="flex items-center gap-1">
+              <div className="flex flex-col gap-0.5">
                 {onEdit && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleEdit}
-                    className="h-8 w-8 p-0 hover:bg-muted-foreground/10"
+                    className="h-6 w-6 p-0 hover:bg-muted-foreground/10"
                     title="Edit document"
                   >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                )}
-                
-                {onDuplicate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDuplicate}
-                    className="h-8 w-8 p-0 hover:bg-muted-foreground/10"
-                    title="Duplicate document"
-                  >
-                    <Copy className="w-4 h-4" />
+                    <Edit className="w-3 h-3" />
                   </Button>
                 )}
                 
@@ -324,10 +305,10 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
                     variant="ghost"
                     size="sm"
                     onClick={handleDelete}
-                    className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
                     title="Delete document"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3 h-3" />
                   </Button>
                 )}
               </div>

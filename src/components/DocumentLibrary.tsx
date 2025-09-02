@@ -768,8 +768,8 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
           ) : (
             <div className={cn(
               viewMode === 'grid' 
-                ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                : "space-y-3"
+                ? "grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : "space-y-2"
             )}>
               {documents.map((doc) => (
                 <DocumentCard
