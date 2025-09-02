@@ -1070,11 +1070,8 @@ export default function Dashboard() {
                          <div className="flex-1 flex flex-col overflow-hidden">
                            <ScrollArea className="flex-1">
                              <div className="p-4 pb-20 space-y-4 bg-slate-400">
-                               {/* Filters */}
-                               <DocumentFilters onFiltersChange={handleFiltersChange} initialFilters={filters} />
-                               
-                               {/* Document List */}
-                               <div className="min-h-0">
+                                {/* Document List */}
+                                <div className="min-h-0">
                                    <DocumentList documents={filteredDocuments} categories={categories} currentDocument={currentDocument} onDocumentSelect={openDocument} onDocumentUpdate={() => user && loadDocuments({
                             userId: user.id
                           })} searchQuery={searchQuery} selectedDocuments={selectedDocuments} onDocumentSelectionChange={(newSelection: string[]) => {
@@ -1082,9 +1079,12 @@ export default function Dashboard() {
                             clearSelection();
                             newSelection.forEach(id => toggleDocumentSelection(id));
                           }} hasMore={hasMore} loading={documentsLoading} onLoadMore={() => user && loadMoreDocuments(user.id)} />
-                               </div>
-                               
-                               {/* Stats - at bottom of scrollable area */}
+                                </div>
+
+                                {/* Filters */}
+                                <DocumentFilters onFiltersChange={handleFiltersChange} initialFilters={filters} />
+                                
+                                {/* Stats - at bottom of scrollable area */}
                                <div className="mt-auto pt-4 border-t">
                                  <DocumentStats documents={documents} />
                                </div>

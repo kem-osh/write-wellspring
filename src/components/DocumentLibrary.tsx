@@ -735,25 +735,6 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
           </div>
         </div>
 
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="border-b bg-muted/30 p-4">
-            <DocumentFilters
-              onFiltersChange={handleFiltersChange}
-              onSearchChange={setSearchQuery}
-              onViewModeChange={setViewMode}
-              initialFilters={{
-                category: filters.category,
-                status: filters.status,
-                sortBy: filters.sortBy,
-                searchQuery,
-                viewMode
-              }}
-              documentCount={documents.length}
-            />
-          </div>
-        )}
-
         {/* Document Grid/List */}
         <div className="flex-1 overflow-y-auto p-4">
           {documentsLoading ? (
@@ -788,6 +769,25 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({ className }) =
             </div>
           )}
         </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="border-t bg-muted/30 p-4">
+            <DocumentFilters
+              onFiltersChange={handleFiltersChange}
+              onSearchChange={setSearchQuery}
+              onViewModeChange={setViewMode}
+              initialFilters={{
+                category: filters.category,
+                status: filters.status,
+                sortBy: filters.sortBy,
+                searchQuery,
+                viewMode
+              }}
+              documentCount={documents.length}
+            />
+          </div>
+        )}
       </div>
 
       {/* Mobile Bulk Actions */}
