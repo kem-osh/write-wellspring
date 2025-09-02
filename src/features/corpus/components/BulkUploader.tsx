@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -17,52 +17,14 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useFileUpload } from '../hooks/useFileUpload';
-import { BulkUploaderProps, UploadFile } from '../types/upload';
-import { formatFileSize } from '../utils/fileProcessor';
+import { BulkUploaderProps } from '../types/upload';
+import { FileListItem } from './FileListItem';
 
-function FileStatusIcon({ status }: { status: UploadFile['status'] }) {
-  switch (status) {
-    case 'queued':
-      return <FileText className="w-4 h-4 text-muted-foreground" />;
-    case 'uploading':
-    case 'processing':
-      return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
-    case 'complete':
-      return <CheckCircle className="w-4 h-4 text-green-500" />;
-    case 'error':
-      return <XCircle className="w-4 h-4 text-red-500" />;
-    default:
-      return <FileText className="w-4 h-4 text-muted-foreground" />;
-  }
-}
-
-function FileStatusBadge({ status }: { status: UploadFile['status'] }) {
-  const variants: Record<UploadFile['status'], any> = {
-    queued: 'secondary',
-    uploading: 'default',
-    processing: 'default',
-    complete: 'default',
-    error: 'destructive'
-  };
-
-  const labels: Record<UploadFile['status'], string> = {
-    queued: 'Queued',
-    uploading: 'Uploading',
-    processing: 'Processing',
-    complete: 'Complete',
-    error: 'Failed'
-  };
-
-  return (
-    <Badge variant={variants[status]} className="text-xs">
-      {labels[status]}
-    </Badge>
-  );
-}
 
 export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: BulkUploaderProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const completedFilesRef = useRef(new Set<string>());
   
   const {
     uploadState,
@@ -90,6 +52,10 @@ export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: Bul
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    // Check if the cursor is leaving to go to a child element
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return;
+    }
     setIsDragOver(false);
   }, []);
 
@@ -102,7 +68,8 @@ export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: Bul
     e.target.value = '';
   }, [uploadFiles]);
 
-  const getStatusCounts = () => {
+  // Memoize status counts for performance
+  const statusCounts = useMemo(() => {
     const counts = {
       queued: 0,
       uploading: 0,
@@ -116,12 +83,36 @@ export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: Bul
     });
     
     return counts;
-  };
-
-  const statusCounts = getStatusCounts();
+  }, [uploadState.files]);
   const hasFiles = uploadState.files.length > 0;
   const hasFailedFiles = statusCounts.error > 0;
   const hasCompletedFiles = statusCounts.complete > 0;
+
+  // Handle callback integration
+  useEffect(() => {
+    const newlyCompleted = uploadState.files.filter(
+      file => file.status === 'complete' && !completedFilesRef.current.has(file.id)
+    );
+
+    if (newlyCompleted.length > 0) {
+      newlyCompleted.forEach(file => {
+        if (onDocumentAdded && file.documentId) {
+          onDocumentAdded({ id: file.documentId, title: file.file.name });
+        }
+        completedFilesRef.current.add(file.id);
+      });
+    }
+
+    // Check if all uploads are finished
+    const allFinished = uploadState.files.length > 0 && !uploadState.isUploading && 
+      uploadState.files.every(f => f.status === 'complete' || f.status === 'error');
+    
+    if (allFinished && onUploadComplete) {
+      const currentCompleted = uploadState.files.filter(f => f.status === 'complete').length;
+      const currentFailed = uploadState.files.filter(f => f.status === 'error').length;
+      onUploadComplete(currentCompleted, currentFailed);
+    }
+  }, [uploadState.files, uploadState.isUploading, onDocumentAdded, onUploadComplete]);
 
   return (
     <div className="space-y-6">
@@ -269,41 +260,13 @@ export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: Bul
             <ScrollArea className="h-96">
               <div className="space-y-2">
                 {uploadState.files.map((file, index) => (
-                  <div key={file.id}>
-                    <div className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <FileStatusIcon status={file.status} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {file.file.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatFileSize(file.file.size)}
-                          </p>
-                          {file.error && (
-                            <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              {file.error}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileStatusBadge status={file.status} />
-                        {file.status === 'error' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => retryFile(file.id)}
-                            disabled={uploadState.isUploading}
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    {index < uploadState.files.length - 1 && <Separator className="my-2" />}
-                  </div>
+                  <FileListItem
+                    key={file.id}
+                    file={file}
+                    isUploading={uploadState.isUploading}
+                    onRetry={retryFile}
+                    showSeparator={index < uploadState.files.length - 1}
+                  />
                 ))}
               </div>
             </ScrollArea>
@@ -317,7 +280,7 @@ export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: Bul
           <AlertDialogHeader>
             <AlertDialogTitle>Clear All Files?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove all files from the upload queue. Completed uploads will remain in your document library.
+              Are you sure you want to clear the list? This will remove all pending and failed files. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
