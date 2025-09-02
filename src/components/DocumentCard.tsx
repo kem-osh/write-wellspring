@@ -215,92 +215,89 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-label={ariaLabel}
       aria-disabled={disabled}
     >
-      <CardContent className="p-3 h-32 flex flex-col justify-center">
-        <div className="flex items-center gap-2 w-full">
-          {/* Selection Checkbox */}
-          {(showCheckbox || isSelected) && (
-            <div className="flex-shrink-0">
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={handleSelectionChange}
-                disabled={disabled}
-                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary w-3 h-3"
-              />
-            </div>
-          )}
-
-          {/* Document Icon */}
+      <CardContent className="p-3 flex items-center gap-3">
+        {/* Selection Checkbox */}
+        {(showCheckbox || isSelected) && (
           <div className="flex-shrink-0">
-            <div className="flex items-center justify-center rounded w-6 h-6 bg-muted/50">
-              <FileText className="text-muted-foreground w-3 h-3" />
-            </div>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={handleSelectionChange}
+              disabled={disabled}
+              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+            />
           </div>
+        )}
 
-          {/* Document Info - Centered */}
-          <div className="flex-1 min-w-0 text-center px-1">
-            <h3 className="font-medium text-[10px] leading-tight text-foreground truncate">
-              {(document.title || 'Untitled Document').length > 25 
-                ? `${(document.title || 'Untitled Document').substring(0, 25)}...` 
-                : (document.title || 'Untitled Document')}
-            </h3>
-            
-            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
-              {document.content 
-                ? document.content.length > 30 
-                  ? `${document.content.substring(0, 30)}...`
-                  : document.content
-                : 'No content'}
-            </p>
-            
-            {/* Stats Row - Centered */}
-            <div className="flex items-center justify-center gap-2 mt-1 text-[8px] text-muted-foreground">
-              {document.word_count > 0 && (
-                <span>{document.word_count > 1000 ? `${Math.round(document.word_count/1000)}k` : document.word_count}w</span>
-              )}
-              <span>•</span>
-              <span>{formatDate(document.updated_at)}</span>
-            </div>
+        {/* Document Icon */}
+        <div className="flex-shrink-0">
+          <div className="flex items-center justify-center rounded-md w-8 h-8 bg-primary/10">
+            <FileText className="text-primary w-4 h-4" />
           </div>
+        </div>
 
-          {/* Status Badge */}
-          {document.status && (
-            <div className="flex-shrink-0">
-              <Badge 
-                variant="secondary" 
-                className={`text-[8px] font-medium ${getStatusColor(document.status)} px-1 py-0`}
+        {/* Document Info */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-sm text-foreground truncate mb-1">
+            {(document.title || 'Untitled Document').length > 45 
+              ? `${(document.title || 'Untitled Document').substring(0, 45)}...` 
+              : (document.title || 'Untitled Document')}
+          </h3>
+          
+          <p className="text-xs text-muted-foreground truncate mb-1">
+            {document.content 
+              ? document.content.length > 60 
+                ? `${document.content.substring(0, 60)}...`
+                : document.content
+              : 'No content'}
+          </p>
+          
+          {/* Stats Row */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {document.word_count > 0 && (
+              <span>{document.word_count > 1000 ? `${Math.round(document.word_count/1000)}k words` : `${document.word_count} words`}</span>
+            )}
+            <span>{formatDate(document.updated_at)}</span>
+          </div>
+        </div>
+
+        {/* Status Badge */}
+        {document.status && (
+          <div className="flex-shrink-0">
+            <Badge 
+              variant="secondary" 
+              className={`text-xs font-medium ${getStatusColor(document.status)}`}
+            >
+              {document.status}
+            </Badge>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isSelected ? 'opacity-100' : ''}`}>
+          <div className="flex gap-1">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEdit}
+                className="h-8 w-8 p-0 hover:bg-muted"
+                title="Edit"
               >
-                {document.status.substring(0, 3)}
-              </Badge>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isSelected ? 'opacity-100' : ''}`}>
-            <div className="flex gap-0.5">
-              {onEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleEdit}
-                  className="h-5 w-5 p-0 hover:bg-muted-foreground/10"
-                  title="Edit"
-                >
-                  <Edit className="w-2.5 h-2.5" />
-                </Button>
-              )}
-              
-              {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDelete}
-                  className="h-5 w-5 p-0 hover:bg-destructive/10 hover:text-destructive"
-                  title="Delete"
-                >
-                  <Trash2 className="w-2.5 h-2.5" />
-                </Button>
-              )}
-            </div>
+                <Edit className="w-4 h-4" />
+              </Button>
+            )}
+            
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
