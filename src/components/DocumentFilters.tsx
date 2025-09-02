@@ -237,7 +237,7 @@ export function DocumentFilters({
             <Grid className="h-3 w-3 mr-1" />
             Grid
           </Button>
-          <Button variant={filters.viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => handleViewModeChange('list')} className="flex-1 h-7 text-xs">
+          <Button variant={filters.viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => handleViewModeChange('list')} className="flex-1 h-7 text-xs my-0 rounded-md px-[13px] mx-0">
             <List className="h-3 w-3 mr-1" />
             List
           </Button>
