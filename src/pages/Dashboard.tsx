@@ -1045,7 +1045,7 @@ export default function Dashboard() {
               onClose={() => setMobileDocumentLibraryOpen(false)}
               documents={filteredDocuments}
               onDocumentSelect={(doc) => {
-                openDocument({...doc, category: doc.category || 'general'});
+                openDocument(doc);
                 setMobileDocumentLibraryOpen(false);
               }}
               onCreateNew={createNewDocument}

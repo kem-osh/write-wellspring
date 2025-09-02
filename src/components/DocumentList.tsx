@@ -555,8 +555,8 @@ export function DocumentList({
                         onDocumentSelect(doc);
                       }
                     }}
-                    onEdit={(doc) => startRename({...doc, category: doc.category || 'general'})}
-                    onDuplicate={(doc) => duplicateDocument({...doc, category: doc.category || 'general'})}
+                    onEdit={(doc) => startRename(doc)}
+                    onDuplicate={duplicateDocument}
                     onDelete={(docId) => setDeleteConfirmId(docId)}
                     searchQuery={searchQuery}
                     showCheckbox={isMultiSelectMode}
