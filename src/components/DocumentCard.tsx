@@ -1,6 +1,18 @@
 import React, { useCallback, useMemo } from 'react';
 import { clsx } from 'clsx';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Edit, 
+  Copy, 
+  Trash2, 
+  Clock, 
+  FileText,
+  Calendar,
+  Hash
+} from 'lucide-react';
 
 // TypeScript interfaces for better type safety
 interface Document {
@@ -31,9 +43,9 @@ interface DocumentCardProps {
   showCheckbox?: boolean;
   onSelectionToggle?: (docId: string) => void;
   searchQuery?: string;
-  onEdit?: (doc: any) => void;
+  onEdit?: (doc: Document) => void;
   onDuplicate?: (doc: Document) => Promise<void>;
-  onDelete?: (docId: any) => void;
+  onDelete?: (docId: string) => void;
 }
 
 // Loading skeleton component
@@ -61,9 +73,15 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
   compact = false, 
   isSelected = false, 
   onSelect,
+  onSelectionToggle,
+  onEdit,
+  onDuplicate,
+  onDelete,
+  searchQuery = '',
   className = '',
   disabled = false,
-  showMetadata = true
+  showMetadata = true,
+  showCheckbox = false
 }) => {
   // Early return for missing document
   if (!document) {
@@ -77,34 +95,100 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
   }
 
   // Memoized click handler
-  const handleCardClick = useCallback(() => {
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
     if (disabled) return;
+    // Don't trigger card click if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[role="checkbox"]')) return;
     onSelect?.(document);
   }, [document, onSelect, disabled]);
 
-  // Memoized keyboard handler
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (disabled) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleCardClick();
-    }
-  }, [handleCardClick, disabled]);
+  // Selection handler
+  const handleSelectionChange = useCallback((checked: boolean) => {
+    if (!onSelectionToggle || disabled) return;
+    onSelectionToggle(document.id);
+  }, [onSelectionToggle, document.id, disabled]);
+
+  // Quick action handlers
+  const handleEdit = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.(document);
+  }, [onEdit, document]);
+
+  const handleDuplicate = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await onDuplicate?.(document);
+  }, [onDuplicate, document]);
+
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(document.id);
+  }, [onDelete, document.id]);
+
+  // Search highlighting function
+  const highlightText = useCallback((text: string, query: string) => {
+    if (!query.trim()) return text;
+    
+    const regex = new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <mark key={index} className="bg-primary/20 text-primary-foreground px-0.5 rounded">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  }, []);
+
+  // Status color mapping
+  const getStatusColor = useCallback((status: string) => {
+    const statusColors: Record<string, string> = {
+      'draft': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+      'polished': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+      'final': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+    };
+    return statusColors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+  }, []);
+
+  // Format date helper
+  const formatDate = useCallback((dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    }).format(date);
+  }, []);
 
   // Memoized class names
   const cardClasses = clsx(
     // Base styles
-    'group transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+    'group relative transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg overflow-hidden',
     
     // Cursor and interaction states
     disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
     
-    // Hover effects based on compact mode
-    !disabled && (compact ? 'hover:shadow-sm' : 'hover:shadow-lg hover:-translate-y-0.5'),
+    // Hover effects with enhanced animations
+    !disabled && 'hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]',
     
-    // Selection states
-    isSelected && !disabled && 'ring-2 ring-primary/50 bg-primary/5 shadow-md',
-    !isSelected && !disabled && 'hover:shadow-md',
+    // Selection states with blue border/background
+    isSelected && !disabled && 'ring-2 ring-primary bg-primary/10 shadow-lg border-primary',
+    !isSelected && !disabled && 'hover:shadow-lg border-border',
+    
+    // Border styles
+    'border-2 transition-colors',
     
     // Custom className
     className
@@ -120,47 +204,11 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     return `${title}${status}`;
   }, [document.title, isSelected]);
 
-  // Format file size helper
-  const formatFileSize = useCallback((bytes?: number): string => {
-    if (!bytes) return '';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
-  }, []);
-
-  // Format date helper
-  const formatDate = useCallback((date?: Date): string => {
-    if (!date) return '';
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(date);
-  }, []);
-
-  // Get document icon based on type
-  const getDocumentIcon = useCallback((type?: string): string => {
-    const iconMap: Record<string, string> = {
-      'pdf': '📄',
-      'doc': '📝',
-      'docx': '📝',
-      'xls': '📊',
-      'xlsx': '📊',
-      'ppt': '📽️',
-      'pptx': '📽️',
-      'txt': '📃',
-      'image': '🖼️',
-      'video': '🎥',
-      'audio': '🎵'
-    };
-    return iconMap[type?.toLowerCase() || ''] || '📄';
-  }, []);
 
   return (
     <Card 
       className={cardClasses}
       onClick={handleCardClick}
-      onKeyDown={handleKeyDown}
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-selected={isSelected}
@@ -168,100 +216,123 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-disabled={disabled}
     >
       <CardContent className={contentClasses}>
-        <div className={`space-y-${compact ? '1' : '2'}`}>
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              {/* Document Icon */}
-              <div className="flex-shrink-0">
-                {document.thumbnail ? (
-                  <img 
-                    src={document.thumbnail} 
-                    alt=""
-                    className={`object-cover rounded ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}
-                    loading="lazy"
+        <div className="space-y-3">
+          {/* Header with checkbox and quick actions */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Selection Checkbox */}
+              {(showCheckbox || isSelected) && (
+                <div className="flex-shrink-0 pt-1">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={handleSelectionChange}
+                    disabled={disabled}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
-                ) : (
-                  <div className={`flex items-center justify-center ${compact ? 'w-6 h-6 text-sm' : 'w-8 h-8 text-lg'}`}>
-                    {getDocumentIcon(document.type)}
-                  </div>
-                )}
+                </div>
+              )}
+
+              {/* Document Icon */}
+              <div className="flex-shrink-0 pt-1">
+                <div className={`flex items-center justify-center rounded-lg bg-muted/50 ${compact ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                  <FileText className={`text-muted-foreground ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                </div>
               </div>
 
               {/* Document Info */}
               <div className="flex-1 min-w-0">
-                <h3 className={`font-medium text-foreground truncate ${
-                  compact ? 'text-sm' : 'text-base'
-                }`}>
-                  {document.title || 'Untitled Document'}
-                </h3>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-semibold text-foreground leading-tight ${compact ? 'text-sm' : 'text-base'}`}>
+                      {highlightText(document.title || 'Untitled Document', searchQuery)}
+                    </h3>
+                    
+                    {document.content && !compact && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {highlightText(
+                          document.content.substring(0, 120) + (document.content.length > 120 ? '...' : ''),
+                          searchQuery
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Status Badge */}
+                  {document.status && (
+                    <Badge 
+                      variant="secondary" 
+                      className={`text-xs font-medium ${getStatusColor(document.status)} flex-shrink-0`}
+                    >
+                      {document.status}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Document Stats */}
+                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                  {document.word_count > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Hash className="w-3 h-3" />
+                      <span>{document.word_count.toLocaleString()} words</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{formatDate(document.updated_at)}</span>
+                  </div>
+                  
+                  {document.category && document.category !== 'general' && (
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-primary"></span>
+                      <span className="capitalize">{document.category}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isSelected ? 'opacity-100' : ''}`}>
+              <div className="flex items-center gap-1">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="h-8 w-8 p-0 hover:bg-muted-foreground/10"
+                    title="Edit document"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
                 
-                {document.description && !compact && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {document.description}
-                  </p>
+                {onDuplicate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDuplicate}
+                    className="h-8 w-8 p-0 hover:bg-muted-foreground/10"
+                    title="Duplicate document"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                )}
+                
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDelete}
+                    className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    title="Delete document"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 )}
               </div>
             </div>
-
-            {/* Selection Indicator */}
-            {isSelected && (
-              <div className={`flex-shrink-0 rounded-full bg-primary flex items-center justify-center ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}>
-                <svg 
-                  className={`text-primary-foreground ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`}
-                  fill="currentColor" 
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path 
-                    fillRule="evenodd" 
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
-                    clipRule="evenodd" 
-                  />
-                </svg>
-              </div>
-            )}
           </div>
-
-          {/* Metadata */}
-          {showMetadata && !compact && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              {document.type && (
-                <span className="uppercase font-medium">
-                  {document.type}
-                </span>
-              )}
-              
-              {document.size && (
-                <span>
-                  {formatFileSize(document.size)}
-                </span>
-              )}
-              
-              {document.lastModified && (
-                <span>
-                  Modified {formatDate(document.lastModified)}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Compact metadata */}
-          {showMetadata && compact && (document.type || document.size) && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {document.type && (
-                <span className="uppercase font-medium text-xs">
-                  {document.type}
-                </span>
-              )}
-              {document.type && document.size && <span>•</span>}
-              {document.size && (
-                <span>
-                  {formatFileSize(document.size)}
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

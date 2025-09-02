@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Settings, Plus, X, Palette } from 'lucide-react';
+import { Settings, Plus, X, Search, Grid, List, Filter } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -21,12 +21,17 @@ interface FilterOptions {
   category: string;
   status: string[];
   sortBy: 'recent' | 'oldest' | 'az' | 'za' | 'wordcount';
+  searchQuery?: string;
+  viewMode?: 'grid' | 'list';
   folderId?: string;
 }
 
 interface DocumentFiltersProps {
   onFiltersChange: (filters: FilterOptions) => void;
+  onSearchChange?: (query: string) => void;
+  onViewModeChange?: (mode: 'grid' | 'list') => void;
   initialFilters: FilterOptions;
+  documentCount?: number;
 }
 
 const STATUS_OPTIONS = [
@@ -48,15 +53,37 @@ const PRESET_COLORS = [
   '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316'
 ];
 
-export function DocumentFilters({ onFiltersChange, initialFilters }: DocumentFiltersProps) {
+export function DocumentFilters({ 
+  onFiltersChange, 
+  onSearchChange,
+  onViewModeChange,
+  initialFilters,
+  documentCount = 0
+}: DocumentFiltersProps) {
   const [filters, setFilters] = useState<FilterOptions>(initialFilters);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(initialFilters.searchQuery || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Handle debounced search
+  useEffect(() => {
+    onSearchChange?.(debouncedSearch);
+    setFilters(prev => ({ ...prev, searchQuery: debouncedSearch }));
+  }, [debouncedSearch, onSearchChange]);
 
   useEffect(() => {
     loadCategories();
@@ -168,10 +195,87 @@ export function DocumentFilters({ onFiltersChange, initialFilters }: DocumentFil
     });
   };
 
-  const hasActiveFilters = filters.category !== 'all' || filters.status.length > 0;
+  const hasActiveFilters = filters.category !== 'all' || filters.status.length > 0 || searchQuery.length > 0;
+  
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.category !== 'all') count++;
+    if (filters.status.length > 0) count += filters.status.length;
+    if (searchQuery.length > 0) count++;
+    return count;
+  }, [filters.category, filters.status.length, searchQuery]);
+
+  const handleViewModeChange = useCallback((mode: 'grid' | 'list') => {
+    setFilters(prev => ({ ...prev, viewMode: mode }));
+    onViewModeChange?.(mode);
+  }, [onViewModeChange]);
 
   return (
     <div className="space-y-4 p-5 bg-surface/30 rounded-xl border border-border/50 shadow-soft backdrop-blur-sm">
+      {/* Header with filter count */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Filters</span>
+          {activeFilterCount > 0 && (
+            <Badge variant="secondary" className="h-5 px-2 text-xs">
+              {activeFilterCount}
+            </Badge>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {documentCount} document{documentCount !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Search Input */}
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Search</Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-9 bg-background/50 border-border/60 focus:border-primary/60 rounded-lg"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* View Mode Toggle */}
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">View</Label>
+        <div className="flex border border-border/60 rounded-lg p-1 bg-background/50">
+          <Button
+            variant={filters.viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => handleViewModeChange('grid')}
+            className="flex-1 h-7 text-xs"
+          >
+            <Grid className="h-3 w-3 mr-1" />
+            Grid
+          </Button>
+          <Button
+            variant={filters.viewMode === 'list' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => handleViewModeChange('list')}
+            className="flex-1 h-7 text-xs"
+          >
+            <List className="h-3 w-3 mr-1" />
+            List
+          </Button>
+        </div>
+      </div>
       {/* Category Filter */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">

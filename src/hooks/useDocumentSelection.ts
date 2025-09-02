@@ -1,44 +1,77 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useHaptics } from './useHaptics';
 
 export function useDocumentSelection() {
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<Set<string>>(new Set());
   const { selectionChanged, impactLight } = useHaptics();
 
-  const toggleDocumentSelection = useCallback((documentId: string) => {
-    setSelectedDocuments(prev => {
-      const isCurrentlySelected = prev.includes(documentId);
-      const newSelection = isCurrentlySelected
-        ? prev.filter(id => id !== documentId)
-        : [...prev, documentId];
-      
-      // Haptic feedback for selection change
+  // Convert Set to array for external use
+  const selectedDocuments = useMemo(() => Array.from(selectedDocumentIds), [selectedDocumentIds]);
+
+  const selectDocument = useCallback((documentId: string) => {
+    setSelectedDocumentIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(documentId);
       selectionChanged();
-      
-      return newSelection;
+      return newSet;
     });
   }, [selectionChanged]);
 
-  const selectAllDocuments = useCallback((documentIds: string[]) => {
-    setSelectedDocuments(documentIds);
+  const deselectDocument = useCallback((documentId: string) => {
+    setSelectedDocumentIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(documentId);
+      selectionChanged();
+      return newSet;
+    });
+  }, [selectionChanged]);
+
+  const toggleDocument = useCallback((documentId: string) => {
+    setSelectedDocumentIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(documentId)) {
+        newSet.delete(documentId);
+      } else {
+        newSet.add(documentId);
+      }
+      selectionChanged();
+      return newSet;
+    });
+  }, [selectionChanged]);
+
+  const selectAll = useCallback((documentIds: string[]) => {
+    if (documentIds.length === 0) return;
+    setSelectedDocumentIds(new Set(documentIds));
     impactLight();
   }, [impactLight]);
 
   const clearSelection = useCallback(() => {
-    setSelectedDocuments([]);
+    setSelectedDocumentIds(new Set());
     impactLight();
   }, [impactLight]);
 
-  const isDocumentSelected = useCallback((documentId: string) => {
-    return selectedDocuments.includes(documentId);
-  }, [selectedDocuments]);
+  const isSelected = useCallback((documentId: string) => {
+    return selectedDocumentIds.has(documentId);
+  }, [selectedDocumentIds]);
+
+  // Legacy support for existing components
+  const toggleDocumentSelection = toggleDocument;
+  const selectAllDocuments = selectAll;
+  const isDocumentSelected = isSelected;
 
   return {
     selectedDocuments,
+    selectedCount: selectedDocumentIds.size,
+    selectDocument,
+    deselectDocument,
+    toggleDocument,
+    selectAll,
+    clearSelection,
+    isSelected,
+    // Legacy support
     toggleDocumentSelection,
     selectAllDocuments,
-    clearSelection,
     isDocumentSelected,
-    selectionCount: selectedDocuments.length
+    selectionCount: selectedDocumentIds.size
   };
 }
