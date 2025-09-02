@@ -133,7 +133,7 @@ export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: Bul
             Bulk Document Upload
           </CardTitle>
           <CardDescription>
-            Drag and drop files here or click to select. Supports .txt, .md, .doc, .docx files up to 10MB each.
+            Drag and drop files here or click to select. Supports .txt and .md files up to 10MB each.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,7 +158,7 @@ export function BulkUploader({ onUploadComplete, onDocumentAdded, onClose }: Bul
                 id="file-upload"
                 className="hidden"
                 multiple
-                accept=".txt,.md,.doc,.docx"
+                accept=".txt,.md"
                 onChange={handleFileSelect}
                 disabled={uploadState.isUploading}
               />

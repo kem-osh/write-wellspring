@@ -11,7 +11,16 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     };
   }
 
-  // Check if it's a text file (we'll read as text regardless of extension)
+  // Check file type
+  const fileExtension = getFileExtension(file.name);
+  if (!SUPPORTED_FILE_TYPES.includes(fileExtension)) {
+    return {
+      valid: false,
+      error: `File type ${fileExtension} not supported. Only .txt and .md files are allowed.`
+    };
+  }
+
+  // Check if file is empty
   if (file.size === 0) {
     return {
       valid: false,
