@@ -32,20 +32,25 @@ serve(async (req) => {
     const { command, content, selectedText, userId, message } = await req.json();
 
     // 2) Validate the payload - for chat, we need either message or content/selectedText
-    if (!userId || !command) {
-      throw new Error('User ID and the full command object are required.');
+    if (!userId) {
+      throw new Error('User ID is required.');
     }
     const userMessage = message || selectedText || content;
     if (!userMessage) {
       throw new Error('No message was provided to process.');
     }
 
-    // 3) Use command object values directly - NO hardcoded fallbacks
-    const commandConfig = command;
+    // 3) Use command object with backward compatibility defaults
+    const commandConfig = command || {
+      ai_model: "gpt-5-mini-2025-08-07",
+      system_prompt: "You are a helpful assistant that answers using the user's documents when possible.",
+      max_tokens: 1200,
+      temperature: 0.7
+    };
     
-    // Validate required fields
-    if (!commandConfig.ai_model) throw new Error('ai_model is required in command config');
-    if (!commandConfig.system_prompt) throw new Error('system_prompt is required in command config');
+    // Ensure required fields exist with fallbacks
+    if (!commandConfig.ai_model) commandConfig.ai_model = "gpt-5-mini-2025-08-07";
+    if (!commandConfig.system_prompt) commandConfig.system_prompt = "You are a helpful assistant that answers using the user's documents when possible.";
     
     const model = commandConfig.ai_model;
     const maxTokens = commandConfig.max_tokens || 1000;

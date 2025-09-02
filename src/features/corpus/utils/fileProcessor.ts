@@ -1,6 +1,6 @@
 export const BATCH_SIZE = 5;
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-export const SUPPORTED_FILE_TYPES = ['.txt', '.md', '.doc', '.docx'];
+export const SUPPORTED_FILE_TYPES = ['.txt', '.md'];
 
 export function validateFile(file: File): { valid: boolean; error?: string } {
   // Check file size

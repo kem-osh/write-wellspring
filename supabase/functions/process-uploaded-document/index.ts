@@ -167,8 +167,14 @@ serve(async (req) => {
       });
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Initialize Supabase client with Authorization header for RLS compliance
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: {
+          Authorization: req.headers.get('Authorization')!,
+        },
+      },
+    });
 
     // Truncate content if too large (max 30k chars for embeddings)
     const maxContentLength = 30000;
