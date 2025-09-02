@@ -20,7 +20,7 @@ interface Document {
   title: string;
   content: string;
   description?: string;
-  category: string;
+  category?: string;
   status: string;
   word_count: number;
   type?: string;

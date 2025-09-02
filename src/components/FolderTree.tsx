@@ -9,10 +9,13 @@ interface Folder {
   id: string;
   name: string;
   parent_id?: string;
-  color: string;
-  icon: string;
-  document_count: number;
+  color?: string;
+  icon?: string;
+  document_count?: number;
   created_at: string;
+  updated_at?: string;
+  user_id?: string;
+  display_order?: number;
 }
 
 interface FolderTreeProps {
@@ -86,9 +89,9 @@ const FolderNode: React.FC<FolderNodeProps> = ({
         {/* Folder Icon */}
         <div className="mr-2">
           {isExpanded && hasChildren ? (
-            <FolderOpen className="w-4 h-4" style={{ color: folder.color }} />
+            <FolderOpen className="w-4 h-4" style={{ color: folder.color || '#6B7280' }} />
           ) : (
-            <Folder className="w-4 h-4" style={{ color: folder.color }} />
+            <Folder className="w-4 h-4" style={{ color: folder.color || '#6B7280' }} />
           )}
         </div>
 
@@ -100,9 +103,9 @@ const FolderNode: React.FC<FolderNodeProps> = ({
           <span className="truncate mr-2">{folder.name}</span>
           
           <div className="flex items-center gap-1">
-            {folder.document_count > 0 && (
+            {(folder.document_count || 0) > 0 && (
               <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                {folder.document_count}
+                {folder.document_count || 0}
               </Badge>
             )}
             
@@ -272,10 +275,10 @@ export const FolderTree: React.FC<FolderTreeProps> = ({
         onClick={() => onFolderSelect(null)}
       >
         <div className="w-6 h-6 mr-1" /> {/* Spacer for alignment */}
-        <FolderOpen className="w-4 h-4 mr-2 text-muted-foreground" />
+          <FolderOpen className="w-4 h-4 mr-2 text-muted-foreground" />
         <span>All Documents</span>
         <Badge variant="secondary" className="ml-auto text-xs px-1.5 py-0">
-          {folders.reduce((sum, f) => sum + f.document_count, 0)}
+          {folders.reduce((sum, f) => sum + (f.document_count || 0), 0)}
         </Badge>
       </div>
 
