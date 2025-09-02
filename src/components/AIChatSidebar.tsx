@@ -145,7 +145,7 @@ export function AIChatSidebar({
     }
   };
   if (!isOpen) return null;
-  return <div className="w-full h-full flex flex-col bg-sidebar">
+  return <div className="w-full h-full flex flex-col bg-sidebar px-[40px]">
       {/* Enhanced Header with better contrast */}
       <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-sidebar-border bg-sidebar shadow-sm py-0">
         <div className="flex items-center gap-3">
