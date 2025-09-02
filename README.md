@@ -24,10 +24,10 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <your_git_url>
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+cd <your_project_name>
 
 # Step 3: Install the necessary dependencies.
 npm i
@@ -49,6 +49,22 @@ npm run dev
 - Select the "Codespaces" tab.
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## Additional Setup Commands
+
+After setting up the project locally or in a development environment, run these additional commands to install required dependencies:
+
+```bash
+# Install date-fns library for date manipulation
+npm install date-fns
+
+# Add shadcn-ui progress and checkbox components
+npx shadcn-ui@latest add progress checkbox
+```
+
+These commands will:
+1. Install the `date-fns` library for enhanced date manipulation capabilities
+2. Add the `progress` and `checkbox` components from shadcn-ui to the project
 
 ## What technologies are used for this project?
 
