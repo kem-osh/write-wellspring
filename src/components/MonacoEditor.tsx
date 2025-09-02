@@ -20,31 +20,74 @@ export function MonacoEditor({ value, onChange, isDarkMode, settings, onSelectio
     // Expose editor to parent if needed
     if (onProvideEditor) onProvideEditor(editor, monaco);
     
-    // Configure Monaco for writing
+    // Configure Monaco for writing (resolve CSS variables to static hex values for Monaco)
+    const getCssVar = (name: string) => {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    };
+
+    const parseHsl = (raw: string) => {
+      // Accept formats like "222.2 84% 4.9%" or "hsl(222.2 84% 4.9%)" or with commas
+      const cleaned = raw.replace(/hsl\(|\)/gi, '').trim();
+      const parts = cleaned.split(/[\s,\/]+/).filter(Boolean);
+      const h = parseFloat(parts[0] || '0');
+      const s = parseFloat((parts[1] || '0').replace('%', ''));
+      const l = parseFloat((parts[2] || '0').replace('%', ''));
+      return { h, s, l };
+    };
+
+    const hslToHex = (h: number, s: number, l: number, a = 1) => {
+      // Convert HSL (0-360, 0-100, 0-100) to hex, with optional alpha
+      const S = s / 100;
+      const L = l / 100;
+      const k = (n: number) => (n + h / 30) % 12;
+      const c = (1 - Math.abs(2 * L - 1)) * S;
+      const x = (n: number) => L - c / 2 + c * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+      const r = Math.round(255 * x(0));
+      const g = Math.round(255 * x(8));
+      const b = Math.round(255 * x(4));
+      const toHex = (n: number) => n.toString(16).padStart(2, '0');
+      const base = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      return a < 1 ? `${base}${toHex(Math.round(a * 255))}` : base;
+    };
+
+    const varToHex = (name: string, alpha = 1) => {
+      const raw = getCssVar(name);
+      const { h, s, l } = parseHsl(raw);
+      return hslToHex(h, s, l, alpha);
+    };
+
+    const themeColors = {
+      bg: varToHex('--surface'),
+      fg: varToHex('--foreground'),
+      line: varToHex('--muted', 0.3),
+      cursor: varToHex('--primary'),
+      selection: varToHex('--primary', 0.15),
+    };
+
     monaco.editor.defineTheme('writing-light', {
       base: 'vs',
       inherit: true,
       rules: [],
-        colors: {
-          'editor.background': 'hsl(var(--surface))',
-          'editor.foreground': 'hsl(var(--foreground))',
-          'editor.lineHighlightBackground': 'hsl(var(--muted)/0.3)',
-          'editorCursor.foreground': 'hsl(var(--primary))',
-          'editor.selectionBackground': 'hsl(var(--primary)/0.15)',
-        }
+      colors: {
+        'editor.background': themeColors.bg,
+        'editor.foreground': themeColors.fg,
+        'editor.lineHighlightBackground': themeColors.line,
+        'editorCursor.foreground': themeColors.cursor,
+        'editor.selectionBackground': themeColors.selection,
+      }
     });
 
     monaco.editor.defineTheme('writing-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [],
-        colors: {
-          'editor.background': 'hsl(var(--surface))',
-          'editor.foreground': 'hsl(var(--foreground))',
-          'editor.lineHighlightBackground': 'hsl(var(--muted)/0.3)',
-          'editorCursor.foreground': 'hsl(var(--primary))',
-          'editor.selectionBackground': 'hsl(var(--primary)/0.15)',
-        }
+      colors: {
+        'editor.background': themeColors.bg,
+        'editor.foreground': themeColors.fg,
+        'editor.lineHighlightBackground': themeColors.line,
+        'editorCursor.foreground': themeColors.cursor,
+        'editor.selectionBackground': themeColors.selection,
+      }
     });
 
     // Track selection changes and report selected text
