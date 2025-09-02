@@ -5,6 +5,7 @@ import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { DocumentCard } from '@/components/DocumentCard';
+import type { Document as CardDocument } from '@/components/DocumentCard';
 import { Input } from '@/components/ui/input';
 import { X, FileText, Search, Plus, Filter } from 'lucide-react';
 import { DocumentSearch } from '@/components/DocumentSearch';
@@ -25,7 +26,7 @@ interface MobileDocumentLibraryProps {
   isOpen: boolean;
   onClose: () => void;
   documents: Document[];
-  onDocumentSelect: (doc: Document) => void;
+  onDocumentSelect: (doc: CardDocument) => void;
   onCreateNew: () => void;
   onDeleteDocument: (docId: string) => void;
   searchQuery: string;
