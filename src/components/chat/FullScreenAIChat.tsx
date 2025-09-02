@@ -40,6 +40,13 @@ export function FullScreenAIChat({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([
+    "What are the main themes in my documents?",
+    "Find documents about mythology",
+    "Summarize my recent writings",
+    "Compare my latest drafts",
+    "Extract key insights from selected documents"
+  ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -138,9 +145,69 @@ export function FullScreenAIChat({
     }
   };
 
+  const handleVoiceInput = async () => {
+    try {
+      // Integrate with existing VoiceRecorder functionality
+      // This would trigger the voice recording modal or inline recording
+      if (onVoiceInput) {
+        onVoiceInput();
+      } else {
+        toast({
+          title: "Voice Input",
+          description: "Voice input is not available in this context.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Voice input error:', error);
+      toast({
+        title: "Voice Input Error",
+        description: "Failed to start voice recording.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSuggestionUse = (suggestion: string) => {
+    // When user clicks a suggestion, we can either send it immediately
+    // or just populate the input. For now, let's send it immediately.
+    sendMessage(suggestion);
+  };
+
+  const updateSuggestionsBasedOnContext = () => {
+    // Update suggestions based on recent messages or document context
+    const contextualSuggestions = [
+      "What are the main themes in my documents?",
+      "Find documents about mythology", 
+      "Summarize my recent writings",
+      "Compare my latest drafts",
+      "Extract key insights from selected documents"
+    ];
+    
+    // If there are existing messages, provide more contextual suggestions
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'assistant') {
+        contextualSuggestions.push(
+          "Tell me more about that",
+          "Can you elaborate?",
+          "Show me related documents"
+        );
+      }
+    }
+    
+    setSuggestions(contextualSuggestions.slice(0, 5)); // Limit to 5 suggestions
+  };
+
   const clearChat = () => {
     setMessages([]);
+    updateSuggestionsBasedOnContext();
   };
+
+  // Update suggestions when messages change
+  useEffect(() => {
+    updateSuggestionsBasedOnContext();
+  }, [messages.length]);
 
   if (!isOpen) return null;
 
@@ -172,22 +239,6 @@ export function FullScreenAIChat({
                     <h3 className="text-xl font-semibold text-foreground mb-2">Start a conversation</h3>
                     <p className="text-muted-foreground">Ask questions about your documents and I'll help you find answers.</p>
                   </div>
-                  
-                  <div className="grid grid-cols-1 gap-2 text-left">
-                    {[
-                      "What are the main themes in my documents?",
-                      "Find documents about mythology",
-                      "Summarize my recent writings"
-                    ].map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => sendMessage(suggestion)}
-                        className="p-3 text-sm text-left rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-border transition-all duration-200"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
             ) : (
@@ -217,8 +268,11 @@ export function FullScreenAIChat({
         <div className="pb-safe">
           <ChatInput
             onSendMessage={sendMessage}
-            onVoiceInput={onVoiceInput}
+            onVoiceInput={handleVoiceInput}
             isLoading={isLoading}
+            suggestions={suggestions}
+            onSuggestionUse={handleSuggestionUse}
+            placeholder="Ask about your documents or use voice input..."
           />
         </div>
       </div>
