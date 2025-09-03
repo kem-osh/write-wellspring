@@ -156,6 +156,27 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     return iconMap[type?.toLowerCase() || ''] || '📄';
   }, []);
 
+  // Generate content preview from document content
+  const getContentPreview = useCallback((content?: string): string => {
+    if (!content || content.trim().length === 0) return '';
+    
+    // Remove markdown formatting and extra whitespace
+    const cleanContent = content
+      .replace(/[#*`_~\[\]]/g, '') // Remove markdown syntax
+      .replace(/\s+/g, ' ') // Replace multiple whitespace with single space
+      .trim();
+    
+    // Return first 50-80 characters with word boundary
+    if (cleanContent.length <= 80) return cleanContent;
+    
+    const truncated = cleanContent.substring(0, 80);
+    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    
+    return lastSpaceIndex > 50 
+      ? truncated.substring(0, lastSpaceIndex) + '...'
+      : truncated + '...';
+  }, []);
+
   return (
     <Card 
       className={cardClasses}
@@ -199,6 +220,15 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
                 {document.description && !compact && (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">
                     {document.description}
+                  </p>
+                )}
+                
+                {/* Content Preview */}
+                {getContentPreview(document.content) && (
+                  <p className={`text-muted-foreground/80 mt-1 line-clamp-2 ${
+                    compact ? 'text-xs' : 'text-xs'
+                  }`}>
+                    {getContentPreview(document.content)}
                   </p>
                 )}
               </div>
