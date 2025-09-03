@@ -43,7 +43,9 @@ import {
   Check,
   X,
   Tag,
-  Circle
+  Circle,
+  Grid3X3,
+  List
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { DocumentCard } from './DocumentCard';
@@ -103,6 +105,7 @@ export function DocumentList({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('list'); // Default to list view
   const { toast } = useToast();
 
   // Sync external selection with internal state
@@ -462,6 +465,35 @@ export function DocumentList({
         </div>
       ) : (
         <>
+          {/* View toggle and bulk actions bar */}
+          {!isMultiSelectMode && (
+            <div className="flex items-center justify-between p-4 bg-surface/60 backdrop-blur-sm border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">View:</span>
+                <div className="flex items-center bg-muted/50 rounded-lg p-1">
+                  <Button
+                    variant={viewLayout === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewLayout('list')}
+                    className="h-7 px-2"
+                  >
+                    <List className="h-3 w-3 mr-1" />
+                    List
+                  </Button>
+                  <Button
+                    variant={viewLayout === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewLayout('grid')}
+                    className="h-7 px-2"
+                  >
+                    <Grid3X3 className="h-3 w-3 mr-1" />
+                    Grid
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Enhanced bulk actions bar */}
           {isMultiSelectMode && (
             <div className="flex items-center justify-between p-4 bg-surface/60 backdrop-blur-sm border-b border-border/50 shadow-sm rounded-t-lg">
@@ -558,11 +590,16 @@ export function DocumentList({
 
           <ScrollArea className="flex-1">
             <div className="p-6">
-              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+              <div className={
+                viewLayout === 'list' 
+                  ? "space-y-2" 
+                  : "grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+              }>
                 {documents.map((doc) => (
                   <DocumentCard
                     key={doc.id}
                     document={doc}
+                    layout={viewLayout}
                     isSelected={selectedDocs.has(doc.id)}
                     onSelect={() => {
                       if (isMultiSelectMode) {

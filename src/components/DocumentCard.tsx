@@ -25,6 +25,7 @@ interface Document {
 interface DocumentCardProps {
   document: Document;
   compact?: boolean;
+  layout?: 'grid' | 'list';
   isSelected?: boolean;
   onSelect?: (document: Document) => void;
   className?: string;
@@ -60,7 +61,8 @@ const DocumentCardSkeleton: React.FC<{ compact?: boolean }> = ({ compact = false
 // Main DocumentCard component
 export const DocumentCard = React.memo<DocumentCardProps>(({ 
   document, 
-  compact = false, 
+  compact = false,
+  layout = 'grid',
   isSelected = false, 
   onSelect,
   className = '',
@@ -221,6 +223,115 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       : truncated + '...';
   }, []);
 
+  // Render horizontal list layout
+  if (layout === 'list') {
+    return (
+      <Card 
+        className={cardClasses}
+        onClick={handleCardClick}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onKeyDown={handleKeyDown}
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-selected={isSelected}
+        aria-label={ariaLabel}
+        aria-disabled={disabled}
+      >
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            {/* Checkbox for selection mode */}
+            {(showCheckbox || isSelected) && (
+              <div className="flex-shrink-0">
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => {
+                    onSelectionToggle?.(document.id);
+                    impactLight();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-4 w-4"
+                  aria-label={`Select document ${document.title}`}
+                />
+              </div>
+            )}
+
+            {/* Document Icon/Thumbnail - Larger in list view */}
+            <div className="flex-shrink-0">
+              {document.thumbnail ? (
+                <img 
+                  src={document.thumbnail} 
+                  alt=""
+                  className="object-cover rounded w-12 h-12"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex items-center justify-center w-12 h-12 text-2xl bg-muted/30 rounded">
+                  {getDocumentIcon(document.type)}
+                </div>
+              )}
+            </div>
+
+            {/* Document Info - Improved for horizontal layout */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-foreground truncate text-base leading-tight">
+                {document.title || 'Untitled Document'}
+              </h3>
+              
+              {document.description && (
+                <p className="text-sm text-muted-foreground truncate mt-0.5">
+                  {document.description}
+                </p>
+              )}
+              
+              {/* Content Preview - Better for list view */}
+              {getContentPreview(document.content) && (
+                <p className="text-sm text-muted-foreground/80 mt-1 line-clamp-2 leading-relaxed">
+                  {getContentPreview(document.content)}
+                </p>
+              )}
+            </div>
+
+            {/* Metadata in list view - Only show on medium+ screens */}
+            {showMetadata && (
+              <div className="hidden md:flex flex-col items-end gap-1 text-xs text-muted-foreground flex-shrink-0">
+                {document.word_count && (
+                  <span className="font-medium">
+                    {formatWordCount(document.word_count)} words
+                  </span>
+                )}
+                {document.lastModified && (
+                  <span>
+                    {formatDate(document.lastModified)}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Selection Indicator */}
+            {isSelected && (
+              <div className="flex-shrink-0 rounded-full bg-primary flex items-center justify-center w-5 h-5">
+                <svg 
+                  className="text-primary-foreground w-3 h-3"
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <path 
+                    fillRule="evenodd" 
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Render grid layout (original design with fixes)
   return (
     <Card 
       className={cardClasses}
@@ -235,7 +346,7 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-disabled={disabled}
     >
       <CardContent className={contentClasses}>
-        <div className={`space-y-${compact ? '1' : '2'}`}>
+        <div className={compact ? "space-y-1" : "space-y-2"}>
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
             {/* Checkbox for selection mode */}
@@ -249,6 +360,7 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
                   }}
                   onClick={(e) => e.stopPropagation()}
                   className="h-4 w-4"
+                  aria-label={`Select document ${document.title}`}
                 />
               </div>
             )}
@@ -357,6 +469,14 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       </CardContent>
     </Card>
   );
+
+  // Helper function for word count formatting
+  function formatWordCount(count: number): string {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k`;
+    }
+    return count.toString();
+  }
 });
 
 // Set display name for better debugging

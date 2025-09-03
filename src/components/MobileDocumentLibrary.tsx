@@ -259,6 +259,7 @@ export function MobileDocumentLibrary({
                     <DocumentCard
                       key={doc.id}
                       document={doc}
+                      layout="list"
                       isSelected={selectedDocuments.includes(doc.id)}
                       onSelect={(doc) => {
                         onDocumentSelect(doc);
