@@ -8,6 +8,8 @@ import {
   MessageSquare, 
   MoreHorizontal
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useKeyboardViewport } from '@/hooks/useKeyboardViewport';
 
 interface MobileBottomNavProps {
   onDocumentLibrary: () => void;
@@ -31,6 +33,12 @@ export function MobileBottomNav({
   className = ""
 }: MobileBottomNavProps) {
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const { isVisible: keyboardVisible } = useKeyboardViewport();
+
+  // Hide bottom nav when keyboard is visible to save space
+  if (keyboardVisible) {
+    return null;
+  }
 
   const handleTabPress = (tabId: string, action: () => void) => {
     setActiveTab(tabId);
@@ -78,7 +86,10 @@ export function MobileBottomNav({
   return (
     <>
       {/* Floating Pill Navigation Container */}
-      <nav className="fixed bottom-6 inset-x-0 z-50">
+      <nav className={cn(
+        "fixed bottom-6 inset-x-0 z-50 pb-safe-bottom",
+        className
+      )}>
         <div className="mx-auto w-fit nav-pill px-2 py-2">
           {/* Navigation Items */}
           <div className="flex items-center justify-center gap-1">
@@ -93,12 +104,12 @@ export function MobileBottomNav({
                   variant={isVoice ? "voice" : "nav-item"}
                   size={isVoice ? "lg" : "icon"}
                   interactive={true}
-                  className={`
-                    relative transition-all duration-300
-                    ${isActive ? 'scale-110' : ''}
-                    ${isVoice ? 'mx-2' : ''}
-                    focus-ring
-                  `}
+                  className={cn(
+                    "relative transition-all duration-300 touch-target",
+                    isActive && "scale-110",
+                    isVoice && "mx-2",
+                    "focus-ring min-h-[48px] min-w-[48px]"
+                  )}
                   onClick={() => handleTabPress(item.id, item.action)}
                   aria-label={`Navigate to ${item.id}`}
                 >

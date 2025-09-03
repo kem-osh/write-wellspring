@@ -330,6 +330,8 @@ export function VoiceRecorder({ onTranscription, onDocumentCreated, disabled }: 
             : 'bg-voice-button hover:bg-voice-button/90 text-voice-button-foreground'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          // Enhanced touch targets for mobile
+          touch-target min-h-[44px] min-w-[44px]
         `}
       >
         {state === 'processing' ? (

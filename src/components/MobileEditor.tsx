@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import type { Settings } from '@/stores/settingsStore';
 
@@ -13,18 +13,42 @@ interface MobileEditorProps {
 export function MobileEditor({ value, onChange, isDarkMode, settings, placeholder = "Start writing..." }: MobileEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    // Auto-resize textarea
+  // Optimized auto-resize with better performance
+  const autoResize = useCallback(() => {
     const textarea = textareaRef.current;
-    if (textarea) {
+    if (!textarea) return;
+
+    // Use requestAnimationFrame for smooth resize
+    requestAnimationFrame(() => {
       textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-  }, [value]);
+      const newHeight = Math.min(textarea.scrollHeight, window.innerHeight * 0.8);
+      textarea.style.height = `${newHeight}px`;
+    });
+  }, []);
+
+  useEffect(() => {
+    autoResize();
+  }, [value, autoResize]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
+    // Trigger resize immediately for smooth typing experience
+    autoResize();
   };
+
+  // Handle focus for better mobile UX
+  const handleFocus = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Scroll into view on mobile to avoid keyboard overlap
+    setTimeout(() => {
+      textarea.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }, 300); // Wait for keyboard animation
+  }, []);
 
   return (
     <div className="h-full w-full flex flex-col bg-surface/50 rounded-xl border border-border/50 shadow-soft backdrop-blur-sm overflow-hidden">
@@ -36,13 +60,18 @@ export function MobileEditor({ value, onChange, isDarkMode, settings, placeholde
           settings.fontFamily === 'mono' ? "font-mono" : "font-sans",
           // Prevent iOS zoom on focus
           "text-base sm:text-sm",
-          // Mobile-specific optimizations
+          // Enhanced mobile optimizations
           "touch-manipulation",
           // Hide scrollbar but keep functionality
-          "scrollbar-none overflow-y-auto"
+          "scrollbar-none overflow-y-auto",
+          // Better iOS scroll behavior
+          "overscroll-behavior-y-contain",
+          // Optimize for mobile rendering
+          "will-change-scroll"
         )}
         value={value}
         onChange={handleChange}
+        onFocus={handleFocus}
         placeholder={placeholder}
         autoComplete="off"
         autoCorrect="on"
@@ -56,7 +85,10 @@ export function MobileEditor({ value, onChange, isDarkMode, settings, placeholde
                       settings.fontFamily === 'mono' ? "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace" : 
                       'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
           WebkitTextSizeAdjust: '100%',
-          minHeight: '100%'
+          minHeight: '100%',
+          // Enhanced mobile input handling
+          WebkitAppearance: 'none',
+          WebkitTapHighlightColor: 'transparent'
         }}
       />
     </div>

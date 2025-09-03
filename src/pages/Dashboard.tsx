@@ -1017,8 +1017,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
-      <div className={`flex flex-col h-screen bg-background ${isMobile ? 'mobile-layout' : ''}`}>
+    <div className={`min-h-screen-mobile ${isDarkMode ? 'dark' : ''}`} style={{ minHeight: '100dvh' }}>
+      <div className={`flex flex-col h-screen bg-background ${isMobile ? 'mobile-layout' : ''}`} style={{ height: '100dvh' }}>
         {/* Mobile Layout */}
         {isMobile ? (
           <>

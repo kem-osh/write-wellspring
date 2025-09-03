@@ -4,6 +4,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDevice } from '@/hooks/useDevice';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useKeyboardViewport } from '@/hooks/useKeyboardViewport';
+import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -28,6 +30,7 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { isMobile } = useDevice();
   const { impactLight } = useHaptics();
+  const { isVisible: keyboardVisible } = useKeyboardViewport();
 
   const handleSend = useCallback(() => {
     if (message.trim() && !isLoading) {
@@ -59,7 +62,17 @@ export function ChatInput({
   const handleFocus = useCallback(() => {
     setIsExpanded(true);
     setShowSuggestions(suggestions.length > 0 && !message.trim());
-  }, [suggestions.length, message]);
+    
+    // On mobile, scroll input into view when keyboard appears
+    if (isMobile) {
+      setTimeout(() => {
+        textareaRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 300); // Wait for keyboard animation
+    }
+  }, [suggestions.length, message, isMobile]);
 
   const handleBlur = useCallback(() => {
     // Delay to allow for suggestion clicks
@@ -77,12 +90,18 @@ export function ChatInput({
     impactLight();
   }, [onSuggestionUse, impactLight]);
 
+  // Enhanced auto-resize with better performance
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      const newHeight = Math.min(textareaRef.current.scrollHeight, isMobile ? 100 : 120);
-      textareaRef.current.style.height = `${newHeight}px`;
-    }
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Use requestAnimationFrame for smooth resize
+    requestAnimationFrame(() => {
+      textarea.style.height = 'auto';
+      const maxHeight = isMobile ? 100 : 120;
+      const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+      textarea.style.height = `${newHeight}px`;
+    });
   }, [message, isMobile]);
 
   // Show suggestions when empty and focused
@@ -127,11 +146,15 @@ export function ChatInput({
       )}
 
       {/* Main Input */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 pb-6">
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 p-4",
+        keyboardVisible && isMobile ? "pb-4" : "pb-safe-bottom"
+      )}>
         <div className="chat-container">
-          <div className={`chat-input-glass rounded-2xl transition-all duration-300 ${
-            isExpanded ? 'p-4' : 'p-3'
-          }`}>
+          <div className={cn(
+            "chat-input-glass rounded-2xl transition-all duration-300",
+            isExpanded ? "p-4 ring-2 ring-primary/20" : "p-3"
+          )}>
             <div className="flex gap-3 items-end">
               <div className="flex-1">
                 <Textarea
@@ -142,11 +165,19 @@ export function ChatInput({
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   placeholder={placeholder}
-                  className={`resize-none bg-transparent border-0 focus-visible:ring-0 p-0 transition-all duration-200 ${
+                  className={cn(
+                    "resize-none bg-transparent border-0 focus-visible:ring-0 p-0 transition-all duration-200",
+                    "placeholder:text-muted-foreground/70 leading-relaxed",
+                    "overscroll-behavior-contain will-change-scroll touch-manipulation",
                     isMobile 
-                      ? 'min-h-[48px] max-h-[100px] text-base' 
-                      : 'min-h-[56px] max-h-[120px] text-base'
-                  }`}
+                      ? "min-h-[48px] max-h-[100px] text-base" 
+                      : "min-h-[56px] max-h-[120px] text-base"
+                  )}
+                  style={{
+                    fontSize: isMobile ? '16px' : '14px', // Prevent iOS zoom
+                    WebkitAppearance: 'none',
+                    WebkitTapHighlightColor: 'transparent'
+                  }}
                   disabled={isLoading}
                   rows={1}
                 />
@@ -158,9 +189,10 @@ export function ChatInput({
                     onClick={onVoiceInput}
                     variant="ghost"
                     size="icon"
-                    className={`rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all duration-200 touch-target ${
-                      isMobile ? 'h-12 w-12' : 'h-10 w-10'
-                    }`}
+                    className={cn(
+                      "rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all duration-200 touch-target",
+                      isMobile ? "h-12 w-12 min-h-[48px] min-w-[48px]" : "h-10 w-10"
+                    )}
                   >
                     <Mic className={isMobile ? "w-5 h-5" : "w-4 h-4"} />
                   </Button>
@@ -170,9 +202,10 @@ export function ChatInput({
                   onClick={handleSend}
                   disabled={!message.trim() || isLoading}
                   size="icon"
-                  className={`rounded-full shadow-lg hover:shadow-xl transition-all duration-200 touch-target ${
-                    isMobile ? 'h-12 w-12' : 'h-10 w-10'
-                  }`}
+                  className={cn(
+                    "rounded-full shadow-lg hover:shadow-xl transition-all duration-200 touch-target",
+                    isMobile ? "h-12 w-12 min-h-[48px] min-w-[48px]" : "h-10 w-10"
+                  )}
                 >
                   <Send className={isMobile ? "w-5 h-5" : "w-4 h-4"} />
                 </Button>

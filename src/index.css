@@ -363,6 +363,60 @@ html, body {
     }
   }
 
+  /* Mobile viewport and safe area utilities */
+  .min-h-screen-mobile {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Enhanced mobile scroll behavior */
+  .mobile-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Performance optimizations for mobile */
+  .mobile-optimized {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 200px;
+  }
+
+  /* Lazy loading for heavy components */
+  .lazy-load-trigger {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
+  }
+
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS-specific styles */
+    .ios-scroll-fix {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* Prevent iOS bounce when scrolling */
+    body {
+      overscroll-behavior-y: none;
+    }
+  }
+
+  /* Android Chrome specific optimizations */
+  @media screen and (max-width: 640px) and (pointer: coarse) {
+    /* Android touch optimizations */
+    .android-tap-highlight {
+      -webkit-tap-highlight-color: hsl(var(--primary) / 0.1);
+    }
+  }
+
   /* Mobile-optimized selection styles */
   .selection-toolbar {
     @apply bg-card/95 backdrop-blur-md border-t border-border/20 shadow-xl;
