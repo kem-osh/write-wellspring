@@ -15,7 +15,6 @@ interface CustomShortcutsProps {
   onCommandsChange?: () => void;
   selectedText?: string;
   isMobile?: boolean;
-  onOpenMore?: () => void;
 }
 
 type CommandCategory = 'edit' | 'structure' | 'analyze' | 'style';
@@ -31,8 +30,7 @@ export function CustomShortcuts({
   isLoading, 
   onCommandsChange, 
   selectedText, 
-  isMobile = false,
-  onOpenMore
+  isMobile = false
 }: CustomShortcutsProps) {
   const { user } = useAuth();
   const { selectionChanged, impactLight } = useHaptics();
@@ -210,29 +208,8 @@ export function CustomShortcuts({
                </TooltipContent>
              </Tooltip>
            </TooltipProvider>
-         ))}
-
-         {filteredCommands.length > primaryCommands.length && (
-           <TooltipProvider>
-             <Tooltip>
-               <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-1 whitespace-nowrap min-w-fit h-11"
-                    onClick={onOpenMore}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    More
-                  </Button>
-               </TooltipTrigger>
-               <TooltipContent side="top">
-                 <p className="text-sm">View all {activeCategory} commands</p>
-               </TooltipContent>
-             </Tooltip>
-           </TooltipProvider>
-         )}
+          ))}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

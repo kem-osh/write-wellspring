@@ -19,6 +19,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { UserMenu } from "@/components/UserMenu";
 import { CustomShortcuts } from "@/components/CustomShortcuts";
 import { AdvancedAICommands } from "@/components/AdvancedAICommands";
+import { CompactMoreCommands } from "@/components/CompactMoreCommands";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
@@ -132,6 +133,15 @@ export default function Dashboard() {
   const [showFactCheckModal, setShowFactCheckModal] = useState(false);
   const [showMoreCommands, setShowMoreCommands] = useState(false);
   const [showBulkUploader, setShowBulkUploader] = useState(false);
+  
+  // Compact commands state for More button
+  const [compactCommands, setCompactCommands] = useState<{
+    continue?: UnifiedCommand;
+    rewrite?: UnifiedCommand;
+    factCheck?: UnifiedCommand;
+    synthesize?: UnifiedCommand;
+    compare?: UnifiedCommand;
+  }>({});
   
   // Auto-title generation constants
   const MIN_CONTENT_LENGTH = 50; // Minimum characters before saving/titling
@@ -745,6 +755,58 @@ export default function Dashboard() {
     }
   };
 
+  // Load compact commands for More button
+  const loadCompactCommands = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const { data: dbCommands, error } = await supabase
+        .from('user_commands')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('function_name', ['ai-continue', 'ai-rewrite', 'ai-fact-check', 'synthesize-documents', 'compare-documents'])
+        .order('name');
+      
+      if (error) throw error;
+      
+      const commandMap = dbCommands?.reduce((acc, cmd) => {
+        switch (cmd.function_name) {
+          case 'ai-continue': acc.continue = cmd; break;
+          case 'ai-rewrite': acc.rewrite = cmd; break;  
+          case 'ai-fact-check': acc.factCheck = cmd; break;
+          case 'synthesize-documents': acc.synthesize = cmd; break;
+          case 'compare-documents': acc.compare = cmd; break;
+        }
+        return acc;
+      }, {} as typeof compactCommands);
+      
+      setCompactCommands(commandMap || {});
+    } catch (err) {
+      console.error('Failed to load compact commands:', err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadCompactCommands();
+  }, [loadCompactCommands]);
+
+  const handleCompactCommand = async (command: UnifiedCommand | undefined) => {
+    if (!command) {
+      toast({
+        title: "Command not available",
+        description: "This command is not configured in your account.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      await executeAICommand(command);
+    } catch (error) {
+      console.error('Compact command error:', error);
+    }
+  };
+
   const handleVoiceTranscription = async (text: string) => {
     if (!text) {
       console.warn('handleVoiceTranscription called with empty text');
@@ -1323,15 +1385,24 @@ export default function Dashboard() {
             <footer className="border-t bg-card">
               <div className="flex items-center gap-3 p-3 min-h-[68px]">
                 {/* Left Section - Custom Shortcuts */}
-                <div className="flex-1 flex items-center gap-1 overflow-x-auto">
+                 <div className="flex-1 flex items-center gap-1 overflow-x-auto">
                    <CustomShortcuts 
                      onShortcut={handleCustomShortcut} 
                      isLoading={aiLoading}
                      selectedText={selectedText}
                      onCommandsChange={() => setCommandSettingsKey(prev => prev + 1)}
-                     onOpenMore={() => setShowMoreCommands(true)}
                    />
-                </div>
+                   <CompactMoreCommands
+                     selectedDocuments={selectedDocuments}
+                     onContinue={() => handleCompactCommand(compactCommands.continue)}
+                     onRewrite={() => handleCompactCommand(compactCommands.rewrite)}
+                     onFactCheck={() => handleCompactCommand(compactCommands.factCheck)}
+                     onSynthesize={() => handleCompactCommand(compactCommands.synthesize)}
+                     onCompare={() => handleCompactCommand(compactCommands.compare)}
+                     onViewAllCommands={() => setShowMoreCommands(true)}
+                     isLoading={aiLoading}
+                   />
+                 </div>
                 
                 {/* Center Section - Voice & AI Chat */}
                 <div className="flex items-center gap-2 shrink-0">
