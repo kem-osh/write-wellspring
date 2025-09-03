@@ -131,7 +131,7 @@ export function MoveToFolderDialog({
       const { error } = await supabase
         .from('documents')
         .update({ 
-          folder_id: selectedFolderId || null 
+          folder_id: selectedFolderId === "__root__" ? null : selectedFolderId || null
         })
         .in('id', documentIds);
 
@@ -186,7 +186,7 @@ export function MoveToFolderDialog({
                     <SelectValue placeholder="Choose folder (or leave empty for root)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">📁 Root (No folder)</SelectItem>
+                    <SelectItem value="__root__">📁 Root (No folder)</SelectItem>
                     {folders.map((folder) => (
                       <SelectItem key={folder.id} value={folder.id}>
                         📁 {folder.path || folder.name}
