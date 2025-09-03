@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { supabase } from '@/integrations/supabase/client';
 import { SelectionToolbar } from '@/components/SelectionToolbar';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,9 +8,11 @@ import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { DocumentCard } from '@/components/DocumentCard';
 import type { Document as CardDocument } from '@/components/DocumentCard';
 import { Input } from '@/components/ui/input';
-import { X, FileText, Search, Plus, Filter } from 'lucide-react';
+import { X, FileText, Search, Plus, Filter, MoreHorizontal } from 'lucide-react';
 import { DocumentSearch } from '@/components/DocumentSearch';
 import { DocumentFilters } from '@/components/DocumentFilters';
+import { BulkDocumentActions } from '@/components/BulkDocumentActions';
+import { MoveToFolderDialog } from '@/components/MoveToFolderDialog';
 
 interface Document {
   id: string;
@@ -18,6 +21,7 @@ interface Document {
   category: string;
   status: string;
   word_count: number;
+  folder_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +33,7 @@ interface MobileDocumentLibraryProps {
   onDocumentSelect: (doc: CardDocument) => void;
   onCreateNew: () => void;
   onDeleteDocument: (docId: string) => void;
+  onDocumentUpdate?: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   filters: any;
@@ -48,6 +53,7 @@ export function MobileDocumentLibrary({
   onDocumentSelect,
   onCreateNew,
   onDeleteDocument,
+  onDocumentUpdate,
   searchQuery,
   onSearchChange,
   filters,
@@ -60,6 +66,8 @@ export function MobileDocumentLibrary({
   onCompareSelected
 }: MobileDocumentLibraryProps) {
   const [showFilters, setShowFilters] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
 
   // Swipe to close gesture
   const swipeHandlers = useSwipeGesture({
@@ -81,9 +89,27 @@ export function MobileDocumentLibrary({
     onSelectionChange([]);
   };
 
-  const handleDeleteSelected = () => {
-    selectedDocuments.forEach(docId => onDeleteDocument(docId));
-    onSelectionChange([]);
+  const handleDeleteSelected = async () => {
+    // Batch delete operation
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .in('id', selectedDocuments);
+
+      if (error) throw error;
+      
+      // Clear selection after successful delete
+      onSelectionChange([]);
+      
+      // Refresh documents list
+      onDocumentUpdate?.();
+    } catch (error) {
+      console.error('Error deleting documents:', error);
+      // Individual fallback
+      selectedDocuments.forEach(docId => onDeleteDocument(docId));
+      onSelectionChange([]);
+    }
   };
 
   const handleDocumentSelectionToggle = (documentId: string) => {
@@ -113,6 +139,7 @@ export function MobileDocumentLibrary({
               onSynthesizeSelected={onSynthesizeSelected}
               onCompareSelected={onCompareSelected}
               onDeleteSelected={handleDeleteSelected}
+              onMoreActions={() => setShowBulkActions(true)}
               className="border-b border-border/20 px-4 py-3 bg-card/50 backdrop-blur-sm"
             />
           )}
@@ -249,6 +276,48 @@ export function MobileDocumentLibrary({
             </div>
           </ScrollArea>
         </div>
+
+        {/* Bulk Actions Modal */}
+        {showBulkActions && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <BulkDocumentActions
+              selectedDocumentIds={selectedDocuments}
+              documents={documents.map(doc => ({
+                id: doc.id,
+                title: doc.title,
+                content: doc.content,
+                word_count: doc.word_count,
+                category: doc.category,
+                folder_id: doc.folder_id
+              }))}
+              onClose={() => setShowBulkActions(false)}
+              onAction={(action, result) => {
+                if (action === 'move') {
+                  setShowBulkActions(false);
+                  setShowMoveDialog(true);
+                } else {
+                  setShowBulkActions(false);
+                  onDocumentUpdate?.();
+                  if (['delete', 'archive'].includes(action)) {
+                    onSelectionChange([]);
+                  }
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Move to Folder Dialog */}
+        <MoveToFolderDialog
+          isOpen={showMoveDialog}
+          onClose={() => setShowMoveDialog(false)}
+          documentIds={selectedDocuments}
+          onMoveComplete={() => {
+            setShowMoveDialog(false);
+            onDocumentUpdate?.();
+            onSelectionChange([]);
+          }}
+        />
       </SheetContent>
     </Sheet>
   );

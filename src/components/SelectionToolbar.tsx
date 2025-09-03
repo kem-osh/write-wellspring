@@ -8,7 +8,11 @@ import {
   Square,
   GitCompare,
   Archive,
-  Copy
+  Copy,
+  Download,
+  FolderOpen,
+  MoreHorizontal,
+  ArchiveRestore
 } from 'lucide-react';
 import { useHaptics } from '@/hooks/useHaptics';
 
@@ -22,6 +26,10 @@ interface SelectionToolbarProps {
   onDeleteSelected: () => void;
   onDuplicateSelected?: () => void;
   onArchiveSelected?: () => void;
+  onUnarchiveSelected?: () => void;
+  onExportSelected?: () => void;
+  onMoveSelected?: () => void;
+  onMoreActions?: () => void;
   className?: string;
 }
 
@@ -35,6 +43,10 @@ export function SelectionToolbar({
   onDeleteSelected,
   onDuplicateSelected,
   onArchiveSelected,
+  onUnarchiveSelected,
+  onExportSelected,
+  onMoveSelected,
+  onMoreActions,
   className = ""
 }: SelectionToolbarProps) {
   const { impactMedium } = useHaptics();
@@ -124,6 +136,30 @@ export function SelectionToolbar({
                 </EnhancedButton>
               )}
 
+              {onExportSelected && (
+                <EnhancedButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={onExportSelected}
+                  className="text-primary-foreground hover:bg-primary-foreground/10 gap-1 h-8 px-3"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </EnhancedButton>
+              )}
+
+              {onMoveSelected && (
+                <EnhancedButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={onMoveSelected}
+                  className="text-primary-foreground hover:bg-primary-foreground/10 gap-1 h-8 px-3"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">Move</span>
+                </EnhancedButton>
+              )}
+
               {onArchiveSelected && (
                 <EnhancedButton
                   variant="ghost"
@@ -133,6 +169,18 @@ export function SelectionToolbar({
                 >
                   <Archive className="h-4 w-4" />
                   <span className="hidden sm:inline">Archive</span>
+                </EnhancedButton>
+              )}
+
+              {onUnarchiveSelected && (
+                <EnhancedButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={onUnarchiveSelected}
+                  className="text-primary-foreground hover:bg-primary-foreground/10 gap-1 h-8 px-3"
+                >
+                  <ArchiveRestore className="h-4 w-4" />
+                  <span className="hidden sm:inline">Unarchive</span>
                 </EnhancedButton>
               )}
               
@@ -145,6 +193,18 @@ export function SelectionToolbar({
                 <Trash2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Delete</span>
               </EnhancedButton>
+
+              {onMoreActions && (
+                <EnhancedButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={onMoreActions}
+                  className="text-primary-foreground hover:bg-primary-foreground/10 gap-1 h-8 px-3"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="hidden sm:inline">More</span>
+                </EnhancedButton>
+              )}
             </>
           )}
 

@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo } from 'react';
 import { clsx } from 'clsx';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useHaptics } from '@/hooks/useHaptics';
 
 // TypeScript interfaces for better type safety
 interface Document {
@@ -63,8 +65,12 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
   onSelect,
   className = '',
   disabled = false,
-  showMetadata = true
+  showMetadata = true,
+  showCheckbox = false,
+  onSelectionToggle
 }) => {
+  const { impactLight } = useHaptics();
+  const [longPressTimer, setLongPressTimer] = React.useState<NodeJS.Timeout | null>(null);
   // Early return for missing document
   if (!document) {
     console.warn('DocumentCard: document prop is required');
@@ -79,8 +85,46 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
   // Memoized click handler
   const handleCardClick = useCallback(() => {
     if (disabled) return;
-    onSelect?.(document);
-  }, [document, onSelect, disabled]);
+    // In selection mode, toggle selection instead of opening document
+    if (showCheckbox && onSelectionToggle) {
+      onSelectionToggle(document.id);
+      impactLight();
+    } else {
+      onSelect?.(document);
+    }
+  }, [document, onSelect, disabled, showCheckbox, onSelectionToggle, impactLight]);
+
+  // Long press handlers for mobile selection
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (disabled || showCheckbox) return;
+    
+    // Start long press timer (500ms)
+    const timer = setTimeout(() => {
+      if (onSelectionToggle) {
+        onSelectionToggle(document.id);
+        impactLight();
+        e.preventDefault();
+      }
+    }, 500);
+    
+    setLongPressTimer(timer);
+  }, [disabled, showCheckbox, onSelectionToggle, document.id, impactLight]);
+
+  const handlePointerUp = useCallback(() => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  }, [longPressTimer]);
+
+  // Clean up timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+    };
+  }, [longPressTimer]);
 
   // Memoized keyboard handler
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -181,6 +225,8 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     <Card 
       className={cardClasses}
       onClick={handleCardClick}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={disabled ? -1 : 0}
@@ -192,6 +238,21 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
         <div className={`space-y-${compact ? '1' : '2'}`}>
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
+            {/* Checkbox for selection mode */}
+            {(showCheckbox || isSelected) && (
+              <div className="flex-shrink-0 pt-1">
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => {
+                    onSelectionToggle?.(document.id);
+                    impactLight();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-4 w-4"
+                />
+              </div>
+            )}
+
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {/* Document Icon */}
               <div className="flex-shrink-0">

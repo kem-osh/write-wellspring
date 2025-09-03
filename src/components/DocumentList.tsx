@@ -47,6 +47,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { DocumentCard } from './DocumentCard';
+import { BulkDocumentActions } from './BulkDocumentActions';
+import { MoveToFolderDialog } from './MoveToFolderDialog';
 
 interface Document {
   id: string;
@@ -99,6 +101,8 @@ export function DocumentList({
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set(selectedDocuments));
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(selectedDocuments.length > 0);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
   const { toast } = useToast();
 
   // Sync external selection with internal state
@@ -296,6 +300,7 @@ export function DocumentList({
   const exitMultiSelectMode = () => {
     setIsMultiSelectMode(false);
     setSelectedDocs(new Set());
+    setShowBulkActions(false); // Close bulk actions when exiting selection
     onDocumentSelectionChange?.([]);
   };
 
@@ -527,6 +532,17 @@ export function DocumentList({
                   Delete All
                 </Button>
                 
+                {/* More Actions button */}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowBulkActions(true)}
+                  className="bg-card hover:bg-secondary/80"
+                >
+                  <MoreVertical className="w-4 h-4 mr-2" />
+                  More Actions
+                </Button>
+                
                 {/* Clear selection button */}
                 <Button 
                   variant="ghost" 
@@ -611,6 +627,41 @@ export function DocumentList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Actions Modal */}
+      {showBulkActions && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <BulkDocumentActions
+            selectedDocumentIds={Array.from(selectedDocs)}
+            documents={documents}
+            onClose={() => setShowBulkActions(false)}
+            onAction={(action, result) => {
+              if (action === 'move') {
+                setShowBulkActions(false);
+                setShowMoveDialog(true);
+              } else {
+                setShowBulkActions(false);
+                onDocumentUpdate();
+                if (['delete', 'archive'].includes(action)) {
+                  exitMultiSelectMode();
+                }
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* Move to Folder Dialog */}
+      <MoveToFolderDialog
+        isOpen={showMoveDialog}
+        onClose={() => setShowMoveDialog(false)}
+        documentIds={Array.from(selectedDocs)}
+        onMoveComplete={() => {
+          setShowMoveDialog(false);
+          onDocumentUpdate();
+          exitMultiSelectMode();
+        }}
+      />
     </div>
   );
 }

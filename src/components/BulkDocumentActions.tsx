@@ -19,7 +19,9 @@ import {
   Wand2,
   BarChart3,
   MessageSquare,
-  X
+  X,
+  FolderOpen,
+  ArchiveRestore
 } from 'lucide-react';
 
 interface BulkDocumentActionsProps {
@@ -30,6 +32,7 @@ interface BulkDocumentActionsProps {
     content: string;
     word_count: number;
     category: string;
+    folder_id?: string;
   }>;
   onClose: () => void;
   onAction: (action: string, result?: any) => void;
@@ -122,7 +125,8 @@ export function BulkDocumentActions({
                 content: doc.content,
                 category: doc.category,
                 status: 'draft',
-                user_id: user.id
+                user_id: user.id,
+                folder_id: doc.folder_id || null // Preserve folder location
               });
           });
           
@@ -136,6 +140,20 @@ export function BulkDocumentActions({
             .update({ status: 'archived' })
             .in('id', selectedDocumentIds);
           result = { data: { success: true, count: selectedDocs.length } };
+          break;
+
+        case 'unarchive':
+          await supabase
+            .from('documents')
+            .update({ status: 'draft' })
+            .in('id', selectedDocumentIds)
+            .eq('status', 'archived');
+          result = { data: { success: true, count: selectedDocs.length } };
+          break;
+
+        case 'move':
+          // This will be handled by parent component with MoveToFolderDialog
+          result = { data: { success: true, action: 'move_requested' } };
           break;
 
         case 'delete':
@@ -194,6 +212,10 @@ export function BulkDocumentActions({
         return `Created copies of ${count} documents.`;
       case 'archive':
         return `Archived ${count} documents.`;
+      case 'unarchive':
+        return `Unarchived ${count} documents.`;
+      case 'move':
+        return `Ready to move ${count} documents to folder.`;
       case 'delete':
         return `Deleted ${count} documents.`;
       default:
@@ -248,10 +270,28 @@ export function BulkDocumentActions({
       color: 'text-muted-foreground'
     },
     {
+      id: 'move',
+      label: 'Move to Folder',
+      description: 'Organize documents into folders',
+      icon: FolderOpen,
+      variant: 'outline' as const,
+      minDocs: 1,
+      color: 'text-muted-foreground'
+    },
+    {
       id: 'archive',
       label: 'Archive Documents',
       description: 'Move documents to archived status',
       icon: Archive,
+      variant: 'outline' as const,
+      minDocs: 1,
+      color: 'text-muted-foreground'
+    },
+    {
+      id: 'unarchive',
+      label: 'Unarchive Documents',
+      description: 'Restore documents from archived status',
+      icon: ArchiveRestore,
       variant: 'outline' as const,
       minDocs: 1,
       color: 'text-muted-foreground'
