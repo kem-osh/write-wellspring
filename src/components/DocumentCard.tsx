@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { clsx } from 'clsx';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/enhanced-card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useHaptics } from '@/hooks/useHaptics';
 
@@ -41,15 +41,15 @@ interface DocumentCardProps {
 
 // Loading skeleton component
 const DocumentCardSkeleton: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
-  <Card className="animate-pulse">
-    <CardContent className={compact ? "p-3" : "p-4"}>
-      <div className={`space-y-${compact ? '2' : '3'}`}>
+  <Card variant="elevated" className="animate-pulse">
+    <CardContent padding={compact ? "xs" : "sm"}>
+      <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 flex-1">
-            <div className="w-6 h-6 bg-muted rounded"></div>
-            <div className="flex-1 space-y-1">
-              <div className="h-3 bg-muted rounded w-3/4"></div>
-              <div className="h-2 bg-muted rounded w-1/2"></div>
+            <div className="w-6 h-6 bg-muted rounded-lg"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-muted rounded-lg w-3/4"></div>
+              <div className="h-3 bg-muted/70 rounded-lg w-1/2"></div>
             </div>
           </div>
         </div>
@@ -137,20 +137,28 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     }
   }, [handleCardClick, disabled]);
 
-  // Memoized class names
+  // Memoized card classes with enhanced styling
   const cardClasses = clsx(
-    // Base styles
-    'group transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+    // Base layout classes
+    'group cursor-pointer transition-all duration-200 ease-out',
     
-    // Cursor and interaction states
-    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+    // Size variants
+    compact && 'text-sm',
     
-    // Hover effects based on compact mode
-    !disabled && (compact ? 'hover:shadow-sm' : 'hover:shadow-lg hover:-translate-y-0.5'),
+    // Layout variants
+    layout === 'list' && 'w-full',
+    layout === 'grid' && 'aspect-[4/3]',
     
-    // Selection states
-    isSelected && !disabled && 'ring-2 ring-primary/50 bg-primary/5 shadow-md',
-    !isSelected && !disabled && 'hover:shadow-md',
+    // Interaction states with enhanced shadows and transforms
+    !disabled && 'hover:shadow-xl hover:scale-[1.02] hover:border-primary/30',
+    disabled && 'opacity-60 cursor-not-allowed',
+    
+    // Selection states with enhanced visuals
+    isSelected && !disabled && 'ring-2 ring-primary/60 bg-primary/8 shadow-lg scale-[1.01] border-primary/40',
+    !isSelected && !disabled && 'shadow-md hover:shadow-xl',
+    
+    // Focus states
+    'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
     
     // Custom className
     className
@@ -223,10 +231,20 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       : truncated + '...';
   }, []);
 
+  // Helper function for word count formatting
+  const formatWordCount = useCallback((count: number): string => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k`;
+    }
+    return count.toString();
+  }, []);
+
   // Render horizontal list layout
   if (layout === 'list') {
     return (
       <Card 
+        variant="interactive"
+        padding="sm"
         className={cardClasses}
         onClick={handleCardClick}
         onPointerDown={handlePointerDown}
@@ -238,8 +256,8 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
         aria-label={ariaLabel}
         aria-disabled={disabled}
       >
-        <CardContent className="p-3">
-          <div className="flex items-center gap-3">
+        <CardContent padding="none" className="p-4">
+          <div className="flex items-center gap-4">
             {/* Checkbox for selection mode */}
             {(showCheckbox || isSelected) && (
               <div className="flex-shrink-0">
@@ -250,7 +268,7 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
                     impactLight();
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="h-4 w-4"
+                  className="h-5 w-5 border-2 shadow-sm"
                   aria-label={`Select document ${document.title}`}
                 />
               </div>
@@ -262,11 +280,11 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
                 <img 
                   src={document.thumbnail} 
                   alt=""
-                  className="object-cover rounded w-12 h-12"
+                  className="object-cover rounded-lg w-14 h-14 shadow-sm ring-1 ring-border/20"
                   loading="lazy"
                 />
               ) : (
-                <div className="flex items-center justify-center w-12 h-12 text-2xl bg-muted/30 rounded">
+                <div className="flex items-center justify-center w-14 h-14 text-2xl bg-gradient-to-br from-muted/50 to-muted/30 rounded-lg shadow-sm ring-1 ring-border/20">
                   {getDocumentIcon(document.type)}
                 </div>
               )}
@@ -274,19 +292,19 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
             {/* Document Info - Improved for horizontal layout */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-foreground truncate text-base leading-tight">
+              <h3 className="font-semibold text-foreground truncate text-lg leading-tight mb-1">
                 {document.title || 'Untitled Document'}
               </h3>
               
               {document.description && (
-                <p className="text-sm text-muted-foreground truncate mt-0.5">
+                <p className="text-sm text-muted-foreground truncate mb-1">
                   {document.description}
                 </p>
               )}
               
               {/* Content Preview - Better for list view */}
               {getContentPreview(document.content) && (
-                <p className="text-sm text-muted-foreground/80 mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-sm text-muted-foreground/90 mt-2 line-clamp-2 leading-relaxed">
                   {getContentPreview(document.content)}
                 </p>
               )}
@@ -294,9 +312,9 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
             {/* Metadata in list view - Only show on medium+ screens */}
             {showMetadata && (
-              <div className="hidden md:flex flex-col items-end gap-1 text-xs text-muted-foreground flex-shrink-0">
+              <div className="hidden md:flex flex-col items-end gap-2 text-sm text-muted-foreground flex-shrink-0 bg-surface/50 rounded-lg p-3 shadow-sm">
                 {document.word_count && (
-                  <span className="font-medium">
+                  <span className="font-medium text-foreground">
                     {formatWordCount(document.word_count)} words
                   </span>
                 )}
@@ -331,9 +349,11 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     );
   }
 
-  // Render grid layout (original design with fixes)
+  // Render grid layout (original design with enhanced styling)
   return (
     <Card 
+      variant="elevated"
+      padding={compact ? "xs" : "sm"}
       className={cardClasses}
       onClick={handleCardClick}
       onPointerDown={handlePointerDown}
@@ -345,10 +365,10 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
       aria-label={ariaLabel}
       aria-disabled={disabled}
     >
-      <CardContent className={contentClasses}>
-        <div className={compact ? "space-y-1" : "space-y-2"}>
+      <CardContent padding="none" className={contentClasses}>
+        <div className={compact ? "space-y-2" : "space-y-3"}>
           {/* Header */}
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-3">
             {/* Checkbox for selection mode */}
             {(showCheckbox || isSelected) && (
               <div className="flex-shrink-0 pt-1">
@@ -359,24 +379,24 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
                     impactLight();
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="h-4 w-4"
+                  className="h-5 w-5 border-2 shadow-sm"
                   aria-label={`Select document ${document.title}`}
                 />
               </div>
             )}
 
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Document Icon */}
               <div className="flex-shrink-0">
                 {document.thumbnail ? (
                   <img 
                     src={document.thumbnail} 
                     alt=""
-                    className={`object-cover rounded ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}
+                    className={`object-cover rounded-lg shadow-sm ring-1 ring-border/20 ${compact ? 'w-8 h-8' : 'w-10 h-10'}`}
                     loading="lazy"
                   />
                 ) : (
-                  <div className={`flex items-center justify-center ${compact ? 'w-6 h-6 text-sm' : 'w-8 h-8 text-lg'}`}>
+                  <div className={`flex items-center justify-center bg-gradient-to-br from-muted/50 to-muted/30 rounded-lg shadow-sm ring-1 ring-border/20 ${compact ? 'w-8 h-8 text-lg' : 'w-10 h-10 text-xl'}`}>
                     {getDocumentIcon(document.type)}
                   </div>
                 )}
@@ -384,22 +404,22 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
               {/* Document Info */}
               <div className="flex-1 min-w-0">
-                <h3 className={`font-medium text-foreground truncate ${
+                <h3 className={`font-semibold text-foreground truncate leading-tight mb-1 ${
                   compact ? 'text-sm' : 'text-base'
                 }`}>
                   {document.title || 'Untitled Document'}
                 </h3>
                 
                 {document.description && !compact && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  <p className="text-sm text-muted-foreground truncate mb-1">
                     {document.description}
                   </p>
                 )}
                 
                 {/* Content Preview */}
                 {getContentPreview(document.content) && (
-                  <p className={`text-muted-foreground/80 mt-1 line-clamp-2 ${
-                    compact ? 'text-xs' : 'text-xs'
+                  <p className={`text-muted-foreground/80 mt-1 line-clamp-2 leading-relaxed ${
+                    compact ? 'text-xs' : 'text-sm'
                   }`}>
                     {getContentPreview(document.content)}
                   </p>
@@ -409,9 +429,9 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
             {/* Selection Indicator */}
             {isSelected && (
-              <div className={`flex-shrink-0 rounded-full bg-primary flex items-center justify-center ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}>
+              <div className={`flex-shrink-0 rounded-full bg-primary shadow-sm flex items-center justify-center ${compact ? 'w-5 h-5' : 'w-6 h-6'}`}>
                 <svg 
-                  className={`text-primary-foreground ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`}
+                  className={`text-primary-foreground ${compact ? 'w-3 h-3' : 'w-3.5 h-3.5'}`}
                   fill="currentColor" 
                   viewBox="0 0 20 20"
                   aria-hidden="true"
@@ -428,36 +448,48 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
 
           {/* Metadata */}
           {showMetadata && !compact && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground bg-surface/30 rounded-lg p-2 mt-3">
+              {document.word_count && (
+                <span className="font-medium text-foreground">
+                  {formatWordCount(document.word_count)} words
+                </span>
+              )}
+              
               {document.type && (
-                <span className="uppercase font-medium">
+                <span className="uppercase font-medium text-xs">
                   {document.type}
                 </span>
               )}
               
               {document.size && (
-                <span>
+                <span className="text-xs">
                   {formatFileSize(document.size)}
                 </span>
               )}
               
               {document.lastModified && (
-                <span>
-                  Modified {formatDate(document.lastModified)}
+                <span className="text-xs">
+                  {formatDate(document.lastModified)}
                 </span>
               )}
             </div>
           )}
 
           {/* Compact metadata */}
-          {showMetadata && compact && (document.type || document.size) && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {showMetadata && compact && (document.word_count || document.type || document.size) && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-surface/30 rounded p-1.5 mt-2">
+              {document.word_count && (
+                <span className="font-medium">
+                  {formatWordCount(document.word_count)}w
+                </span>
+              )}
+              {document.type && document.word_count && <span>•</span>}
               {document.type && (
-                <span className="uppercase font-medium text-xs">
+                <span className="uppercase font-medium">
                   {document.type}
                 </span>
               )}
-              {document.type && document.size && <span>•</span>}
+              {document.size && (document.type || document.word_count) && <span>•</span>}
               {document.size && (
                 <span>
                   {formatFileSize(document.size)}
@@ -470,13 +502,6 @@ export const DocumentCard = React.memo<DocumentCardProps>(({
     </Card>
   );
 
-  // Helper function for word count formatting
-  function formatWordCount(count: number): string {
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}k`;
-    }
-    return count.toString();
-  }
 });
 
 // Set display name for better debugging

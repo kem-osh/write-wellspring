@@ -1166,19 +1166,20 @@ export default function Dashboard() {
           /* Desktop Layout */
           <>
             {/* Desktop Top Bar */}
-            <header className="flex items-center justify-between p-4 border-b bg-card">
-              <div className="flex items-center gap-4">
+            <header className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-card to-surface shadow-sm">
+              <div className="flex items-center gap-6">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+                  className="hover:bg-primary/10 rounded-lg"
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-5 w-5" />
                 </Button>
                 <Input
                   value={documentTitle}
                   onChange={(e) => setDocumentTitle(e.target.value)}
-                  className="text-lg font-medium bg-transparent border-none focus:border-border max-w-md"
+                  className="text-xl font-semibold bg-transparent border-none focus:border-border max-w-lg text-foreground"
                   placeholder="Document title..."
                 />
               </div>
@@ -1227,30 +1228,34 @@ export default function Dashboard() {
                 {/* Left Sidebar - Document Library */}
                 {(leftSidebarOpen && !isFocusMode) && (
                   <>
-                     <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                       <div className="h-full flex flex-col border-r bg-card sidebar-transition animate-slideInLeft overflow-hidden">
-                         {/* ... existing sidebar content ... */}
-                         {/* Fixed Header Section */}
-                         <div className="flex-shrink-0 border-b bg-card">
-                           {/* Title and Close Button */}
-                           <div className="p-4 border-b flex items-center justify-between">
-                             <h3 className="font-medium">Documents</h3>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => setLeftSidebarOpen(false)}
-                             >
-                               <X className="h-4 w-4" />
-                             </Button>
-                           </div>
+                      <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                        <div className="h-full flex flex-col border-r bg-gradient-to-b from-card to-surface shadow-lg sidebar-transition animate-slideInLeft overflow-hidden">
+                          {/* ... existing sidebar content ... */}
+                          {/* Fixed Header Section */}
+                          <div className="flex-shrink-0 border-b bg-gradient-to-r from-card to-surface">
+                            {/* Title and Close Button */}
+                            <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between">
+                              <h3 className="text-lg font-semibold text-foreground">Documents</h3>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setLeftSidebarOpen(false)}
+                                className="hover:bg-primary/10 rounded-lg"
+                              >
+                                <X className="h-5 w-5" />
+                              </Button>
+                            </div>
                            
-                            {/* New Document & Search */}
-                            <div className="p-4 space-y-3">
-                              <div className="flex gap-2">
-                                <Button onClick={createNewDocument} className="flex-1">
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  New Document
-                                </Button>
+                             {/* New Document & Search */}
+                             <div className="px-6 py-4 space-y-4">
+                               <div className="flex gap-3">
+                                 <Button 
+                                   onClick={createNewDocument} 
+                                   className="flex-1 h-11 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg transition-all"
+                                 >
+                                   <Plus className="h-5 w-5 mr-2" />
+                                   New Document
+                                 </Button>
                                 <Dialog open={showBulkUploader} onOpenChange={setShowBulkUploader}>
                                   <DialogTrigger asChild>
                                     <Button variant="outline" size="default" className="px-3">
@@ -1289,41 +1294,45 @@ export default function Dashboard() {
                             </div>
                          </div>
                          
-                         {/* Scrollable Content Section */}
-                         <div className="flex-1 flex flex-col overflow-hidden">
-                           <ScrollArea className="flex-1">
-                             <div className="p-4 pb-20 space-y-4">
-                               {/* Filters */}
-                               <DocumentFilters 
-                                 onFiltersChange={handleFiltersChange}
-                                 initialFilters={filters}
-                               />
-                               
-                               {/* Document List */}
-                               <div className="min-h-0">
-                                   <DocumentList
-                                     documents={filteredDocuments}
-                                     categories={categories}
-                                     currentDocument={currentDocument}
-                                     onDocumentSelect={openDocument}
-                                     onDocumentUpdate={() => user && loadDocuments({ userId: user.id })}
-                                     searchQuery={searchQuery}
-                                     selectedDocuments={selectedDocuments}
-                                     onDocumentSelectionChange={(newSelection: string[]) => {
-                                       // Clear current selection and set new one
-                                       clearSelection();
-                                       newSelection.forEach(id => toggleDocumentSelection(id));
-                                     }}
-                                     hasMore={hasMore}
-                                     loading={documentsLoading}
-                                     onLoadMore={() => user && loadMoreDocuments(user.id)}
-                                   />
-                               </div>
-                               
-                               {/* Stats - at bottom of scrollable area */}
-                               <div className="mt-auto pt-4 border-t">
-                                 <DocumentStats documents={documents} />
-                               </div>
+                          {/* Scrollable Content Section */}
+                          <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-surface/50 to-background">
+                            <ScrollArea className="flex-1">
+                              <div className="px-6 py-4 pb-20 space-y-6">
+                                {/* Filters */}
+                                <div className="bg-card rounded-xl p-4 shadow-sm border border-border/50">
+                                  <DocumentFilters 
+                                    onFiltersChange={handleFiltersChange}
+                                    initialFilters={filters}
+                                  />
+                                </div>
+                                
+                                {/* Document List */}
+                                <div className="min-h-0 space-y-4">
+                                    <DocumentList
+                                      documents={filteredDocuments}
+                                      categories={categories}
+                                      currentDocument={currentDocument}
+                                      onDocumentSelect={openDocument}
+                                      onDocumentUpdate={() => user && loadDocuments({ userId: user.id })}
+                                      searchQuery={searchQuery}
+                                      selectedDocuments={selectedDocuments}
+                                      onDocumentSelectionChange={(newSelection: string[]) => {
+                                        // Clear current selection and set new one
+                                        clearSelection();
+                                        newSelection.forEach(id => toggleDocumentSelection(id));
+                                      }}
+                                      hasMore={hasMore}
+                                      loading={documentsLoading}
+                                      onLoadMore={() => user && loadMoreDocuments(user.id)}
+                                    />
+                                </div>
+                                
+                                {/* Stats - at bottom of scrollable area */}
+                                <div className="mt-auto pt-6 border-t border-border/50">
+                                  <div className="bg-card rounded-xl p-4 shadow-sm">
+                                    <DocumentStats documents={documents} />
+                                  </div>
+                                </div>
                              </div>
                            </ScrollArea>
                          </div>
@@ -1348,19 +1357,38 @@ export default function Dashboard() {
                          />
                        </div>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-center">
-                        <div>
-                          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                          <h2 className="text-xl font-semibold mb-2">Welcome to LogosScribe</h2>
-                          <p className="text-muted-foreground mb-4">
-                            Your AI-powered writing studio for professional content creation
-                          </p>
-                          <Button onClick={createNewDocument}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Your First Document
-                          </Button>
-                        </div>
-                      </div>
+                       <div className="flex-1 flex items-center justify-center text-center bg-gradient-to-br from-surface/30 to-background">
+                         <div className="max-w-md mx-auto p-8">
+                           <div className="mb-8 relative">
+                             <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl"></div>
+                             <FileText className="relative h-20 w-20 mx-auto text-primary/70" />
+                           </div>
+                           <h2 className="text-2xl font-bold mb-3 text-foreground">Welcome to LogosScribe</h2>
+                           <p className="text-muted-foreground mb-8 leading-relaxed">
+                             Your AI-powered writing studio for professional content creation. 
+                             Start by creating your first document or uploading existing content.
+                           </p>
+                           <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                             <Button 
+                               onClick={createNewDocument}
+                               size="lg"
+                               className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
+                             >
+                               <Plus className="h-5 w-5 mr-2" />
+                               Create Document
+                             </Button>
+                             <Button 
+                               variant="outline" 
+                               size="lg"
+                               onClick={() => setShowBulkUploader(true)}
+                               className="border-2 hover:bg-primary/10 hover:border-primary/20"
+                             >
+                               <Upload className="h-5 w-5 mr-2" />
+                               Upload Files
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
                     )}
                   </div>
                 </ResizablePanel>
@@ -1382,8 +1410,8 @@ export default function Dashboard() {
             </div>
 
             {/* Desktop Bottom Toolbar */}
-            <footer className="border-t bg-card">
-              <div className="flex items-center gap-3 p-3 min-h-[68px]">
+            <footer className="border-t bg-gradient-to-r from-card to-surface shadow-lg">
+              <div className="flex items-center gap-4 px-6 py-4 min-h-[72px]">
                 {/* Left Section - Custom Shortcuts */}
                  <div className="flex-1 flex items-center gap-1 overflow-x-auto">
                    <CustomShortcuts 
