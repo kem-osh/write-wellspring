@@ -369,15 +369,15 @@ export default function DocumentLibrary() {
                 </div>
                 <ScrollArea className="flex-1">
                   <div className="p-4 space-y-4">
-                  <DocumentSearch 
-                    onSearch={setSearchQuery}
-                    onClear={() => setSearchQuery('')}
-                    isLoading={searchLoading}
-                  />
-                  <DocumentFilters
-                    initialFilters={filters}
-                    onFiltersChange={setFilters}
-                  />
+                    <DocumentSearch 
+                      onSearch={setSearchQuery}
+                      onClear={() => setSearchQuery('')}
+                      isLoading={searchLoading}
+                    />
+                    <DocumentFilters
+                      initialFilters={filters}
+                      onFiltersChange={setFilters}
+                    />
                     <DocumentStats documents={filteredDocuments} />
                   </div>
                 </ScrollArea>
@@ -386,99 +386,20 @@ export default function DocumentLibrary() {
           </Sheet>
         )}
 
-        {/* Left Sidebar - Document Library Panel */}
-        {!isMobile && (
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <div className="w-full h-full bg-sidebar/95 backdrop-blur-sm border-r border-sidebar-border shadow-lg">
-              <div className="flex flex-col h-full">
-                {/* Header */}
-                <div className="flex-shrink-0 p-5 border-b border-sidebar-border bg-sidebar shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-sidebar-primary/10 border border-sidebar-primary/20">
-                        <FileText className="w-5 h-5 text-sidebar-primary" />
-                      </div>
-                      <div>
-                        <h2 className="text-heading-md font-semibold text-sidebar-foreground">Documents</h2>
-                        <p className="text-xs text-muted-foreground">{documents.length} documents</p>
-                      </div>
-                    </div>
-                    <UserMenu />
-                  </div>
-                  
-                  {/* Quick Actions */}
-                  <div className="space-y-2">
-                    <EnhancedButton 
-                      size="sm" 
-                      onClick={createNewDocument}
-                      className="w-full justify-start shadow-md hover:shadow-lg transition-all duration-200"
-                    >
-                      <PenTool className="h-4 w-4 mr-2" />
-                      Write New Document
-                    </EnhancedButton>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handlePasteContent}
-                        className="flex-1 justify-start text-xs bg-card/50 hover:bg-card border-border/60 hover:border-sidebar-primary/30"
-                      >
-                        <Clipboard className="h-3 w-3 mr-1" />
-                        Paste
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setShowBulkUploader(true)}
-                        className="flex-1 justify-start text-xs bg-card/50 hover:bg-card border-border/60 hover:border-sidebar-primary/30"
-                      >
-                        <Upload className="h-3 w-3 mr-1" />
-                        Upload
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Search and Filters */}
-                <div className="flex-shrink-0 p-4 space-y-4 bg-surface/30">
-                <DocumentSearch 
-                  onSearch={setSearchQuery}
-                  onClear={() => setSearchQuery('')}
-                  isLoading={searchLoading}
-                />
-                <DocumentFilters
-                  initialFilters={filters}
-                  onFiltersChange={setFilters}
-                />
-                </div>
-
-                {/* Document Stats */}
-                <div className="flex-shrink-0 p-4">
-                  <DocumentStats documents={filteredDocuments} />
-                </div>
-              </div>
-            </div>
-          </ResizablePanel>
-        )}
-
-        {!isMobile && <ResizableHandle />}
-
-        {/* Center Panel - Document Management Center */}
-        <ResizablePanel>
-          <div className="h-full flex flex-col bg-surface/20">
+        {/* Desktop Layout with Resizable Panels */}
+        {isMobile ? (
+          /* Mobile Layout - No Resizable Panels */
+          <div className="flex-1 flex flex-col bg-surface/20">
             {/* Header */}
             <div className="flex-shrink-0 flex items-center justify-between p-4 bg-surface/60 backdrop-blur-sm border-b border-border/50 shadow-sm">
               <div className="flex items-center gap-4">
-                {isMobile && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setLeftSidebarOpen(true)}
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                )}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setLeftSidebarOpen(true)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
                 <div>
                   <h1 className="text-heading-lg font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                     LogosScribe
@@ -584,19 +505,212 @@ export default function DocumentLibrary() {
               />
             </div>
           </div>
-        </ResizablePanel>
+        ) : (
+          /* Desktop Layout with Resizable Panels */
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
+            {/* Left Sidebar - Document Library Panel */}
+            <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+              <div className="w-full h-full bg-sidebar/95 backdrop-blur-sm border-r border-sidebar-border shadow-lg">
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="flex-shrink-0 p-5 border-b border-sidebar-border bg-sidebar shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-sidebar-primary/10 border border-sidebar-primary/20">
+                          <FileText className="w-5 h-5 text-sidebar-primary" />
+                        </div>
+                        <div>
+                          <h2 className="text-heading-md font-semibold text-sidebar-foreground">Documents</h2>
+                          <p className="text-xs text-muted-foreground">{documents.length} documents</p>
+                        </div>
+                      </div>
+                      <UserMenu />
+                    </div>
+                    
+                    {/* Quick Actions */}
+                    <div className="space-y-2">
+                      <EnhancedButton 
+                        size="sm" 
+                        onClick={createNewDocument}
+                        className="w-full justify-start shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        <PenTool className="h-4 w-4 mr-2" />
+                        Write New Document
+                      </EnhancedButton>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handlePasteContent}
+                          className="flex-1 justify-start text-xs bg-card/50 hover:bg-card border-border/60 hover:border-sidebar-primary/30"
+                        >
+                          <Clipboard className="h-3 w-3 mr-1" />
+                          Paste
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setShowBulkUploader(true)}
+                          className="flex-1 justify-start text-xs bg-card/50 hover:bg-card border-border/60 hover:border-sidebar-primary/30"
+                        >
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
 
-        {!isMobile && <ResizableHandle />}
+                  {/* Search and Filters */}
+                  <div className="flex-shrink-0 p-4 space-y-4 bg-surface/30">
+                    <DocumentSearch 
+                      onSearch={setSearchQuery}
+                      onClear={() => setSearchQuery('')}
+                      isLoading={searchLoading}
+                    />
+                    <DocumentFilters
+                      initialFilters={filters}
+                      onFiltersChange={setFilters}
+                    />
+                  </div>
 
-        {/* Right Sidebar - AI Chat Panel */}
-        {rightSidebarOpen && !isMobile && (
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <AIChatSidebar
-              isOpen={true}
-              onClose={() => setRightSidebarOpen(false)}
-              onDocumentSelect={handleDocumentSelect}
-            />
-          </ResizablePanel>
+                  {/* Document Stats */}
+                  <div className="flex-shrink-0 p-4">
+                    <DocumentStats documents={filteredDocuments} />
+                  </div>
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle />
+
+            {/* Center Panel - Document Management Center */}
+            <ResizablePanel>
+              <div className="h-full flex flex-col bg-surface/20">
+                {/* Header */}
+                <div className="flex-shrink-0 flex items-center justify-between p-4 bg-surface/60 backdrop-blur-sm border-b border-border/50 shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <h1 className="text-heading-lg font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                        LogosScribe
+                      </h1>
+                      <p className="text-sm text-muted-foreground">Document Library</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* View Layout Toggle */}
+                    <div className="flex items-center bg-muted/50 rounded-lg p-1">
+                      <Button
+                        variant={viewLayout === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewLayout('list')}
+                        className="h-7 px-2"
+                      >
+                        <List className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant={viewLayout === 'grid' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewLayout('grid')}
+                        className="h-7 px-2"
+                      >
+                        <Grid3X3 className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+                      className="hover:bg-sidebar-accent"
+                    >
+                      <MessageSquare className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setShowSettingsModal(true)}
+                    >
+                      <Settings className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Document Preview Panel */}
+                {selectedDocumentForPreview && (
+                  <div className="flex-shrink-0 p-4 bg-card/50 border-b border-border/50">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-heading-sm font-semibold">{selectedDocumentForPreview.title}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {selectedDocumentForPreview.category}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {selectedDocumentForPreview.status}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {selectedDocumentForPreview.word_count} words
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleDocumentEdit(selectedDocumentForPreview)}>
+                          <PenTool className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedDocumentForPreview(null)}>
+                          ×
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 max-h-32 overflow-y-auto">
+                      {selectedDocumentForPreview.content.substring(0, 300)}
+                      {selectedDocumentForPreview.content.length > 300 && '...'}
+                    </div>
+                  </div>
+                )}
+
+                {/* Document List */}
+                <div className="flex-1 overflow-hidden">
+                  <DocumentList
+                    documents={filteredDocuments}
+                    categories={categories}
+                    onDocumentSelect={handleDocumentSelect}
+                    onDocumentUpdate={handleDocumentUpdate}
+                    searchQuery={searchQuery}
+                    selectedDocuments={selectedDocuments}
+                    onDocumentSelectionChange={(ids) => {
+                      ids.forEach(id => {
+                        if (!isDocumentSelected(id)) {
+                          toggleDocumentSelection(id);
+                        }
+                      });
+                    }}
+                    hasMore={hasMore}
+                    loading={documentsLoading}
+                    onLoadMore={() => user && loadMoreDocuments(user.id)}
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            {/* Right Sidebar - AI Chat Panel */}
+            {rightSidebarOpen && (
+              <>
+                <ResizableHandle />
+                <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                  <AIChatSidebar
+                    isOpen={true}
+                    onClose={() => setRightSidebarOpen(false)}
+                    onDocumentSelect={handleDocumentSelect}
+                  />
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
         )}
       </div>
 
